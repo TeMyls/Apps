@@ -9,9 +9,33 @@ from proglog import ProgressBarLogger
 #import cv2
 import tkinter as tk
 from tkinter import ttk, filedialog
+
 #import potrace
 
 
+
+class MyBarLogger(ProgressBarLogger):
+    def __init__(self):
+        super().__init__()
+        self.last_message = ''
+        self.previous_percentage = 0    
+    
+    def callback(self, **changes):
+        # Every time the logger message is updated, this function is called with
+        # the `changes` dictionary of the form `parameter: new value`.
+        for (parameter, value) in changes.items():
+            # print ('Parameter %s is now %s' % (parameter, value))
+            self.last_message = value
+    
+    def bars_callback(self, bar, attr, value,old_value=None):
+        # Every time the logger progress is updated, this function is called        
+        if 'Writing video' in self.last_message:
+            percentage = (value / self.bars[bar]['total']) * 100
+            if percentage > 0 and percentage < 100:
+                if int(percentage) != self.previous_percentage:
+                    self.previous_percentage = int(percentage)
+                    print(self.previous_percentage)
+                    
 
 
 class Application(tk.Tk):
@@ -31,6 +55,9 @@ class Application(tk.Tk):
 
         
 class PathForm(ttk.Frame):
+    
+    
+    
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent)
 
@@ -69,14 +96,13 @@ class PathForm(ttk.Frame):
         
         self.convert_to_combobox = ttk.Combobox(self, width = 15,  textvariable = tk.StringVar()) 
         
-        self.convert_to_combobox["values"] = (  "No Change"
+        self.convert_to_combobox["values"] = (  "No Change",
                                                 "mp4",
                                                 "ogv",
                                                 "webm",
                                                 "gif",
                                               )
-        
-
+       
         #Mute
         self.audio_label = ttk.Label(self, text="Audio")
         self.muted_label = ttk.Label(self, text="muted")
@@ -127,7 +153,7 @@ class PathForm(ttk.Frame):
         
         self.save_path_scrollbar_x.config(command=self.save_path_listbox.xview)
         self.save_path_button = tk.Button(self, text="Select Folder", command=self.get_directory)
-        self.save_save = tk.Button(self, text="save", command=self.save_files)
+        self.save_true = tk.Button(self, text="Save", command=self.save_files)
         
         
         
@@ -151,8 +177,59 @@ class PathForm(ttk.Frame):
         self.combine_listbox.bind("<<ListboxSelect>>", lambda _: self.get_selected_videos(self.combine_listbox))
         
         #Crop
-        self.crop_label = ttk.Label(self, text="Crop Video")
-        self.crop_video_img_canavs = tk.Canvas(self)
+        #self.crop_label = ttk.Label(self, text="Crop Video")
+        #self.crop_video_img_canavs = tk.Canvas(self)
+        
+        
+        
+        
+        #Selection Type
+        self.type_selection_label = ttk.Label(self, text = "Selection Type")
+        self.type_selection_svar = tk.StringVar()
+        self.type_selection_svar.set("Single")
+        
+        self.type_selection_radiobutton1 = ttk.Radiobutton(self, text="Single", 
+                                                           variable=self.type_selection_svar,
+                                                           value = "Single",
+                                                           command=self.get_type_sel)
+        self.type_selection_radiobutton2 = ttk.Radiobutton(self, text="Multiple", 
+                                                           variable=self.type_selection_svar,
+                                                           value = "Multiple",
+                                                           command=self.get_type_sel)
+        
+        
+  
+        
+        self.multiple_selection_widgets = [
+            self.combine_label,
+            self.combine_listbox,
+            self.combine_scrollbar_x,
+            self.combine_scrollbar_y
+        ]
+        
+        
+        
+        self.static_widgets = [
+            self.selected_file_label,
+            self.selected_file_listbox,
+            self.selected_file_scrollbar_x,
+            self.selected_file_scrollbar_y,
+            self.selected_file_open_button,
+            self.selected_file_clear_button,
+            
+            self.type_selection_label,
+            self.type_selection_radiobutton1,
+            self.type_selection_radiobutton2,
+            
+            self.save_path_label,
+            self.save_path_listbox,
+            self.save_path_scrollbar_x,
+            self.save_path_button,
+            self.save_name_label,
+            self.save_name_entry,
+            self.save_true
+            
+        ]
         
         
         #grid positions
@@ -163,10 +240,10 @@ class PathForm(ttk.Frame):
             [self.selected_file_listbox    , self.selected_file_scrollbar_y, self.convert_to_combobox, self.combine_listbox   , self.combine_scrollbar_y ,  self.resize_spinbox , self.save_path_listbox      ],
             [self.selected_file_scrollbar_x, None                          , None                    ,self.combine_scrollbar_x, None                     , None                 , self.save_path_scrollbar_x  ],
             [self.selected_file_open_button, None                          , None                    , None                   , None                     , None                 , self.save_path_button       ],
-            [self.selected_file_clear_button,None                          , self.cut_label          , None                   , self.audio_label         , None                 , self.save_name_label        ],                     
-            [None                          , self.start_cut_label          , self.cut_start_spinbox  , None                   , self.mute_checkbutton    , self.muted_label     , self.save_name_entry        ],    
-            [None                          , self.end_cut_label            , self.cut_end_spinbox    , None                   , None                     , None                 , None                        ],  
-            [None                          , None                          , None                    , None                   , None                     , None                 , None                        ], 
+            [self.selected_file_clear_button,None                          , None                    , self.cut_label         , self.audio_label         , None                 , self.save_name_label        ],                     
+            [self.type_selection_label     , None                          ,  self.start_cut_label   , self.cut_start_spinbox , self.mute_checkbutton    , self.muted_label     , self.save_name_entry        ],    
+            [self.type_selection_radiobutton1, None                        ,  self.end_cut_label     , self.cut_end_spinbox   , None                     , None                 , self.save_true              ],  
+            [self.type_selection_radiobutton2, None                        , None                    , None                   , None                     , None                 , None                      ], 
             [None                          , None                          , None                    , None                   , None                     , None                 , None                        ]                       
             
             
@@ -190,16 +267,47 @@ class PathForm(ttk.Frame):
                         arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "NWES", columnspan = 1)
                     else:
                         arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "NW")
-                            
+                
+                
+        self.get_type_sel()            
         test = "C:/Users/Tlmyl/Downloads/Downloads/Scripts/Simple Scripts"
         blank = "/"
         self.last_folder = test
-        
-        
+        self.logger = MyBarLogger()
 
         
         
+    def get_type_sel(self):
+        type_sel = self.type_selection_svar.get()
+        #for ind_y in range(len(arrangement)):
+            #for ind_x in range(2, len(arrangement[ind_y]) - 1):
+        for widget in self.winfo_children():
+            print("Yes")
+          
+            #and  widget in self.static_widgets
+            if type_sel == "Single":
+                if widget in self.multiple_selection_widgets:
+                    widget.grid_remove()
+                else:
+                    widget.grid()
+            elif type_sel == "Multiple":
+                if widget in self.multiple_selection_widgets:
+                    widget.grid()
+                else:
+                    if widget not in self.static_widgets:
+                        widget.grid_remove()
+                    
+                    
+                
+                    
+                    
         
+        
+    def hide_widget(self, widget):
+        widget.grid_remove()
+        
+    def show_widget(self, widget):
+        widget.grid()
         
         
     def open_files(self):
@@ -250,7 +358,8 @@ class PathForm(ttk.Frame):
         print(file_name)      
         
     def save_files(self):
-        VideoFileClip()
+        file_paths = self.selected_file_listbox.curselection()
+        video = VideoFileClip()
 
     def get_selected_videos(self, lb):
        # Get selected values from the Listbox widget

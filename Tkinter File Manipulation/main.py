@@ -8,7 +8,7 @@ from moviepy.decorators import apply_to_audio, apply_to_mask, requires_duration
 from proglog import ProgressBarLogger
 #import cv2
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk, filedialog, messagebox
 
 #import potrace
 
@@ -82,7 +82,7 @@ class PathForm(ttk.Frame):
         self.selected_file_listbox = tk.Listbox(self, 
                                                 yscrollcommand = self.selected_file_scrollbar_y.set,
                                                 xscrollcommand = self.selected_file_scrollbar_x.set,
-                                                selectmode="multiple", 
+                                                selectmode="single", 
                                                 exportselection=False
                                                 )
         
@@ -102,18 +102,23 @@ class PathForm(ttk.Frame):
                                                 "webm",
                                                 "gif",
                                               )
+        
+        self.convert_to_combobox.current(0)
        
         #Mute
         self.audio_label = ttk.Label(self, text="Audio")
-        self.muted_label = ttk.Label(self, text="muted")
+        self.muted_label = ttk.Label(self, text="Muted")
+        self.mute_checkbool = tk.BooleanVar()
+        self.mute_checkbool.set(False)
         self.mute_checkbutton = ttk.Checkbutton(self,   
-                                                onvalue = 0,
-                                                offvalue = 1
+                                                variable=self.mute_checkbool
                                                 
                                                 ) 
+        #self.mute_checkbutton
+        
         
         #Resize
-        self.resize_label = ttk.Label(self, text = "Resize")
+        self.resize_label = ttk.Label(self, text = "Resize Percent")
         self.resize_spinbox= ttk.Spinbox(self, 
                                         from_ = 0, 
                                         to = 500,
@@ -126,16 +131,25 @@ class PathForm(ttk.Frame):
         
         #Cut
         self.cut_label = ttk.Label(self, text = "Cut")
-        self.start_cut_label = ttk.Label(self, text = "Start Time:")
-        self.end_cut_label = ttk.Label(self, text = "End Time:")
+        self.start_cut_label = ttk.Label(self, text = "Start Seconds:")
+        self.end_cut_label = ttk.Label(self, text = "End Seconds:")
+        
+        cs_sbv = tk.DoubleVar(value=0.0)
+       
+        
+        ce_sbv = tk.DoubleVar(value=1.0)
+        
         
         self.cut_start_spinbox = ttk.Spinbox(self, 
                                         from_ = 0, 
-                                        to = 100
+                                        to = 300000,
+                                        textvariable = cs_sbv
                                         ) 
         self.cut_end_spinbox = ttk.Spinbox(self, 
                                         from_ = 0,
-                                        to = 100
+                                        to = 300000,
+                                        textvariable = ce_sbv
+                                    
                                         ) 
                          
   
@@ -241,7 +255,7 @@ class PathForm(ttk.Frame):
             [self.selected_file_scrollbar_x, None                          , None                    ,self.combine_scrollbar_x, None                     , None                 , self.save_path_scrollbar_x  ],
             [self.selected_file_open_button, None                          , None                    , None                   , None                     , None                 , self.save_path_button       ],
             [self.selected_file_clear_button,None                          , None                    , self.cut_label         , self.audio_label         , None                 , self.save_name_label        ],                     
-            [self.type_selection_label     , None                          ,  self.start_cut_label   , self.cut_start_spinbox , self.mute_checkbutton    , self.muted_label     , self.save_name_entry        ],    
+            [self.type_selection_label     , None                          ,  self.start_cut_label   , self.cut_start_spinbox , self.muted_label         , self.mute_checkbutton, self.save_name_entry        ],    
             [self.type_selection_radiobutton1, None                        ,  self.end_cut_label     , self.cut_end_spinbox   , None                     , None                 , self.save_true              ],  
             [self.type_selection_radiobutton2, None                        , None                    , None                   , None                     , None                 , None                      ], 
             [None                          , None                          , None                    , None                   , None                     , None                 , None                        ]                       
@@ -272,6 +286,8 @@ class PathForm(ttk.Frame):
         self.get_type_sel()            
         test = "C:/Users/Tlmyl/Downloads/Downloads/Scripts/Simple Scripts"
         blank = "/"
+        
+        self.current_directory = ""
         self.last_folder = test
         self.logger = MyBarLogger()
 
@@ -282,20 +298,25 @@ class PathForm(ttk.Frame):
         #for ind_y in range(len(arrangement)):
             #for ind_x in range(2, len(arrangement[ind_y]) - 1):
         for widget in self.winfo_children():
-            print("Yes")
+            #print("Yes")
           
             #and  widget in self.static_widgets
             if type_sel == "Single":
+                self.selected_file_listbox["selectmode"] = "single"
+                self.selected_file_listbox.select_clear(0, tk.END)
                 if widget in self.multiple_selection_widgets:
-                    widget.grid_remove()
+                    self.hide_widget(widget)
                 else:
-                    widget.grid()
+                    self.show_widget(widget)
+                    
             elif type_sel == "Multiple":
+                self.selected_file_listbox["selectmode"] = "multiple"
+                self.selected_file_listbox.select_clear(0, tk.END)
                 if widget in self.multiple_selection_widgets:
-                    widget.grid()
+                    self.show_widget(widget)
                 else:
                     if widget not in self.static_widgets:
-                        widget.grid_remove()
+                        self.hide_widget(widget)
                     
                     
                 
@@ -312,13 +333,13 @@ class PathForm(ttk.Frame):
         
     def open_files(self):
         filetypes = [
-                    ("All files", "*.*"),
+                    #("All files", "*.*"),
                     ("mp4 files", "*.mp4"), 
                     ("webm files", "*.webm"),
                     ("ogv files", "*.ogv"),
-                    ("gif files", "*.gif"),
-                    ("jpg files", ".jpg .jpeg"),
-                    ("png files", "*.png")
+                    ("gif files", "*.gif")
+                    #("jpg files", ".jpg .jpeg"),
+                    #("png files", "*.png")
                     
                     ]
         
@@ -348,18 +369,117 @@ class PathForm(ttk.Frame):
         
             
     def get_directory(self):
-        current_directory = filedialog.askdirectory(
+        self.current_directory = filedialog.askdirectory(
             initialdir = self.last_folder
         )
-        file_name = os.path.join(self.last_folder, self.save_name_entry.get())       
-        self.save_path_listbox.insert(tk.END, self.last_folder)
         
-        print(self.last_folder)
-        print(file_name)      
+        self.last_folder = self.current_directory
+        self.save_path_listbox.delete(0,tk.END)
+        self.save_path_listbox.insert(tk.END, self.current_directory)
+          
         
     def save_files(self):
-        file_paths = self.selected_file_listbox.curselection()
-        video = VideoFileClip()
+        try:
+            file_name = ""
+            #self.save_path_listbox.insert(tk.END, self.last_folder)
+            file_path_s = ""
+            video = ""
+            video_list = []
+            slogger = self.logger
+            
+            
+            
+            type_sel = self.type_selection_svar.get()
+            if type_sel == "single":
+                file_path_s = self.selected_file_listbox.curselection()[0]
+            elif type_sel == "multiple":
+                file_path_s = self.selected_file_listbox.curselection()
+                
+            if type(file_path_s) == type("STRING"):
+                #single selection
+                
+                print(file_path_s)
+                #with open(file_path_s, 'r') as file:
+                current_ext = file_path_s.split(".")[-1]
+                
+                video = VideoFileClip(
+                    file_path_s,
+                    audio = self.mute_checkbool.get() ,
+                    
+                )
+                
+                start_seconds = int(self.cut_start_spinbox.get()) 
+                end_seconds =  int(self.cut_start_spinbox.get()) 
+                
+                
+                if start_seconds >= end_seconds or start_seconds < 0 or end_seconds < 0 or start_seconds > video.end or end_seconds > video.end:
+                    pass
+                else:
+                    video = video.subclip(start_seconds, end_seconds)
+                    
+                resize_value = int(self.resize_spinbox.get())
+                if resize_value == 100:
+                    pass
+                else:
+                    video = video.resize(resize_value)
+                    
+                    
+                #"No Change", "mp4","ogv","webm","gif",   
+                conversion_value = self.convert_to_combobox.get()
+                cdc = ""
+                codec_dict = {'mp4':'libx264','ogv':'libtheora','webm':'libvpx'}
+                
+                if conversion_value == "No Change" or conversion_value == current_ext:
+                    if current_ext != "gif":
+                        cdc = codec_dict[current_ext]
+                    
+                
+                else:
+                    if conversion_value != "gif":
+                        cdc = codec_dict[conversion_value]
+                        
+                save_path = os.join(self.current_directory,self.save_name_entry.get())
+                print(save_path, "\n", cdc, "\n", conversion_value)
+                '''
+                if cdc == "":
+                    video.write_gif(save_path)
+                else:
+                    video.write_videofile(
+                                            save_path,
+                                            codec = cdc
+                                            )
+                '''
+                
+                            
+                            
+                    
+                    
+                        
+                        
+                    
+                    
+                    
+                
+                    
+            else:
+                #multiple selection
+                for path in file_path_s:
+                    print(path)
+            
+            
+            
+           
+            video = VideoFileClip()
+            #    pass
+            #file_contents = file.read()
+            #self.file_text.delete('1.0', tk.END)
+            #self.file_text.insert(tk.END, file_path_list[0])
+        except Exception as e:
+
+            messagebox.showerror("Error", "File Path Invalid")
+            self.selected_file_label.config(text=f"Error: {str(e)}")
+            
+        
 
     def get_selected_videos(self, lb):
        # Get selected values from the Listbox widget

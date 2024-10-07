@@ -135,23 +135,30 @@ class PathForm(ttk.Frame):
         self.start_cut_label = ttk.Label(self, text = "Start Seconds:")
         self.end_cut_label = ttk.Label(self, text = "End Seconds:")
         
-        cs_sbv = tk.DoubleVar(value=0.0)
+        cs_sbv = tk.StringVar()
        
         
-        ce_sbv = tk.DoubleVar(value=1.0)
+        ce_sbv = tk.StringVar()
+        cs_sbv.set("0.0")
+        ce_sbv.set("0.0")
         
         
         self.cut_start_spinbox = ttk.Spinbox(self, 
                                         from_ = 0, 
                                         to = 300000,
-                                        textvariable = cs_sbv
+                                        textvariable=cs_sbv
+                                        
                                         ) 
         self.cut_end_spinbox = ttk.Spinbox(self, 
                                         from_ = 0,
                                         to = 300000,
-                                        textvariable = ce_sbv
+                                        textvariable=ce_sbv
+                                        
                                     
                                         ) 
+        
+        #self.cut_end_spinbox["textvariable"] = ce_sbv
+        #self.cut_start_spinbox["textvariable"] = cs_sbv
                          
   
         
@@ -425,7 +432,7 @@ class PathForm(ttk.Frame):
                 
                 
                 start_seconds = int(self.cut_start_spinbox.get()) 
-                end_seconds =  int(self.cut_start_spinbox.get()) 
+                end_seconds =  int(self.cut_end_spinbox.get()) 
                 
                 
                 if start_seconds >= end_seconds or start_seconds < 0 or end_seconds < 0 or start_seconds > video.end or end_seconds > video.end:
@@ -449,11 +456,12 @@ class PathForm(ttk.Frame):
                 if conversion_value == "No Change" or conversion_value == current_ext:
                     if current_ext != "gif":
                         cdc = codec_dict[current_ext]
-                    
+                        save_path = save_path + "." + current_ext
                 
                 else:
                     if conversion_value != "gif":
                         cdc = codec_dict[conversion_value]
+                        save_path = save_path + "." + conversion_value
                         
                 
             
@@ -464,7 +472,7 @@ class PathForm(ttk.Frame):
                     #video.write_videofile(save_path, codec = cdc)
                     pass
                 
-                save_path = save_path + "." + conversion_value
+                
                 
                             
                 print("yep")

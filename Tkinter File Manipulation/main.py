@@ -1,4 +1,5 @@
 import os
+import sys
 #from PIL import Image
 from moviepy.editor import VideoFileClip,concatenate_videoclips,AudioFileClip,vfx,CompositeAudioClip
 #import math
@@ -168,7 +169,7 @@ class PathForm(ttk.Frame):
         self.save_path_scrollbar_x.config(command=self.save_path_listbox.xview)
         self.save_path_button = tk.Button(self, text="Select Folder", command=self.get_directory)
         self.save_true = tk.Button(self, text="Save", command=self.save_files)
-        
+        #self.save_true["state"] = "disabled"
         
         
         
@@ -373,40 +374,55 @@ class PathForm(ttk.Frame):
             initialdir = self.last_folder
         )
         
-        self.last_folder = self.current_directory
+        #self.last_folder = self.current_directory
         self.save_path_listbox.delete(0,tk.END)
         self.save_path_listbox.insert(tk.END, self.current_directory)
+        
+    def path_correction(self, path):
+        foward_slash = "/"
+        back_slash = "\\"
+        path = path.replace(foward_slash, back_slash)
+
+        return path
           
         
     def save_files(self):
+        
+        #self.save_path_listbox.insert(tk.END, self.last_folder)
+        file_path_s = ""
+        video = ""
+        video_list = []
+        slogger = self.logger
+        cdc = ""
+        codec_dict = {'mp4':'libx264','ogv':'libtheora','webm':'libvpx'}
+        self.current_directory = self.path_correction(self.current_directory)
+        save_file = self.save_name_entry.get()
+        if save_file == "":
+            save_file = "file"
+        save_path = os.path.join(self.current_directory,save_file)
+        conversion_value = ""
         try:
-            file_name = ""
-            #self.save_path_listbox.insert(tk.END, self.last_folder)
-            file_path_s = ""
-            video = ""
-            video_list = []
-            slogger = self.logger
             
             
             
-            type_sel = self.type_selection_svar.get()
-            if type_sel == "single":
-                file_path_s = self.selected_file_listbox.curselection()[0]
-            elif type_sel == "multiple":
-                file_path_s = self.selected_file_listbox.curselection()
+            
+            sel_len = len(self.selected_file_listbox.curselection())
+            filp_len = self.save_path_listbox.size()
+            if  self.selected_file_listbox["selectmode"] == "single"and sel_len > 0 and filp_len > 0:
+                file_path_s = self.path_correction(self.selected_file_listbox.get(self.selected_file_listbox.curselection()[0])) 
                 
-            if type(file_path_s) == type("STRING"):
-                #single selection
-                
-                print(file_path_s)
-                #with open(file_path_s, 'r') as file:
+
                 current_ext = file_path_s.split(".")[-1]
-                
+               
+          
+                '''
                 video = VideoFileClip(
                     file_path_s,
-                    audio = self.mute_checkbool.get() ,
-                    
+                    audio = self.mute_checkbool.get(),
+                    logger = slogger
                 )
+                '''
+                
                 
                 start_seconds = int(self.cut_start_spinbox.get()) 
                 end_seconds =  int(self.cut_start_spinbox.get()) 
@@ -415,19 +431,20 @@ class PathForm(ttk.Frame):
                 if start_seconds >= end_seconds or start_seconds < 0 or end_seconds < 0 or start_seconds > video.end or end_seconds > video.end:
                     pass
                 else:
-                    video = video.subclip(start_seconds, end_seconds)
+                    pass
+                    #video = video.subclip(start_seconds, end_seconds)
                     
                 resize_value = int(self.resize_spinbox.get())
                 if resize_value == 100:
                     pass
                 else:
-                    video = video.resize(resize_value)
+                    pass
+                    #video = video.resize(resize_value)
                     
                     
                 #"No Change", "mp4","ogv","webm","gif",   
                 conversion_value = self.convert_to_combobox.get()
-                cdc = ""
-                codec_dict = {'mp4':'libx264','ogv':'libtheora','webm':'libvpx'}
+                
                 
                 if conversion_value == "No Change" or conversion_value == current_ext:
                     if current_ext != "gif":
@@ -438,20 +455,20 @@ class PathForm(ttk.Frame):
                     if conversion_value != "gif":
                         cdc = codec_dict[conversion_value]
                         
-                save_path = os.join(self.current_directory,self.save_name_entry.get())
-                print(save_path, "\n", cdc, "\n", conversion_value)
-                '''
+                
+            
                 if cdc == "":
-                    video.write_gif(save_path)
+                    #video.write_gif(save_path)
+                    pass
                 else:
-                    video.write_videofile(
-                                            save_path,
-                                            codec = cdc
-                                            )
-                '''
+                    #video.write_videofile(save_path, codec = cdc)
+                    pass
+                
+                save_path = save_path + "." + conversion_value
                 
                             
-                            
+                print("yep")
+                print(self.current_directory,'\n',save_path, "\n", file_path_s,"\n", cdc, "\n", conversion_value)
                     
                     
                         
@@ -461,21 +478,34 @@ class PathForm(ttk.Frame):
                     
                 
                     
-            else:
+            elif self.selected_file_listbox["selectmode"] == "multiple"  and sel_len > 0 and filp_len > 0:
+                file_path_s = [self.path_correction(path) for path in self.selected_file_listbox.curselection()]
+            
                 #multiple selection
                 for path in file_path_s:
                     print(path)
-            
+            else:
+                if sel_len == 0:
+                    messagebox.showerror("showinfo", "Make sure the filepath is selected. It should be highlighted blue if clicked on.")
+                elif filp_len == 0:
+                    
+                
+                    messagebox.showerror("showinfo", "Make sure the save directory is selected.")
             
             
            
-            video = VideoFileClip()
+           
             #    pass
             #file_contents = file.read()
             #self.file_text.delete('1.0', tk.END)
             #self.file_text.insert(tk.END, file_path_list[0])
         except Exception as e:
-
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            
+            print("mo")
+            print(self.current_directory,'\n',save_path, "\n", file_path_s,"\n", cdc, "\n", conversion_value)
             messagebox.showerror("Error", "File Path Invalid")
             self.selected_file_label.config(text=f"Error: {str(e)}")
             

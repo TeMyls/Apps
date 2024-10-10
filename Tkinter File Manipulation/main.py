@@ -437,18 +437,18 @@ class PathForm(ttk.Frame):
                 current_ext = file_path_s.split(".")[-1]
 
                 was_muted = self.mute_checkbool.get()
-                '''
+                
                 video = VideoFileClip(
                     file_path_s,
-                    audio = self.mute_checkbool.get(),
-                    logger = slogger
+                    audio = self.mute_checkbool.get()
+                    
                 )
-                '''
                 
                 
                 
-                start_seconds = int(self.cut_start_spinbox.get()) 
-                end_seconds =  int(self.cut_end_spinbox.get()) 
+                
+                start_seconds = float(self.cut_start_spinbox.get()) 
+                end_seconds =  float(self.cut_end_spinbox.get()) 
                 
                 
                 if start_seconds >= end_seconds or start_seconds < 0 or end_seconds < 0 or start_seconds > video.end or end_seconds > video.end:
@@ -480,14 +480,16 @@ class PathForm(ttk.Frame):
                         cdc = codec_dict[conversion_value]
                         save_path = save_path + "." + conversion_value
                     
-                        
+                
+                if not was_changed and not was_cut and not was_muted and not was_resized:
+                    messagebox.showerror("showinfo", "Make some type of change/")
                 
             
                 if conversion_value == "gif" and current_ext in codec_dict:
                     #video.write_gif(save_path)
                     pass
                 else:
-                    #video.write_videofile(save_path, codec = cdc)
+                    #video.write_videofile(save_path, codec = cdc, logger = s_logger)
                     pass
                 
                 
@@ -530,8 +532,6 @@ class PathForm(ttk.Frame):
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print(exc_type, fname, exc_tb.tb_lineno)
-            
-            print("mo")
             print(self.current_directory,'\n',save_path, "\n", file_path_s,"\n", cdc, "\n", conversion_value)
             messagebox.showerror("Error", "File Path Invalid")
             self.selected_file_label.config(text=f"Error: {str(e)}")

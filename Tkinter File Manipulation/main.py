@@ -35,7 +35,7 @@ class MyBarLogger(ProgressBarLogger):
             if percentage > 0 and percentage < 100:
                 if int(percentage) != self.previous_percentage:
                     self.previous_percentage = int(percentage)
-                    print(self.previous_percentage)
+                    #print(self.previous_percentage)
                     
 
 
@@ -127,7 +127,7 @@ class PathForm(ttk.Frame):
                                         
                                         )
         
-        self.resize_spinbox.set("100")
+        self.resize_spinbox.set(100)
         
         
         #Cut
@@ -135,30 +135,26 @@ class PathForm(ttk.Frame):
         self.start_cut_label = ttk.Label(self, text = "Start Seconds:")
         self.end_cut_label = ttk.Label(self, text = "End Seconds:")
         
-        cs_sbv = tk.StringVar()
-       
-        
-        ce_sbv = tk.StringVar()
-        cs_sbv.set("0.0")
-        ce_sbv.set("0.0")
+
         
         
         self.cut_start_spinbox = ttk.Spinbox(self, 
                                         from_ = 0, 
                                         to = 300000,
-                                        textvariable=cs_sbv
+                                        #textvariable=tk.DoubleVar(value=0.00),
+                                        increment= 0.01
                                         
                                         ) 
         self.cut_end_spinbox = ttk.Spinbox(self, 
                                         from_ = 0,
                                         to = 300000,
-                                        textvariable=ce_sbv
-                                        
+                                        #textvariable=tk.DoubleVar(value=0.00),
+                                        increment= 0.01
                                     
                                         ) 
-        
-        #self.cut_end_spinbox["textvariable"] = ce_sbv
-        #self.cut_start_spinbox["textvariable"] = cs_sbv
+       
+        self.cut_end_spinbox.set(0)
+        self.cut_start_spinbox.set(0)
                          
   
         
@@ -219,6 +215,10 @@ class PathForm(ttk.Frame):
                                                            value = "Multiple",
                                                            command=self.get_type_sel)
         
+        #Progress Bar
+        self.complete_progress_label = ttk.Label(self, text = "Progress: ")
+        
+        self.complete_progress_bar = ttk.Progressbar(self, orient="horizontal",  mode="determinate")
         
   
         
@@ -243,6 +243,9 @@ class PathForm(ttk.Frame):
             self.type_selection_radiobutton1,
             self.type_selection_radiobutton2,
             
+            self.complete_progress_label,
+            self.complete_progress_bar,
+            
             self.save_path_label,
             self.save_path_listbox,
             self.save_path_scrollbar_x,
@@ -254,10 +257,13 @@ class PathForm(ttk.Frame):
         ]
         
         
+        
+        
         #grid positions
 
         
         arrangement = [
+           
             [self.selected_file_label      , None                          , self.convert_to_label   , self.combine_label     , None                     , self.resize_label    , self.save_path_label        ],
             [self.selected_file_listbox    , self.selected_file_scrollbar_y, self.convert_to_combobox, self.combine_listbox   , self.combine_scrollbar_y ,  self.resize_spinbox , self.save_path_listbox      ],
             [self.selected_file_scrollbar_x, None                          , None                    ,self.combine_scrollbar_x, None                     , None                 , self.save_path_scrollbar_x  ],
@@ -265,8 +271,8 @@ class PathForm(ttk.Frame):
             [self.selected_file_clear_button,None                          , None                    , self.cut_label         , self.audio_label         , None                 , self.save_name_label        ],                     
             [self.type_selection_label     , None                          ,  self.start_cut_label   , self.cut_start_spinbox , self.muted_label         , self.mute_checkbutton, self.save_name_entry        ],    
             [self.type_selection_radiobutton1, None                        ,  self.end_cut_label     , self.cut_end_spinbox   , None                     , None                 , self.save_true              ],  
-            [self.type_selection_radiobutton2, None                        , None                    , None                   , None                     , None                 , None                      ], 
-            [None                          , None                          , None                    , None                   , None                     , None                 , None                        ]                       
+            [self.type_selection_radiobutton2, None                        , self.complete_progress_label, None                , None                     , None                 , None                        ], 
+            [None                          , None                          , self.complete_progress_bar, None                 , None                     , None                 , None                        ]                       
             
             
         ]
@@ -287,6 +293,8 @@ class PathForm(ttk.Frame):
                         arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "N", columnspan = 1)
                     elif isinstance(arrangement[ind_y][ind_x], tk.Button):
                         arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "NWES", columnspan = 1)
+                    elif isinstance(arrangement[ind_y][ind_x], ttk.Progressbar):
+                        arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "NWES", columnspan = 4)
                     else:
                         arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "NW")
                 
@@ -294,6 +302,8 @@ class PathForm(ttk.Frame):
         self.get_type_sel()            
         test = "C:/Users/Tlmyl/Downloads/Downloads/Scripts/Simple Scripts"
         blank = "/"
+        
+  
         
         self.current_directory = ""
         self.last_folder = test
@@ -396,10 +406,15 @@ class PathForm(ttk.Frame):
     def save_files(self):
         
         #self.save_path_listbox.insert(tk.END, self.last_folder)
+        was_changed = False
+        was_cut = False
+        was_muted = False
+        was_resized = False
+        
         file_path_s = ""
         video = ""
         video_list = []
-        slogger = self.logger
+        s_logger = self.logger
         cdc = ""
         codec_dict = {'mp4':'libx264','ogv':'libtheora','webm':'libvpx'}
         self.current_directory = self.path_correction(self.current_directory)
@@ -420,8 +435,8 @@ class PathForm(ttk.Frame):
                 
 
                 current_ext = file_path_s.split(".")[-1]
-               
-          
+
+                was_muted = self.mute_checkbool.get()
                 '''
                 video = VideoFileClip(
                     file_path_s,
@@ -431,6 +446,7 @@ class PathForm(ttk.Frame):
                 '''
                 
                 
+                
                 start_seconds = int(self.cut_start_spinbox.get()) 
                 end_seconds =  int(self.cut_end_spinbox.get()) 
                 
@@ -438,14 +454,14 @@ class PathForm(ttk.Frame):
                 if start_seconds >= end_seconds or start_seconds < 0 or end_seconds < 0 or start_seconds > video.end or end_seconds > video.end:
                     pass
                 else:
-                    pass
+                    was_cut = True
                     #video = video.subclip(start_seconds, end_seconds)
                     
                 resize_value = int(self.resize_spinbox.get())
                 if resize_value == 100:
                     pass
                 else:
-                    pass
+                    was_resized = True
                     #video = video.resize(resize_value)
                     
                     
@@ -457,15 +473,17 @@ class PathForm(ttk.Frame):
                     if current_ext != "gif":
                         cdc = codec_dict[current_ext]
                         save_path = save_path + "." + current_ext
-                
+                    else:
+                        save_path = save_path + "." + current_ext
                 else:
                     if conversion_value != "gif":
                         cdc = codec_dict[conversion_value]
                         save_path = save_path + "." + conversion_value
+                    
                         
                 
             
-                if cdc == "":
+                if conversion_value == "gif" and current_ext in codec_dict:
                     #video.write_gif(save_path)
                     pass
                 else:
@@ -473,10 +491,11 @@ class PathForm(ttk.Frame):
                     pass
                 
                 
-                
+                self.complete_progress_bar["value"] = s_logger.previous_percentage
                             
                 print("yep")
                 print(self.current_directory,'\n',save_path, "\n", file_path_s,"\n", cdc, "\n", conversion_value)
+                print(f"Muted {was_muted} \nCut: {was_cut} \n Resized:{was_resized} \nCoverted {was_changed}")
                     
                     
                         

@@ -480,24 +480,27 @@ class PathForm(ttk.Frame):
                         cdc = codec_dict[conversion_value]
                         save_path = save_path + "." + conversion_value
                     
+                    
+                print("yep")
+                print(self.current_directory,'\n',save_path, "\n", file_path_s,"\n", cdc, "\n", conversion_value)
+                print(f"Muted {was_muted} \nCut: {was_cut} \n Resized:{was_resized} \nCoverted {was_changed}")    
+                    
+                    
                 
                 if not was_changed and not was_cut and not was_muted and not was_resized:
                     messagebox.showerror("showinfo", "Make some type of change/")
-                
-            
-                if conversion_value == "gif" and current_ext in codec_dict:
-                    #video.write_gif(save_path)
-                    pass
                 else:
-                    #video.write_videofile(save_path, codec = cdc, logger = s_logger)
-                    pass
+                    if conversion_value == "gif" and current_ext in codec_dict:
+                        #video.write_gif(save_path)
+                        pass
+                    else:
+                        #video.write_videofile(save_path, codec = cdc, logger = s_logger)
+                        pass
                 
                 
                 self.complete_progress_bar["value"] = s_logger.previous_percentage
                             
-                print("yep")
-                print(self.current_directory,'\n',save_path, "\n", file_path_s,"\n", cdc, "\n", conversion_value)
-                print(f"Muted {was_muted} \nCut: {was_cut} \n Resized:{was_resized} \nCoverted {was_changed}")
+                
                     
                     
                         

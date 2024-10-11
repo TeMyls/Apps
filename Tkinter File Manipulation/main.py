@@ -2,40 +2,17 @@ import os
 import sys
 #from PIL import Image
 from moviepy.editor import VideoFileClip,concatenate_videoclips,AudioFileClip,vfx,CompositeAudioClip
-#import math
-#import numpy as np
-#from numpy import asarray
+import math
 from moviepy.decorators import apply_to_audio, apply_to_mask, requires_duration
 from proglog import ProgressBarLogger
-#import cv2
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-#import potrace
 
 
 
-class MyBarLogger(ProgressBarLogger):
-    def __init__(self):
-        super().__init__()
-        self.last_message = ''
-        self.previous_percentage = 0    
-    
-    def callback(self, **changes):
-        # Every time the logger message is updated, this function is called with
-        # the `changes` dictionary of the form `parameter: new value`.
-        for (parameter, value) in changes.items():
-            # print ('Parameter %s is now %s' % (parameter, value))
-            self.last_message = value
-    
-    def bars_callback(self, bar, attr, value,old_value=None):
-        # Every time the logger progress is updated, this function is called        
-        if 'Writing video' in self.last_message:
-            percentage = (value / self.bars[bar]['total']) * 100
-            if percentage > 0 and percentage < 100:
-                if int(percentage) != self.previous_percentage:
-                    self.previous_percentage = int(percentage)
-                    #print(self.previous_percentage)
+
+
                     
 
 
@@ -112,14 +89,14 @@ class PathForm(ttk.Frame):
         self.mute_checkbool = tk.BooleanVar()
         self.mute_checkbool.set(False)
         self.mute_checkbutton = ttk.Checkbutton(self,   
-                                                variable=self.mute_checkbool
-                                                
+                                                variable=self.mute_checkbool,
+                                                command=self.is_muted
                                                 ) 
         #self.mute_checkbutton
         
         
         #Resize
-        self.resize_label = ttk.Label(self, text = "Resize Percent")
+        self.resize_label = ttk.Label(self, text = "Resize %")
         self.resize_spinbox= ttk.Spinbox(self, 
                                         from_ = 0, 
                                         to = 500,
@@ -300,14 +277,14 @@ class PathForm(ttk.Frame):
                 
                 
         self.get_type_sel()            
-        test = "C:/Users/Tlmyl/Downloads/Downloads/Scripts/Simple Scripts"
+        
         blank = "/"
         
   
         
         self.current_directory = ""
-        self.last_folder = test
-        self.logger = MyBarLogger()
+        self.last_folder = blank
+        self.logger = self.MyBarLogger(self.complete_progress_bar, self)
 
         
         
@@ -337,10 +314,7 @@ class PathForm(ttk.Frame):
                         self.hide_widget(widget)
                     
                     
-                
-                    
-                    
-        
+                  
         
     def hide_widget(self, widget):
         widget.grid_remove()
@@ -379,7 +353,7 @@ class PathForm(ttk.Frame):
             temp = file_path_list[0].split('/')
             self.last_folder = "/".join(temp[:len(temp) - 1]) + "/"
             
-            self.process_file(file_path_list)
+            
             
     def clear_files(self):
         if self.selected_file_listbox.size() > 0:
@@ -436,11 +410,11 @@ class PathForm(ttk.Frame):
 
                 current_ext = file_path_s.split(".")[-1]
 
-                was_muted = self.mute_checkbool.get()
+                was_muted = self.mute_checkbool.get() == False
                 
                 video = VideoFileClip(
                     file_path_s,
-                    audio = self.mute_checkbool.get()
+                    audio = was_muted
                     
                 )
                 
@@ -455,14 +429,14 @@ class PathForm(ttk.Frame):
                     pass
                 else:
                     was_cut = True
-                    #video = video.subclip(start_seconds, end_seconds)
+                    video = video.subclip(start_seconds, end_seconds)
                     
                 resize_value = int(self.resize_spinbox.get())
                 if resize_value == 100:
                     pass
                 else:
                     was_resized = True
-                    #video = video.resize(resize_value)
+                    video = video.resize(resize_value)
                     
                     
                 #"No Change", "mp4","ogv","webm","gif",   
@@ -479,6 +453,9 @@ class PathForm(ttk.Frame):
                     if conversion_value != "gif":
                         cdc = codec_dict[conversion_value]
                         save_path = save_path + "." + conversion_value
+                    else:
+                        save_path = save_path + ".gif" 
+                    was_changed = True
                     
                     
                 print("yep")
@@ -488,27 +465,19 @@ class PathForm(ttk.Frame):
                     
                 
                 if not was_changed and not was_cut and not was_muted and not was_resized:
-                    messagebox.showerror("showinfo", "Make some type of change/")
+                    messagebox.showerror("showinfo", "Make some type of change")
                 else:
+                    print("\nStarting")
                     if conversion_value == "gif" and current_ext in codec_dict:
-                        #video.write_gif(save_path)
-                        pass
+                        print("\nNow Right")
+                        video.write_gif(save_path)
+                      
                     else:
-                        #video.write_videofile(save_path, codec = cdc, logger = s_logger)
-                        pass
-                
-                
-                self.complete_progress_bar["value"] = s_logger.previous_percentage
-                            
-                
-                    
-                    
+                        print("\nRight Now")
+                        
+                        video.write_videofile(save_path, codec = cdc, logger = s_logger)
                         
                         
-                    
-                    
-                    
-                
                     
             elif self.selected_file_listbox["selectmode"] == "multiple"  and sel_len > 0 and filp_len > 0:
                 file_path_s = [self.path_correction(path) for path in self.selected_file_listbox.curselection()]
@@ -547,18 +516,8 @@ class PathForm(ttk.Frame):
         for i in selected_videopaths:
             print(i)
         
-
-    def process_file(self, file_path_list):
-        # Implement your file processing logic here
-        # For demonstration, let's just display the contents of the selected file
-        try:
-            pass
-            #with open(file_path, 'r') as file:
-            #file_contents = file.read()
-            #self.file_text.delete('1.0', tk.END)
-            #self.file_text.insert(tk.END, file_path_list[0])
-        except Exception as e:
-            self.selected_file_label.config(text=f"Error: {str(e)}")
+    def is_muted(self):
+        print("Muted", self.mute_checkbool.get() == False)
             
    
         
@@ -571,6 +530,36 @@ class PathForm(ttk.Frame):
 
     def clear_list(self):
         self.text_list.delete(0, tk.END)
+        
+    class MyBarLogger(ProgressBarLogger):
+        #https://stackoverflow.com/questions/69423410/moviepy-getting-progress-bar-values
+    
+        def __init__(self, tk_progressbar, parent_window):
+            super().__init__()
+            self.last_message = ''
+            self.previous_percentage = 0
+
+            self.tk_progress = tk_progressbar
+            self.root_window = parent_window
+
+        def callback(self, **changes):
+            # Every time the logger message is updated, this function is called with
+            # the `changes` dictionary of the form `parameter: new value`.
+            for (parameter, value) in changes.items():
+                # print('Parameter %s is now %s' % (parameter, value))
+                self.last_message = value
+
+        def bars_callback(self, bar, attr, value, old_value=None):
+            # Every time the logger progress is updated, this function is called
+            if 'Writing video' in self.last_message:
+                percentage = (value / self.bars[bar]['total']) * 100
+                if percentage > 0 and percentage < 100:
+                    if int(percentage) != self.previous_percentage:
+                        self.previous_percentage = int(percentage)
+                        self.tk_progress["value"] = self.previous_percentage
+                        self.root_window.update_idletasks()
+                       
+                       
 
 
 

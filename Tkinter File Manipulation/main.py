@@ -1,5 +1,6 @@
 import os
 import sys
+import shlex
 #from PIL import Image
 from moviepy.editor import VideoFileClip,concatenate_videoclips,AudioFileClip,vfx,CompositeAudioClip
 import math
@@ -193,9 +194,11 @@ class PathForm(ttk.Frame):
                                                            command=self.get_type_sel)
         
         #Progress Bar
-        self.complete_progress_label = ttk.Label(self, text = "Progress: ")
+        self.complete_progress_label = ttk.Label(self, text = "Progress ")
         
-        self.complete_progress_bar = ttk.Progressbar(self, orient="horizontal",  mode="determinate")
+        self.complete_progress_bar = ttk.Progressbar(self, orient="vertical",  mode="determinate")
+        
+        self.complete_progress_status_label = ttk.Label(self, text = "Idle")
         
   
         
@@ -241,15 +244,15 @@ class PathForm(ttk.Frame):
         
         arrangement = [
            
-            [self.selected_file_label      , None                          , self.convert_to_label   , self.combine_label     , None                     , self.resize_label    , self.save_path_label        ],
-            [self.selected_file_listbox    , self.selected_file_scrollbar_y, self.convert_to_combobox, self.combine_listbox   , self.combine_scrollbar_y ,  self.resize_spinbox , self.save_path_listbox      ],
-            [self.selected_file_scrollbar_x, None                          , None                    ,self.combine_scrollbar_x, None                     , None                 , self.save_path_scrollbar_x  ],
-            [self.selected_file_open_button, None                          , None                    , None                   , None                     , None                 , self.save_path_button       ],
-            [self.selected_file_clear_button,None                          , None                    , self.cut_label         , self.audio_label         , None                 , self.save_name_label        ],                     
-            [self.type_selection_label     , None                          ,  self.start_cut_label   , self.cut_start_spinbox , self.muted_label         , self.mute_checkbutton, self.save_name_entry        ],    
-            [self.type_selection_radiobutton1, None                        ,  self.end_cut_label     , self.cut_end_spinbox   , None                     , None                 , self.save_true              ],  
-            [self.type_selection_radiobutton2, None                        , self.complete_progress_label, None                , None                     , None                 , None                        ], 
-            [None                          , None                          , self.complete_progress_bar, None                 , None                     , None                 , None                        ]                       
+            [self.selected_file_label      , None                          , self.convert_to_label   , self.combine_label     , None                     , self.resize_label    , self.save_path_label        , self.complete_progress_label],
+            [self.selected_file_listbox    , self.selected_file_scrollbar_y, self.convert_to_combobox, self.combine_listbox   , self.combine_scrollbar_y ,  self.resize_spinbox , self.save_path_listbox      , self.complete_progress_bar  ],
+            [self.selected_file_scrollbar_x, None                          , None                    ,self.combine_scrollbar_x, None                     , None                 , self.save_path_scrollbar_x  , None                        ],
+            [self.selected_file_open_button, None                          , None                    , None                   , None                     , None                 , self.save_path_button       , None                        ],
+            [self.selected_file_clear_button,None                          , None                    , self.cut_label         , self.audio_label         , None                 , self.save_name_label        , self.complete_progress_status_label],                   
+            [self.type_selection_label     , None                          ,  self.start_cut_label   , self.cut_start_spinbox , self.muted_label         , self.mute_checkbutton, self.save_name_entry        , None                        ], 
+            [self.type_selection_radiobutton1, None                        ,  self.end_cut_label     , self.cut_end_spinbox   , None                     , None                 , self.save_true              , None                        ], 
+            [self.type_selection_radiobutton2, None                        , None                    , None                   , None                     , None                 , None                        , None                        ],
+            [None                          , None                          , None                    , None                   , None                     , None                 , None                        , None                        ]           
             
             
         ]
@@ -271,7 +274,7 @@ class PathForm(ttk.Frame):
                     elif isinstance(arrangement[ind_y][ind_x], tk.Button):
                         arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "NWES", columnspan = 1)
                     elif isinstance(arrangement[ind_y][ind_x], ttk.Progressbar):
-                        arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "NWES", columnspan = 4)
+                        arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "NWES", rowspan = 3)
                     else:
                         arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "NW")
                 
@@ -284,7 +287,7 @@ class PathForm(ttk.Frame):
         
         self.current_directory = ""
         self.last_folder = blank
-        self.logger = self.MyBarLogger(self.complete_progress_bar, self)
+        self.logger = self.MyBarLogger(self.complete_progress_bar, self.complete_progress_status_label, self)
 
         
         
@@ -404,7 +407,7 @@ class PathForm(ttk.Frame):
             
             sel_len = len(self.selected_file_listbox.curselection())
             filp_len = self.save_path_listbox.size()
-            if  self.selected_file_listbox["selectmode"] == "single"and sel_len > 0 and filp_len > 0:
+            if  self.selected_file_listbox["selectmode"] == "single" and sel_len > 0 and filp_len > 0:
                 file_path_s = self.path_correction(self.selected_file_listbox.get(self.selected_file_listbox.curselection()[0])) 
                 
 
@@ -436,7 +439,7 @@ class PathForm(ttk.Frame):
                     pass
                 else:
                     was_resized = True
-                    video = video.resize(resize_value)
+                    video = video.resize(resize_value/100)
                     
                     
                 #"No Change", "mp4","ogv","webm","gif",   
@@ -469,14 +472,26 @@ class PathForm(ttk.Frame):
                 else:
                     print("\nStarting")
                     if conversion_value == "gif" and current_ext in codec_dict:
-                        print("\nNow Right")
-                        video.write_gif(save_path)
+                       
+                        video.write_gif(save_path, progress_bar = s_logger)
                       
                     else:
-                        print("\nRight Now")
                         
-                        video.write_videofile(save_path, codec = cdc, logger = s_logger)
+                        vid_size = os.path.getsize(file_path_s)/1000000000
+                       
+                        #print(vid_size)
+                        brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.85)
+                        #print(brate)
                         
+                        video.write_videofile(save_path, 
+                                            codec = cdc, 
+                                            logger = s_logger, 
+                                            bitrate = str(brate)
+                        )
+                                                          
+                                                          
+                                                          
+                        self.complete_progress_status_label["text"] = "Finished"
                         
                     
             elif self.selected_file_listbox["selectmode"] == "multiple"  and sel_len > 0 and filp_len > 0:
@@ -534,13 +549,14 @@ class PathForm(ttk.Frame):
     class MyBarLogger(ProgressBarLogger):
         #https://stackoverflow.com/questions/69423410/moviepy-getting-progress-bar-values
     
-        def __init__(self, tk_progressbar, parent_window):
+        def __init__(self, tk_progressbar, status_label ,parent_window):
             super().__init__()
             self.last_message = ''
             self.previous_percentage = 0
 
             self.tk_progress = tk_progressbar
             self.root_window = parent_window
+            self.status = status_label
 
         def callback(self, **changes):
             # Every time the logger message is updated, this function is called with
@@ -557,7 +573,10 @@ class PathForm(ttk.Frame):
                     if int(percentage) != self.previous_percentage:
                         self.previous_percentage = int(percentage)
                         self.tk_progress["value"] = self.previous_percentage
+                        self.status["text"] = "Loading"
                         self.root_window.update_idletasks()
+            
+                
                        
                        
 

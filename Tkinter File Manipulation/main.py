@@ -1,14 +1,15 @@
 import os
 import sys
-import shlex
+
 #from PIL import Image
 from moviepy.editor import VideoFileClip,concatenate_videoclips,AudioFileClip,vfx,CompositeAudioClip
 import math
-from moviepy.decorators import apply_to_audio, apply_to_mask, requires_duration
+#from moviepy.decorators import apply_to_audio, apply_to_mask, requires_duration
 from proglog import ProgressBarLogger
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-
+import cv2
+import imageio
 
 
 
@@ -378,6 +379,8 @@ class PathForm(ttk.Frame):
         path = path.replace(foward_slash, back_slash)
 
         return path
+    
+    
           
         
     def save_files(self):
@@ -471,16 +474,84 @@ class PathForm(ttk.Frame):
                     messagebox.showerror("showinfo", "Make some type of change")
                 else:
                     print("\nStarting")
-                    if conversion_value == "gif" and current_ext in codec_dict:
-                       
-                        video.write_gif(save_path, progress_bar = s_logger)
+                    if conversion_value == "gif" and current_ext in codec_dict and was_changed:
+                        #Using OpenCV's stuff
+                        video.close()
+                        
+                        self.complete_progress_status_label["text"] =  "Loading"
+                        
+                        #https://gist.github.com/laygond/d62df2f2757671dea78af25a061bf234#file-writevideofromimages-py-L25
+                        #https://theailearner.com/2021/05/29/creating-gif-from-video-using-opencv-and-imageio/
+                        
+                        cap = cv2.VideoCapture(file_path_s)
+                        # Get General Info
+                        fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
+                        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    
+                        duration    = int(frame_count/fps)
+                        width       = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # float
+                        height      = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
+                        
+                        image_list = []
+                        
+                        
+                        
+                        
+
+                        print("OPENCV LOOP")
+                        start_time = 0
+                        end_time = frame_count
+                        if was_cut:
+                            start_time = start_seconds * fps
+                            end_time = end_seconds * fps
+                        
+                        
+                        i = 0
+                        
+                        while True:
+                            is_reading, frame = cap.read()
+                            if not is_reading:
+                                break
+                            
+                            
+                            if i >= start_time and i <= end_time:
+                                frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                                
+                                if was_resized:
+                                    rw = int(width * (resize_value/100))
+                                    rh = int(height * (resize_value/100))
+                                    frame_rgb = cv2.resize(frame_rgb, (rw, rh ))
+                                    
+                                image_list.append(frame_rgb)
+                                self.complete_progress_bar['value'] = int((i/(end_time - start_time)) * 100)
+                                
+                            
+                            
+                            i += 1
+                            
+                            self.update_idletasks()
+                        
+                            
+                            
+
+                        
+                        milliseconds = (1/fps) * 1000
+                                
+                        print(fps, "\n", milliseconds)
+                        
+                        self.complete_progress_status_label["text"] = "Saving"
+                        
+                        imageio.mimsave(save_path, image_list, duration = milliseconds)
+                        self.complete_progress_status_label["text"] = "Finished"
+                        cap.release()
+                        #video.write_gif(save_path, progress_bar = True)
                       
                     else:
-                        
+                        #Using MoviePy's VideoFileClip
                         vid_size = os.path.getsize(file_path_s)/1000000000
                        
                         #print(vid_size)
-                        brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.85)
+                        brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
                         #print(brate)
                         
                         video.write_videofile(save_path, 
@@ -495,7 +566,7 @@ class PathForm(ttk.Frame):
                         
                     
             elif self.selected_file_listbox["selectmode"] == "multiple"  and sel_len > 0 and filp_len > 0:
-                file_path_s = [self.path_correction(path) for path in self.selected_file_listbox.curselection()]
+                file_path_s = [self.path_correction(self.selected_file_listbox.get(self.selected_file_listbox.curselection()[ind])) for ind in self.selected_file_listbox.curselection()]
             
                 #multiple selection
                 for path in file_path_s:

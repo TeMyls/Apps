@@ -1,7 +1,7 @@
 import os
 import sys
 
-#from PIL import Image
+from PIL import Image, ImageTk
 from moviepy.editor import VideoFileClip,concatenate_videoclips,AudioFileClip,vfx,CompositeAudioClip
 import math
 #from moviepy.decorators import apply_to_audio, apply_to_mask, requires_duration
@@ -201,6 +201,13 @@ class PathForm(ttk.Frame):
         
         self.complete_progress_status_label = ttk.Label(self, text = "Idle")
         
+        
+        #Cropping
+        self.crop_chop_button = tk.Button(self, text="Crop", command = self.slice_into_images)
+        self.crop_next_button = tk.Button(self, text="Next")
+        self.crop_back_button = tk.Button(self, text="Back")
+        
+        
   
         
         self.multiple_selection_widgets = [
@@ -253,7 +260,9 @@ class PathForm(ttk.Frame):
             [self.type_selection_label     , None                          ,  self.start_cut_label   , self.cut_start_spinbox , self.muted_label         , self.mute_checkbutton, self.save_name_entry        , None                        ], 
             [self.type_selection_radiobutton1, None                        ,  self.end_cut_label     , self.cut_end_spinbox   , None                     , None                 , self.save_true              , None                        ], 
             [self.type_selection_radiobutton2, None                        , None                    , None                   , None                     , None                 , None                        , None                        ],
-            [None                          , None                          , None                    , None                   , None                     , None                 , None                        , None                        ]           
+            [None                          , None                          , None                    , self.crop_chop_button  , None                     , None                 , None                        , None                        ],    
+            [None                          , None                          , None                    , None                   , None                     , None                 , None                        , None                        ],     
+            [None                          , None                          , None                    , None                   , None                     , None                 , None                        , None                        ]
             
             
         ]
@@ -290,7 +299,10 @@ class PathForm(ttk.Frame):
         self.last_folder = blank
         self.logger = self.MyBarLogger(self.complete_progress_bar, self.complete_progress_status_label, self)
 
-        
+    def slice_into_images(self):
+        pass
+    
+    
         
     def get_type_sel(self):
         type_sel = self.type_selection_svar.get()
@@ -475,6 +487,8 @@ class PathForm(ttk.Frame):
                 else:
                     print("\nStarting")
                     if conversion_value == "gif" and current_ext in codec_dict and was_changed:
+                        #if converting a video to a gif
+                        
                         #Using OpenCV's stuff
                         video.close()
                         
@@ -482,7 +496,7 @@ class PathForm(ttk.Frame):
                         
                         #https://gist.github.com/laygond/d62df2f2757671dea78af25a061bf234#file-writevideofromimages-py-L25
                         #https://theailearner.com/2021/05/29/creating-gif-from-video-using-opencv-and-imageio/
-                        
+                        #https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
                         cap = cv2.VideoCapture(file_path_s)
                         # Get General Info
                         fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
@@ -539,30 +553,53 @@ class PathForm(ttk.Frame):
                                 
                         print(fps, "\n", milliseconds)
                         
+                        cap.release()
                         self.complete_progress_status_label["text"] = "Saving"
                         
                         imageio.mimsave(save_path, image_list, duration = milliseconds)
                         self.complete_progress_status_label["text"] = "Finished"
-                        cap.release()
+                        
                         #video.write_gif(save_path, progress_bar = True)
                       
                     else:
-                        #Using MoviePy's VideoFileClip
-                        vid_size = os.path.getsize(file_path_s)/1000000000
-                       
-                        #print(vid_size)
-                        brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
-                        #print(brate)
+                        #if current_ext == "gif" and conversion_value in codec_dict: 
+                            #Using MoviePy's VideoFileClip
+                        if current_ext == "gif" and conversion_value in codec_dict and not was_cut and not was_resized and not was_muted: 
+                            #converting a gif to a video
+                            vid_size = os.path.getsize(file_path_s)/1000000000
                         
-                        video.write_videofile(save_path, 
-                                            codec = cdc, 
-                                            logger = s_logger, 
-                                            bitrate = str(brate)
-                        )
-                                                          
-                                                          
-                                                          
-                        self.complete_progress_status_label["text"] = "Finished"
+                            #print(vid_size)
+                            brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
+                            #print(brate)
+                            
+                            video.write_videofile(save_path, 
+                                                codec = cdc, 
+                                                logger = s_logger, 
+                                                bitrate = str(brate)
+                            )
+                                                            
+                                                            
+                                                            
+                            self.complete_progress_status_label["text"] = "Finished"
+                        elif current_ext != "gif":
+                            vid_size = os.path.getsize(file_path_s)/1000000000
+                        
+                            #print(vid_size)
+                            brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
+                            #print(brate)
+                            
+                            video.write_videofile(save_path, 
+                                                codec = cdc, 
+                                                logger = s_logger, 
+                                                bitrate = str(brate)
+                            )
+                                                            
+                                                            
+                                                            
+                            self.complete_progress_status_label["text"] = "Finished"
+                        else:
+                           messagebox.showerror("showinfo", "Can only convert gifs to Videos.\nMake sure no values were changed besides\n, \"Change To\"")
+                        #    print("can't do gif yet sorry")
                         
                     
             elif self.selected_file_listbox["selectmode"] == "multiple"  and sel_len > 0 and filp_len > 0:

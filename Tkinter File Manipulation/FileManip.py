@@ -929,7 +929,7 @@ class ParameterSelection(ttk.Frame):
                                                         
                                                         
                         #self.complete_progress_status_label["text"] = "Finished"
-            video.close()
+           
             
             
      

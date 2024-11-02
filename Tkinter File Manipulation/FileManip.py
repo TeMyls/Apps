@@ -12,6 +12,13 @@ import imageio
 import numpy as np  
 
 
+def path_correction(path):
+    foward_slash = "/"
+    back_slash = "\\"
+    path = path.replace(foward_slash, back_slash)
+
+    return path
+
 class Application(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -24,7 +31,7 @@ class Application(tk.Tk):
         # Adding File Menu and commands 
         self.file_menu = tk.Menu(self.menubar, tearoff = False) 
         #self.file_menu.add_command(label ='New File', command = None, accelerator="Ctrl+N") 
-        self.file_menu.add_command(label ='Open...', command = self.open_files, accelerator="Ctrl+O")  
+        self.file_menu.add_command(label ='Open', command = self.open_files, accelerator="Ctrl+O")  
         self.file_menu.add_command(label ='Save', command = self.save_files, accelerator="Ctrl+S") 
         self.file_menu.add_separator() 
         self.file_menu.add_command(label ='Exit', command = self.destroy) 
@@ -133,15 +140,25 @@ class Application(tk.Tk):
                 #temp = file_path_list[0].split('/')
                 #self.last_folder = "/".join(temp[:len(temp) - 1]) + "/"
                 self.frame_mavigator.set_video_frame(self.selected_file)
-                self.frame_mavigator.set_path_label(self.selected_file)
+                self.frame_mavigator.set_path_listbox(self.selected_file)
                 
                 self.current_directory = "\\".join(self.selected_file.split('/')[:-1]) + "\\"
-                #print(self.current_directory)
-                #print(self.selected_file)
+                self.parameter_arbiter.set_file(
+                                                "\\".join(self.selected_file.split('/')[-1:]), 
+                                                "\\".join(self.selected_file.split('/'))
+                                                )
+             
+             
+             
+                self.selected_file = self.parameter_arbiter.selected_file
                 
+                print(self.current_directory)
+                print(self.selected_file)
+                print(self.parameter_arbiter.selected_file)
+                print(self.parameter_arbiter.selected_file_path)
         else:
             print("not implemented yet")
-            
+            messagebox.showerror("showinfo", "Multiple Files Not Implemented")
             '''
             file_path_s = filedialog.askopenfilenames(
                 title='Open files',
@@ -162,17 +179,35 @@ class Application(tk.Tk):
         
     def save_files(self):
         #self.save_path_listbox.insert(tk.END, self.last_folder)
-        was_changed = False
-        was_cut = False
-        was_muted = False
-        was_resized = False
-        was_cropped = False
         
-        self.current_directory = filedialog.askdirectory(
-            initialdir = self.current_directory
-        )
+
         
+        u = filetypes = [
+                    ("All files", "*.*"),
+                    #("mp4 files", "*.mp4"), 
+                    #("mov files", "*.mov"), 
+                    #("webm files", "*.webm"),
+                    #("ogv files", "*.ogv"),
+                    #("gif files", "*.gif")
+                    #("jpg files", ".jpg .jpeg"),
+                    #("png files", "*.png")
+                    
+                    ]
+        
+        dext = self.parameter_arbiter.get_extension()
+        save_path = filedialog.asksaveasfilename(
+            
+                                     initialdir=self.current_directory,
+                                     defaultextension = dext, 
+                                     filetypes= filetypes #[("PNG", ".png"),("JPG",".jpg")] 
+                                     ) 
+        
+        print(dext, " worked")
+        print(self.selected_file)
+        self.current_directory = "\\".join(save_path.split('/')[:-1]) + "\\"
+        self.parameter_arbiter.apply_changes(save_path)
         #self.last_folder = self.current_directory
+        
         
             
     def clear_files(self):
@@ -182,12 +217,7 @@ class Application(tk.Tk):
     def get_directory(self):
         pass
         
-    def path_correction(self, path):
-        foward_slash = "/"
-        back_slash = "\\"
-        path = path.replace(foward_slash, back_slash)
-
-        return path
+    
     
     
           
@@ -235,40 +265,48 @@ class ParameterSelection(ttk.Frame):
         super().__init__(parent)
         
         self.conversion_widgets = self.setup_conversion_widgets()
-        self.convert_to_checkbutton.config(command=self.set_widget_states)
+        
         
         
         self.audio_widgets = self.setup_audio_widgets()
-        self.audio_checkbutton.config(command=self.set_widget_states)
+        
         
         
         self.resize_widgets = self.setup_resize_widgets()
-        self.resize_checkbutton.config(command=self.set_widget_states)
+        
         
         
         self.cut_widgets = self.setup_cut_widgets()
-        self.cut_checkbutton.config(command=self.set_widget_states)
+        
         
         self.crop_widgets = self.setup_crop_widgets()
+        
+        
+        self.convert_to_checkbutton.config(command=self.set_widget_states)
+        self.audio_checkbutton.config(command=self.set_widget_states)
+        self.resize_checkbutton.config(command=self.set_widget_states)
+        self.cut_checkbutton.config(command=self.set_widget_states)
         self.crop_checkbutton.config(command=self.set_widget_states)
         
-        
-        
+        #Conversion
         #Placement
         self.convert_to_label.grid(row = 0, column = 0, sticky="WE")
         self.convert_to_checkbutton.grid(row = 1, column=0, sticky="N")
         self.convert_to_combobox.grid(row = 2, column= 0, sticky="N")
         
+        #Audio
         #Placement
         self.audio_label.grid(row = 0, column = 1, sticky="WE")
         self.audio_checkbutton.grid(row = 1, column = 1, sticky="N")
         self.mute_checkbutton.grid(row = 2, column = 1, sticky="W")
         
+        #Resize
         #Placement
         self.resize_label.grid(row = 3, column = 0, sticky="WE")
         self.resize_checkbutton.grid(row = 4, column = 0, sticky="N")
         self.resize_spinbox.grid(row = 5, column = 0, sticky="N")
         
+        #Cut
         #Placement
         self.cut_label.grid(row = 6, column = 0, sticky="WE")
         self.cut_checkbutton.grid(row = 7, column = 0, sticky="N")
@@ -277,6 +315,7 @@ class ParameterSelection(ttk.Frame):
         self.cut_start_spinbox.grid(row = 8, column = 1, sticky="N")
         self.cut_end_spinbox.grid(row = 9, column = 1, sticky="N")
         
+        #Crop
         #Placement
         self.crop_label.grid(row = 10, column = 0, sticky="WE")
         self.crop_checkbutton.grid(row = 11, column = 0, sticky="N")
@@ -286,9 +325,13 @@ class ParameterSelection(ttk.Frame):
         self.crop_image_xy2_coords.grid(row = 13, column = 1, sticky="N")
         
         
-        
-        
+        self.selected_file_path = ""
+        self.selected_file = ""
+        self.has_file = True
         self.set_widget_states()
+        self.has_file = False
+        
+        
         
         self.progress_bar = None
         self.label_bar = None
@@ -305,11 +348,25 @@ class ParameterSelection(ttk.Frame):
         if kwargs.get("bar_status"):
             self.status_bar = kwargs["bar_status"]
             
+    def get_extension(self):
+        if self.convert_to_checkbool.get():
+            print("yo")
+            if self.convert_to_combobox.get() == "No Change":
+                print("yolo")
+                return "." + self.selected_file.split(".")[-1]
+            else:
+                print("hoho")
+                return "." + self.convert_to_combobox.get()
+        else:
+            print("lolo")
+            if self.selected_file:
+                print("gofo")
+                return "." + self.selected_file.split(".")[-1]
+            else:
+                print("foo")
+                return ".mp4"
             
-      
             
-            
-        
     
     def hide_widget(self, widget):
         widget.grid_remove()
@@ -317,65 +374,103 @@ class ParameterSelection(ttk.Frame):
     def show_widget(self, widget):
         widget.grid()
         
-    def set_widget_states(self):
+    def set_file(self, sel_file, full_file):
+        self.selected_file = sel_file
+        self.selected_file_path = full_file
+        self.has_file = True
         
-        if self.convert_to_checkbool.get():
-            #self.convert_to_checkbutton.config(text = "Enable")
-            for widget in self.conversion_widgets:
-                self.show_widget(widget)
-        elif not self.convert_to_checkbool.get():
-           
-            #self.convert_to_checkbutton.config(text = "Disabled")
+        
+    def set_widget_states(self):
+        if self.has_file:
+        
+            if self.convert_to_checkbool.get():
+                #self.convert_to_checkbutton.config(text = "Enable")
+                for widget in self.conversion_widgets:
+                    self.show_widget(widget)
+            elif not self.convert_to_checkbool.get():
+            
+                #self.convert_to_checkbutton.config(text = "Disabled")
+                for widget in  self.conversion_widgets:
+                    self.hide_widget(widget)
+                    
+                    
+                    
+            if self.audio_checkbool.get():
+                #self.convert_to_checkbutton.config(text = "Enable")
+                for widget in self.audio_widgets:
+                    self.show_widget(widget)
+            elif not self.audio_checkbool.get():
+            
+                #self.convert_to_checkbutton.config(text = "Disabled")
+                for widget in self.audio_widgets:
+                    self.hide_widget(widget)
+                    
+                    
+                    
+            if self.resize_checkbool.get():
+                #self.convert_to_checkbutton.config(text = "Enable")
+                for widget in self.resize_widgets:
+                    self.show_widget(widget)
+            elif not self.resize_checkbool.get():
+                
+                #self.convert_to_checkbutton.config(text = "Disabled")
+                for widget in self.resize_widgets:
+                    self.hide_widget(widget)
+                    
+                    
+                    
+            if self.cut_checkbool.get():
+                #self.convert_to_checkbutton.config(text = "Enable")
+                for widget in self.cut_widgets:
+                    self.show_widget(widget)
+            elif not self.cut_checkbool.get():
+            
+                #self.convert_to_checkbutton.config(text = "Disabled")
+                for widget in self.cut_widgets:
+                    self.hide_widget(widget)
+                    
+                    
+                    
+            if self.crop_checkbool.get():
+                #self.convert_to_checkbutton.config(text = "Enable")
+                for widget in self.crop_widgets:
+                    self.show_widget(widget)
+            elif not self.crop_checkbool.get():
+                
+                #self.convert_to_checkbutton.config(text = "Disabled")
+                for widget in self.crop_widgets:
+                    self.hide_widget(widget)
+                    
+        else:
+            self.convert_to_checkbool.set(False)
+            self.audio_checkbool.set(False)
+            self.resize_checkbool.set(False)
+            self.cut_checkbool.set(False)
+            self.crop_checkbool.set(False)
+   
             for widget in  self.conversion_widgets:
                 self.hide_widget(widget)
                 
                 
                 
-        if self.audio_checkbool.get():
-            #self.convert_to_checkbutton.config(text = "Enable")
-            for widget in self.audio_widgets:
-                self.show_widget(widget)
-        elif not self.audio_checkbool.get():
-          
-            #self.convert_to_checkbutton.config(text = "Disabled")
+    
             for widget in self.audio_widgets:
                 self.hide_widget(widget)
                 
                 
-                
-        if self.resize_checkbool.get():
-            #self.convert_to_checkbutton.config(text = "Enable")
-            for widget in self.resize_widgets:
-                self.show_widget(widget)
-        elif not self.resize_checkbool.get():
-            
-            #self.convert_to_checkbutton.config(text = "Disabled")
+
             for widget in self.resize_widgets:
                 self.hide_widget(widget)
                 
                 
-                
-        if self.cut_checkbool.get():
-            #self.convert_to_checkbutton.config(text = "Enable")
-            for widget in self.cut_widgets:
-                self.show_widget(widget)
-        elif not self.cut_checkbool.get():
-          
-            #self.convert_to_checkbutton.config(text = "Disabled")
+
             for widget in self.cut_widgets:
                 self.hide_widget(widget)
                 
                 
-                
-        if self.crop_checkbool.get():
-            #self.convert_to_checkbutton.config(text = "Enable")
+
             for widget in self.crop_widgets:
-                self.show_widget(widget)
-        elif not self.crop_checkbool.get():
-            
-            #self.convert_to_checkbutton.config(text = "Disabled")
-            for widget in self.crop_widgets:
-                self.hide_widget(widget)
+                self.hide_widget(widget)  
     
     def setup_conversion_widgets(self):
         
@@ -391,7 +486,7 @@ class ParameterSelection(ttk.Frame):
     
         
         #Enablement Bools
-        self.convert_to_label= ttk.Label(self, text="Convert To")
+        self.convert_to_label= ttk.Label(self, text="Convert")
         
         self.convert_to_checkbool = tk.BooleanVar()
         self.convert_to_checkbool.set(False)
@@ -409,9 +504,7 @@ class ParameterSelection(ttk.Frame):
         self.convert_to_combobox.current(0)
         
         return [ self.convert_to_combobox ]
-        
-
-                
+                      
     def setup_audio_widgets(self):
         #Parameters
         
@@ -446,8 +539,7 @@ class ParameterSelection(ttk.Frame):
     
         
         return [ self.mute_checkbutton ]
-    
-    
+      
     def setup_resize_widgets(self):
         #Parameters
         self.resize_spinbox= ttk.Spinbox(self, 
@@ -477,7 +569,6 @@ class ParameterSelection(ttk.Frame):
        
         
         return [ self.resize_spinbox ]
-    
     
     def setup_cut_widgets(self):
         #Parameters
@@ -527,9 +618,7 @@ class ParameterSelection(ttk.Frame):
  
         
         return [ self.cut_start_spinbox , self.cut_end_spinbox, self.start_cut_label, self.end_cut_label]
-    
-
-            
+             
     def setup_crop_widgets(self):
         #Parameters
         
@@ -565,6 +654,35 @@ class ParameterSelection(ttk.Frame):
         
         return [ self.crop_canvas_xy1_coords, self.crop_canvas_xy2_coords, self.crop_image_xy1_coords, self.crop_image_xy2_coords ]
     
+    def setup_extractor_widgets(self):
+        #Parameters
+        
+        self.ext_frame = ttk.Label(self, text = "Selected_Frame: 0")
+        self.ext_combobox = ttk.Combobox(self, width = 15,  textvariable = tk.StringVar()) 
+        self.ext_combobox["values"] = ( "No Change",
+                                        "png",
+                                        "jpg"
+   
+                                    )
+        
+
+        
+        
+        
+        #Enablement Bools
+        self.ext_label = ttk.Label(self, text = "Image Frame")
+ 
+        
+        self.ext_checkbool = tk.BooleanVar()
+        self.ext_checkbool.set(False)
+        
+        self.ext_checkbutton = ttk.Checkbutton(self,   
+                                                variable=self.crop_checkbool,
+                                                text= "Enabled"
+                                     
+                                                ) 
+
+        return [ self.ext_frame, self.ext_combobox ]
     
     def update_crop_widget_labels(self, **kwargs):
         '''
@@ -598,18 +716,226 @@ class ParameterSelection(ttk.Frame):
             self.crop_ix2  =  round(kwargs["image_x2"])
         if kwargs.get("image_y2"):
             self.crop_iy2  =  round(kwargs["image_y2"])
-            
-        self.crop_canvas_xy1_coords.config(text = f"Canvas X1: {self.crop_cx1}, Canvas Y1: {self.crop_cy1}")
-        self.crop_canvas_xy2_coords.config(text = f"Canvas X2: {self.crop_cx2}, Canvas Y2: {self.crop_cy2}")
-        self.crop_image_xy1_coords.config(text = f"Image X1: {self.crop_ix1}, Image Y1: {self.crop_iy1}")
-        self.crop_image_xy2_coords.config(text = f"Image X1: {self.crop_ix2}, Image Y2: {self.crop_iy2}")
+        
+        if self.crop_cx1 == -1:
+            self.crop_canvas_xy1_coords.config(text = "Canvas X1: 0, Canvas Y1: 0")
+            self.crop_canvas_xy2_coords.config(text = "Canvas X2: 0, Canvas Y2: 0")
+            self.crop_image_xy1_coords.config(text = "Image X1: 0, Image Y1: 0")
+            self.crop_image_xy2_coords.config(text = "Image X1: 0, Image Y2: 0")
+        
+        else:
+            self.crop_canvas_xy1_coords.config(text = f"Canvas X1: {self.crop_cx1}, Canvas Y1: {self.crop_cy1}")
+            self.crop_canvas_xy2_coords.config(text = f"Canvas X2: {self.crop_cx2}, Canvas Y2: {self.crop_cy2}")
+            self.crop_image_xy1_coords.config(text = f"Image X1: {self.crop_ix1}, Image Y1: {self.crop_iy1}")
+            self.crop_image_xy2_coords.config(text = f"Image X2: {self.crop_ix2}, Image Y2: {self.crop_iy2}")
         
         #print(kwargs)
         
     
-    def apply_changes(self):
-        pass
+    def apply_changes(self, save_path):
+        if  self.selected_file:
+            was_changed = False
+            was_cut = False
+            was_muted = False
+            was_resized = False
+            was_cropped = False
+            codec_dict = {'mp4':'libx264','ogv':'libtheora','webm':'libvpx'}
+            cdc = ""
             
+            current_ext = save_path.split(".")[-1]
+            save_path = path_correction(save_path)
+            selected_file = path_correction(self.selected_file_path)
+            start_seconds = float(self.cut_start_spinbox.get()) 
+            end_seconds =  float(self.cut_end_spinbox.get()) 
+            conversion_value = self.convert_to_combobox.get()
+            
+            print()
+            print(save_path)
+            print(self.selected_file_path)
+            
+            video = VideoFileClip(
+                    selected_file#,
+                    #audio = was_muted
+                    
+                )
+            
+   
+            video = VideoFileClip(selected_file)
+            if self.audio_checkbool.get():
+                was_muted = self.mute_checkbool.get() == False
+                if was_muted:
+                    video.set_audio(None)
+                else:
+                    pass
+            elif not self.audio_checkbool.get():
+                pass
+            
+            if self.cut_checkbool.get():
+                
+                if start_seconds >= end_seconds or start_seconds < 0 or end_seconds < 0 or start_seconds > video.end or end_seconds > video.end:
+                    pass
+                else:
+                    was_cut = True
+                    video = video.subclip(start_seconds, end_seconds)
+            elif not self.cut_checkbool.get():
+                pass
+            
+            if self.crop_checkbool.get():
+                video = vfx.crop(video,  x1=self.crop_ix1 , y1=self.crop_iy1 , x2=self.crop_ix2 , y2=self.crop_iy2)
+            elif not self.crop_checkbool.get():
+                pass
+            
+            
+            if self.resize_checkbool.get():
+                resize_value = int(self.resize_spinbox.get())
+                if resize_value == 100:
+                    pass
+                else:
+                    was_resized = True
+                    video = video.resize(resize_value/100)
+            elif not self.resize_checkbool.get():
+                pass
+            
+            if self.convert_to_checkbool.get():
+                #"No Change", "mp4","ogv","webm","gif",   
+                
+                
+                
+                if conversion_value == "No Change" or conversion_value == current_ext:
+                    if current_ext != "gif":
+                        cdc = codec_dict[current_ext]
+                        save_path = save_path + "." + current_ext
+                    else:
+                        save_path = save_path + "." + current_ext
+                else:
+                    if conversion_value != "gif":
+                        cdc = codec_dict[conversion_value]
+                        save_path = save_path + "." + conversion_value
+                    else:
+                        save_path = save_path + ".gif" 
+                    was_changed = True
+            elif not self.convert_to_checkbool.get():
+                cdc = codec_dict[current_ext]
+                    
+                    
+                    
+            
+                    
+                    
+            
+                    
+                    
+                    
+            
+                    
+                    
+                    
+            
+            
+            if not was_changed and not was_cut and not was_muted and not was_resized:
+                    messagebox.showerror("showinfo", "Make some type of change")
+            else:
+                if conversion_value == "gif":
+                        #if converting a video to a gif
+                        
+                        #Using OpenCV's stuff
+                        video.close()
+                        
+                        #self.complete_progress_status_label["text"] =  "Loading"
+                        
+                        #https://gist.github.com/laygond/d62df2f2757671dea78af25a061bf234#file-writevideofromimages-py-L25
+                        #https://theailearner.com/2021/05/29/creating-gif-from-video-using-opencv-and-imageio/
+                        #https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
+                        cap = cv2.VideoCapture(selected_file)
+                        # Get General Info
+                        fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
+                        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    
+                        duration    = int(frame_count/fps)
+                        width       = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # float
+                        height      = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
+                        
+                        image_list = []
+                        
+                        
+                        
+                        
+
+                        print("OPENCV LOOP")
+                        start_time = 0
+                        end_time = frame_count
+                        if was_cut:
+                            start_time = start_seconds * fps
+                            end_time = end_seconds * fps
+                        
+                        
+                        i = 0
+                        
+                        while True:
+                            is_reading, frame = cap.read()
+                            if not is_reading:
+                                break
+                            
+                            
+                            if i >= start_time and i <= end_time:
+                                frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                                
+                                if was_resized:
+                                    rw = int(width * (resize_value/100))
+                                    rh = int(height * (resize_value/100))
+                                    frame_rgb = cv2.resize(frame_rgb, (rw, rh ))
+                                    
+                                image_list.append(frame_rgb)
+                                self.complete_progress_bar['value'] = int((i/(end_time - start_time)) * 100)
+                                
+                            
+                            
+                            i += 1
+                            
+                            #self.update_idletasks()
+                        
+                            
+                            
+
+                        
+                        milliseconds = (1/fps) * 1000
+                                
+                        print(fps, "\n", milliseconds)
+                        
+                        cap.release()
+                        #self.complete_progress_status_label["text"] = "Saving"
+                        
+                        imageio.mimsave(save_path, image_list, duration = milliseconds)
+                        #self.complete_progress_status_label["text"] = "Finished"
+                        
+                        #video.write_gif(save_path, progress_bar = True)
+                      
+                else:
+                    #if current_ext == "gif" and conversion_value in codec_dict: 
+                        #Using MoviePy's VideoFileClip
+                    
+                    vid_size = os.path.getsize(selected_file)/1000000000
+                
+                    #print(vid_size)
+                    brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
+                    #print(brate)
+                    
+                    video.write_videofile(save_path, 
+                                        codec = cdc, 
+                                        #logger = s_logger, 
+                                        bitrate = str(brate)
+                    )
+                                                        
+                                                        
+                                                        
+                        #self.complete_progress_status_label["text"] = "Finished"
+                        
+            
+            
+     
+class InforameNav(ttk.Frame):  
+    def __init__(self, parent, canvas_width: int, canvas_height: int, **kwargs):
+        super().__init__(parent)
     
             
 
@@ -644,6 +970,7 @@ class VideoFrameNav(ttk.Frame):
         
         self.og_image_scale = 0
         self.current_frame = 0
+        self.frame_seconds = 0
         
         self.video = None
         self.current_img = None
@@ -696,7 +1023,20 @@ class VideoFrameNav(ttk.Frame):
         
         
         self.path_label =  tk.Label(self, text = "FilePath: ")
-        self.file_info = tk.Label(self, text = "Genera: ")
+        
+        self.path_listbox = tk.Listbox(self, 
+
+                                       height=1,
+                                       width=82
+                                       )
+        
+        self.path_scrollbar_x = tk.Scrollbar(self, orient = 'horizontal', command=self.path_listbox.xview)
+        self.path_listbox.config(xscrollcommand=self.path_scrollbar_x.set)
+        
+        
+        
+        self.file_info = tk.Label(self, text = "General: ")
+        
        
         
         
@@ -757,6 +1097,8 @@ class VideoFrameNav(ttk.Frame):
         arrangement = [
             
             [self.bck_btn, self.path_label   , self.nxt_btn                ],
+            [None        , self.path_listbox , None                        ],
+            [None        , self.path_scrollbar_x, None                     ],
             [None        , self.canvas       , None                        ],
             [None        , None              , self.interval_spinbox_label ],
             [None        , None              , self.interval_spinbox       ],
@@ -775,12 +1117,20 @@ class VideoFrameNav(ttk.Frame):
                 if arrangement[ind_y][ind_x] == None:
                     pass
                 else:
-                    arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "W")
+                 
+                    arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "EW")
                     
                     
                     
     def set_path_label(self, filepath):
         self.path_label.config(text = filepath)
+        
+    def set_path_listbox(self, filepath):
+        if self.path_listbox.size() > 0:
+            self.path_listbox.delete(0, tk.END)
+        self.path_listbox.insert(0, filepath)
+        
+        
         
     def set_video_frame(self, video_path):
         #To open an frame of a video as file
@@ -835,6 +1185,8 @@ class VideoFrameNav(ttk.Frame):
         # To display the image
         self.draw_image(self.current_img)
         
+    def get_video_frame(self):
+        return self.current_frame
         
     def Next(self):
         if self.current_img == None:
@@ -906,7 +1258,19 @@ class VideoFrameNav(ttk.Frame):
     # Mouse events
     # -------------------------------------------------------------------------------
     def on_button_clear(self, event):
+        if self.arb_params != None:
+                self.arb_params.update_crop_widget_labels(
+                    canvas_x1 = -1,
+                    canvas_y1 = -1,
+                    canvas_x2 = -1,
+                    canvas_y2 = -1,
+                    image_x1 = -1,
+                    image_y1 = -1,
+                    image_x2 = -1,
+                    image_y2 = -1
+                )
         self.canvas.delete("rect")
+        
     
     def mouse_down_left(self, event):
         

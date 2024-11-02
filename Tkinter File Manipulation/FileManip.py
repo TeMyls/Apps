@@ -762,7 +762,7 @@ class ParameterSelection(ttk.Frame):
    
             video = VideoFileClip(selected_file)
             if self.audio_checkbool.get():
-                was_muted = self.mute_checkbool.get() == False
+                was_muted = self.mute_checkbool.get() 
                 if was_muted:
                     video.set_audio(None)
                 else:
@@ -929,7 +929,7 @@ class ParameterSelection(ttk.Frame):
                                                         
                                                         
                         #self.complete_progress_status_label["text"] = "Finished"
-                        
+            video.close()
             
             
      

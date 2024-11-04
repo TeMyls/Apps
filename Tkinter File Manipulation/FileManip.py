@@ -88,16 +88,23 @@ class Application(tk.Tk):
         
         self.general_info = GenInfoFrame(self)
         
+        self.general_info.grid(row=0, column=0, sticky="N")
+        
+        #Fourth Frame
+        self.bar_progress = BarProgress(self,
+                                        bar_progress = self.complete_progress_bar, 
+                                        bar_label = self.complete_progress_label, 
+                                        bar_status = self.complete_progress_status_label
+                                        )
+        
         #Third Frame 
         #The Parameter Decider
         self.parameter_arbiter = ParameterSelection(self, 
-                                                    bar_progress = self.complete_progress_bar, 
-                                                    bar_label = self.complete_progress_label, 
-                                                    bar_status = self.complete_progress_status_label,
+                                                    
                                                     
                                                     )
         
-        self.parameter_arbiter.grid(row=0, column=1, sticky="N")
+        self.parameter_arbiter.grid(row=0, column=2, sticky="N")
         
         #Second Frame
         #The Canvas Flipper Frame
@@ -107,9 +114,10 @@ class Application(tk.Tk):
                                             param_arbs = self.parameter_arbiter,
                                             info_gen = self.general_info
                                             )
-        self.frame_mavigator.grid(row=0, column=0, sticky="EW")
+        self.frame_mavigator.grid(row=0, column=1, sticky="EW")
         
-       
+        
+        
         
         
         
@@ -288,32 +296,54 @@ class GenInfoFrame(ttk.Frame):
         self.width_label= ttk.Label(self, text="Width:")
         self.height_label= ttk.Label(self, text="Height:")
         
+        self.title_label.grid(row=0, column=0, sticky="N")
+        self.file_name_label.grid(row=1, column=0, sticky="N")
+        self.fps_label.grid(row=2, column=0)
+        self.duration_label.grid(row=3, column=0, sticky="N")
+        self.frame_count_label.grid(row=4, column=0, sticky="N")
+        self.current_frame_label.grid(row=5, column=0, sticky="N")
+        self.current_second_label.grid(row=6, column=0, sticky="N")
+        self.width_label.grid(row=7, column=0, sticky="N")
+        self.height_label.grid(row=8, column=0, sticky="N")
+        
+        
+        
     def set_info(self, **kwargs):
+        
+        
         if kwargs.get("file_name"):
-            self.file_name =  round(kwargs["file_name"])
+            self.file_name =  kwargs["file_name"]
+        if kwargs.get("fps"):
+            self.fps =  kwargs["fps"]
+        if kwargs.get("frame_count"):
+            self.frame_count =  kwargs["frame_count"]
+        if kwargs.get("duration"):
+            self.duration =  kwargs["duration"]
+        
+        
+        if kwargs.get("width"):
+            self.width  = kwargs["width"]
+        if kwargs.get("height"):
+            self.height  = kwargs["height"]
+        if kwargs.get("current_frame"):
+            self.current_frame  = kwargs["current_frame"]
+        if kwargs.get("current_second"):
+            self.current_second  = kwargs["current_second"]
             
-        if kwargs.get("canvas_y1"):
-            self.crop_cy1 =  round(kwargs["canvas_y1"])
-        if kwargs.get("canvas_x2"):
-            self.crop_cx2 =  round(kwargs["canvas_x2"])
-        if kwargs.get("canvas_y2"):
-            self.crop_cy2 =  round(kwargs["canvas_y2"])
-        
-        
-        
-        if kwargs.get("image_x1"):
-            self.crop_ix1  =  round(kwargs["image_x1"])
-        if kwargs.get("image_y1"):
-            self.crop_iy1  =  round(kwargs["image_y1"])
-        if kwargs.get("image_x2"):
-            self.crop_ix2  =  round(kwargs["image_x2"])
-        if kwargs.get("image_y2"):
-            self.crop_iy2  =  round(kwargs["image_y2"])
-        
-        
         
             
-            
+        
+        self.file_name_label.config(text= "File Name:{}".format(self.file_name))
+        self.fps_label.config(text= "FPS:{}".format(self.fps))
+        self.duration_label.config(text= "Duration:{} Seconds".format(self.duration))
+        self.frame_count_label.config(text= "Frame Count:{}".format(self.frame_count))
+        self.current_frame_label.config(text= "Current Frame:{}".format(self.current_frame))
+        self.current_second_label.config(text= "Current Second:{:.3f}".format(self.current_second))
+        self.width_label.config(text= "Width:{}".format(str(self.width)))
+        self.height_label.config(text= "Height:{}".format(str(self.height)))
+        
+        
+           
             
 class BarProgress(ttk.Frame):  
     def __init__(self, parent, **kwargs):
@@ -326,6 +356,8 @@ class BarProgress(ttk.Frame):
             
         if kwargs.get("bar_status"):
             self.status_bar = kwargs["bar_status"]
+
+
 
 class ParameterSelection(ttk.Frame):
     def __init__(self, parent, **kwargs):
@@ -564,7 +596,7 @@ class ParameterSelection(ttk.Frame):
         
         self.convert_to_checkbutton = ttk.Checkbutton(self,   
                                                 variable=self.convert_to_checkbool,
-                                                text= "Enabled",
+                                                text= "Enabled"
 
                                                 ) 
         
@@ -818,11 +850,12 @@ class ParameterSelection(ttk.Frame):
                 self.edit_video(save_path)
             else:
                 messagebox.showerror("showinfo", "Gif Stuff not Implemented yet")
-                self.edit_gif(save_path)
+                pass
+                #self.edit_gif(save_path)
         
     def edit_gif(self, save_path):
-        if True:
-            return
+        #if True:
+        #    return
         
         was_changed = False
         was_cut = False
@@ -857,6 +890,7 @@ class ParameterSelection(ttk.Frame):
                 video.set_audio(None)
             else:
                 pass
+            
         elif not self.audio_checkbool.get():
             pass
         
@@ -1089,11 +1123,17 @@ class ParameterSelection(ttk.Frame):
                 #if current_ext == "gif" and conversion_value in codec_dict: 
                     #Using MoviePy's VideoFileClip
                 
-                
-                vid_size = os.path.getsize(selected_file)/1000000000
+                cap = cv2.VideoCapture(selected_file)
+                # Get General Info
+                fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
+                frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                cap.release()
+                #vid_size = os.path.getsize(selected_file)/1000000000
+                vid_size = os.path.getsize(selected_file)
             
                 #print(vid_size)
-                brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
+                #brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
+                brate = (vid_size * 8) / (frame_count / fps)
                 #print(brate)
                 
                 video.write_videofile(save_path, 
@@ -1122,6 +1162,9 @@ class MediaFrameNav(ttk.Frame):
     ##https://gist.github.com/laygond/d62df2f2757671dea78af25a061bf234#file-writevideofromimages-py-L25
     #https://theailearner.com/2021/05/29/creating-gif-from-video-using-opencv-and-imageio/
     #https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
+    #https://stackoverflow.com/questions/29789554/tkinter-draw-rectangle-using-a-mouse
+    #https://stackoverflow.com/questions/32289175/list-of-all-tkinter-events
+    
     def __init__(self, parent, canvas_width: int, canvas_height: int, **kwargs):
         super().__init__(parent)
         
@@ -1147,8 +1190,7 @@ class MediaFrameNav(ttk.Frame):
         self.current_frame = 0
         self.frame_seconds = 0
         
-        self.video = None
-        self.gif = None
+
         self.media = None
         self.current_img = None
         self.rect = None
@@ -1322,7 +1364,7 @@ class MediaFrameNav(ttk.Frame):
         
         animated_filetypes =  ["mp4", "mov", "webm", "ogv", "gif"]
         self.current_ext = file_path.split(".")[-1]
-        self.file_name = "\\".join(file_path.split('/'))
+        self.file_name = "\\".join(file_path.split('/')[-1:])
         print("File Current EXT: {}".format(self.current_ext))
         if self.current_ext in animated_filetypes:
             if self.media != None:
@@ -1335,9 +1377,30 @@ class MediaFrameNav(ttk.Frame):
             self.width       = int(self.media.get(cv2.CAP_PROP_FRAME_WIDTH))  # float
             self.height      = int(self.media.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
             
-            #print("GIF FPS:{}".format(self.fps))
             
             self.current_frame = 0
+            
+            
+            if self.gen_info != None:
+                self.gen_info.set_info(
+                    
+                    file_name = self.file_name,
+                    fps = self.fps,
+                    frame_count = self.frame_count,
+                    duration = self.duration,
+                    width = self.width,
+                    height = self.height,
+                    current_frame = self.current_frame,
+                    current_second = 1
+                    
+                    
+                    
+                    
+                )
+            
+            #print("GIF FPS:{}".format(self.fps))
+            
+            
             self.media.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
             
             #img is a frame of the video
@@ -1403,6 +1466,19 @@ class MediaFrameNav(ttk.Frame):
             #self.img_label.config(image=self.current_img)
             
             self.current_frame_label.config(text = f"Current Frame: {self.current_frame}")
+            
+            if self.gen_info != None:
+                if self.current_frame != 0:
+                    self.gen_info.set_info(
+                        current_frame = self.current_frame,
+                        current_second = (self.fps**-1) * self.current_frame
+                    )
+                else:
+                     self.gen_info.set_info(
+                        current_frame = self.current_frame,
+                        current_second = 0
+                    )
+            
             #cv2.imshow("video", img)
             #cv2.waitKey(0)
             #except:
@@ -1441,6 +1517,19 @@ class MediaFrameNav(ttk.Frame):
             #self.img_label.config(image=self.current_img)
             
             self.current_frame_label.config(text = f"Current Frame: {self.current_frame}")
+            
+            if self.gen_info != None:
+                if self.current_frame != 0:
+                    self.gen_info.set_info(
+                        current_frame = self.current_frame,
+                        current_second = (self.fps**-1) * self.current_frame
+                    )
+                else:
+                     self.gen_info.set_info(
+                        current_frame = self.current_frame,
+                        current_second = 0
+                    )
+            
             #cv2.imshow("video", img)
             #cv2.waitKey(0)
             #self.canvas.delete("all")

@@ -76,14 +76,20 @@ class Application(tk.Tk):
         self.config(menu = self.menubar) 
         
         
+        
         #Progress Bar
         self.complete_progress_label = ttk.Label(self, text = "Progress ")
         self.complete_progress_bar = ttk.Progressbar(self, orient= "horizontal",  mode="determinate")
         self.complete_progress_status_label = ttk.Label(self, text = "Idle")
         self.logger = self.MyBarLogger(self.complete_progress_bar, self.complete_progress_status_label, self)
         
+        #First Frame
+        #General Info
         
-        #Second Frame The Parameter Decider
+        self.general_info = GenInfoFrame(self)
+        
+        #Third Frame 
+        #The Parameter Decider
         self.parameter_arbiter = ParameterSelection(self, 
                                                     bar_progress = self.complete_progress_bar, 
                                                     bar_label = self.complete_progress_label, 
@@ -93,14 +99,17 @@ class Application(tk.Tk):
         
         self.parameter_arbiter.grid(row=0, column=1, sticky="N")
         
-        #First Frame
+        #Second Frame
         #The Canvas Flipper Frame
         self.frame_mavigator = MediaFrameNav(self, 
                                             500, 
                                             500,
-                                            param_arbs = self.parameter_arbiter
+                                            param_arbs = self.parameter_arbiter,
+                                            info_gen = self.general_info
                                             )
         self.frame_mavigator.grid(row=0, column=0, sticky="EW")
+        
+       
         
         
         
@@ -220,12 +229,6 @@ class Application(tk.Tk):
         
     
     
-    
-          
-        
-    
-        
-        
         
     class MyBarLogger(ProgressBarLogger):
         #https://stackoverflow.com/questions/69423410/moviepy-getting-progress-bar-values
@@ -259,7 +262,70 @@ class Application(tk.Tk):
         
 
 
-
+class GenInfoFrame(ttk.Frame):  
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+        
+        #General Info
+        self.file_name   = None
+        self.fps         = None
+        self.frame_count = None
+        self.duration    = None
+        self.width       = None
+        self.height      = None
+        self.current_frame = None
+        self.current_second = None
+        
+        self.title_label= ttk.Label(self, text="General Info")
+        
+        self.file_name_label= ttk.Label(self, text="File Name:")
+        self.fps_label= ttk.Label(self, text="FPS:")
+        self.duration_label = ttk.Label(self, text="Duration:")
+        self.frame_count_label= ttk.Label(self, text="Frame_Count:")
+        self.current_frame_label = ttk.Label(self, text="Current Frame:")
+        self.current_second_label = ttk.Label(self, text="Current Second:")
+        self.width_label= ttk.Label(self, text="Width:")
+        self.height_label= ttk.Label(self, text="Height:")
+        
+    def set_info(self, **kwargs):
+        if kwargs.get("file_name"):
+            self.file_name =  round(kwargs["file_name"])
+            
+        if kwargs.get("canvas_y1"):
+            self.crop_cy1 =  round(kwargs["canvas_y1"])
+        if kwargs.get("canvas_x2"):
+            self.crop_cx2 =  round(kwargs["canvas_x2"])
+        if kwargs.get("canvas_y2"):
+            self.crop_cy2 =  round(kwargs["canvas_y2"])
+        
+        
+        
+        if kwargs.get("image_x1"):
+            self.crop_ix1  =  round(kwargs["image_x1"])
+        if kwargs.get("image_y1"):
+            self.crop_iy1  =  round(kwargs["image_y1"])
+        if kwargs.get("image_x2"):
+            self.crop_ix2  =  round(kwargs["image_x2"])
+        if kwargs.get("image_y2"):
+            self.crop_iy2  =  round(kwargs["image_y2"])
+        
+        
+        
+            
+            
+            
+class BarProgress(ttk.Frame):  
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent)
+        if kwargs.get("bar_progress"):
+            self.progress_bar = kwargs["bar_progress"]
+            
+        if kwargs.get("bar_label"):
+            self.label_bar = kwargs["bar_label"]
+            
+        if kwargs.get("bar_status"):
+            self.status_bar = kwargs["bar_status"]
 
 class ParameterSelection(ttk.Frame):
     def __init__(self, parent, **kwargs):
@@ -578,6 +644,10 @@ class ParameterSelection(ttk.Frame):
     def setup_cut_widgets(self):
         #Parameters
         
+        self.cut_seconds_frame_checkbool = tk.BooleanVar()
+        
+        
+        
         self.start_cut_label = ttk.Label(self, text = "Start Seconds:")
         self.end_cut_label = ttk.Label(self, text = "End Seconds:")
         
@@ -601,6 +671,10 @@ class ParameterSelection(ttk.Frame):
        
         self.cut_end_spinbox.set(0)
         self.cut_start_spinbox.set(0)
+        
+        
+        
+        
         
         
         
@@ -744,9 +818,94 @@ class ParameterSelection(ttk.Frame):
                 self.edit_video(save_path)
             else:
                 messagebox.showerror("showinfo", "Gif Stuff not Implemented yet")
+                self.edit_gif(save_path)
         
     def edit_gif(self, save_path):
-        pass
+        if True:
+            return
+        
+        was_changed = False
+        was_cut = False
+        was_muted = False
+        was_resized = False
+        was_cropped = False
+        codec_dict = {'mp4':'libx264','ogv':'libtheora','webm':'libvpx', "mov":'libx264'}
+        cdc = ""
+        
+        current_ext = self.current_ext
+        save_path = path_correction(save_path)
+        selected_file = path_correction(self.selected_file_path)
+        start_seconds = float(self.cut_start_spinbox.get()) 
+        end_seconds =  float(self.cut_end_spinbox.get()) 
+        conversion_value = self.convert_to_combobox.get()
+        
+        print()
+        print(save_path)
+        print(self.selected_file_path)
+        
+        video = VideoFileClip(
+                selected_file#,
+                #audio = was_muted
+                
+            )
+        
+
+        video = VideoFileClip(selected_file)
+        if self.audio_checkbool.get():
+            was_muted = not self.mute_checkbool.get() 
+            if was_muted:
+                video.set_audio(None)
+            else:
+                pass
+        elif not self.audio_checkbool.get():
+            pass
+        
+        if self.cut_checkbool.get():
+            
+            if start_seconds >= end_seconds or start_seconds < 0 or end_seconds < 0 or start_seconds > video.end or end_seconds > video.end:
+                pass
+            else:
+                was_cut = True
+                video = video.subclip(start_seconds, end_seconds)
+        elif not self.cut_checkbool.get():
+            pass
+        
+        if self.crop_checkbool.get():
+            video = vfx.crop(video,  x1=self.crop_ix1 , y1=self.crop_iy1 , x2=self.crop_ix2 , y2=self.crop_iy2)
+        elif not self.crop_checkbool.get():
+            pass
+        
+        
+        if self.resize_checkbool.get():
+            resize_value = int(self.resize_spinbox.get())
+            if resize_value == 100:
+                pass
+            else:
+                was_resized = True
+                video = video.resize(resize_value/100)
+        elif not self.resize_checkbool.get():
+            pass
+        
+        if self.convert_to_checkbool.get():
+            #"No Change", "mp4","ogv","webm","gif",   
+            
+            
+            
+            if conversion_value == "No Change" or conversion_value == current_ext:
+                #if current_ext != "gif":
+                cdc = codec_dict[current_ext]
+                save_path = save_path + "." + current_ext
+                #else:
+                #    save_path = save_path + "." + current_ext
+            else:
+                #if conversion_value != "gif":
+                cdc = codec_dict[conversion_value]
+                save_path = save_path + "." + conversion_value
+                #else:
+                #    save_path = save_path + ".gif" 
+                was_changed = True
+        elif not self.convert_to_checkbool.get():
+            cdc = codec_dict[current_ext]
     
     def edit_video(self, save_path):
         
@@ -950,9 +1109,7 @@ class ParameterSelection(ttk.Frame):
             
             
      
-class InfoFrameNav(ttk.Frame):  
-    def __init__(self, parent, canvas_width: int, canvas_height: int, **kwargs):
-        super().__init__(parent)
+
     
             
 
@@ -985,11 +1142,14 @@ class MediaFrameNav(ttk.Frame):
 
         self.zoom_cycle = 0
         
+        
         self.og_image_scale = 0
         self.current_frame = 0
         self.frame_seconds = 0
         
         self.video = None
+        self.gif = None
+        self.media = None
         self.current_img = None
         self.rect = None
         
@@ -999,6 +1159,7 @@ class MediaFrameNav(ttk.Frame):
         self.rect_h = None
         
         #General Info
+        self.file_name   = None
         self.fps         = None
         self.frame_count = None
         self.duration    = None
@@ -1054,7 +1215,7 @@ class MediaFrameNav(ttk.Frame):
         
         
         
-        self.file_info = tk.Label(self, text = "General: ")
+        #self.file_info = tk.Label(self, text = "General: ")
         
        
         
@@ -1089,6 +1250,9 @@ class MediaFrameNav(ttk.Frame):
             self.arb_params = kwargs["param_arbs"]
             
             
+        self.gen_info = None 
+        if kwargs.get("info_gen"):
+            self.gen_info = kwargs["info_gen"]
         
         #Placement
         
@@ -1149,85 +1313,74 @@ class MediaFrameNav(ttk.Frame):
             self.path_listbox.delete(0, tk.END)
         self.path_listbox.insert(0, filepath)
         
+
+        
     def set_frame(self, file_path):
         if not file_path:
             return
         
-        video_filetypes =  ["mp4", "mov", "webm", "ogv"]
+        
+        animated_filetypes =  ["mp4", "mov", "webm", "ogv", "gif"]
         self.current_ext = file_path.split(".")[-1]
+        self.file_name = "\\".join(file_path.split('/'))
         print("File Current EXT: {}".format(self.current_ext))
+        if self.current_ext in animated_filetypes:
+            if self.media != None:
+                self.media.release()
+            
+            self.media =  cv2.VideoCapture(file_path)
+            self.fps         = self.media.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
+            self.frame_count = int(self.media.get(cv2.CAP_PROP_FRAME_COUNT))
+            self.duration    = int(self.frame_count/self.fps)
+            self.width       = int(self.media.get(cv2.CAP_PROP_FRAME_WIDTH))  # float
+            self.height      = int(self.media.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
+            
+            #print("GIF FPS:{}".format(self.fps))
+            
+            self.current_frame = 0
+            self.media.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
+            
+            #img is a frame of the video
+            ret, img = self.media.read()
+            #conversion from CV2 Image Data a into a Pillow Image        
+            self.current_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            
+            
+            #self.img_label = ttk.Label(self, image = self.current_img)
+            #self.img_label.pack()
+            self.interval_spinbox.config(from_ = 1, to = int(self.frame_count/3))
+            
+    
+            #self.interval_spinbox.set(1)
+            
+            
+            
+            
+            self.total_frame_label.config(text = f"Total Frames: {self.frame_count}")
+            #print("Gif Width:{} Gif Height:{}".format(self.current_img.width, self.current_img.height))
+            #can be image width or height
+            #original image width before resize
+            self.og_image_scale = self.width
+            
+            #self.canvas.config(width=self.current_img.width, height=self.current_img.height)
+            
+            #self.nu_image_scale_w, self.nu_image_scale_h = self.og_image_scale_w, self.og_image_scale_h
+            # Set the affine transformation matrix to display the entire image.
+            self.zoom_fit(self.current_img.width, self.current_img.height)
+            # To display the image
+            self.draw_image(self.current_img)
+            
+            
+    
         
-        if self.current_ext in video_filetypes:
-            self.set_video_frame(file_path)
-        else:
-            self.set_gif_frame(file_path)
-        
-        
-        
-    def set_gif_frame(self, gif_path):
-        pass
-        
-    def set_video_frame(self, video_path):
-        #To open an frame of a video as file
-        if not video_path:
-            return
-        
-        self.video = cv2.VideoCapture(video_path)
-        
-        if not self.video.isOpened():
-            return
-        
-        
-        # Get General Info
-        self.fps         = self.video.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
-        self.frame_count = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.duration    = int(self.frame_count/self.fps)
-        self.width       = int(self.video.get(cv2.CAP_PROP_FRAME_WIDTH))  # float
-        self.height      = int(self.video.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
-        self.current_frame = 0
-        self.video.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
-        
-        #img is a frame of the video
-        ret, img = self.video.read()
-        #conversion from CV2 Image Data a into a Pillow Image        
-        self.current_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-        
-        
-        #self.img_label = ttk.Label(self, image = self.current_img)
-        #self.img_label.pack()
-        self.interval_spinbox.config(from_ = 1, to = int(self.frame_count/3))
-        
- 
-        #self.interval_spinbox.set(1)
-        
-        
-        
-        
-        self.total_frame_label.config(text = f"Total Frames: {self.frame_count}")
-       
-        
-        
-        
-        #can be image width or height
-        #original image width before resize
-        self.og_image_scale = self.width
-        
-        #self.canvas.config(width=self.current_img.width, height=self.current_img.height)
-        
-        #self.nu_image_scale_w, self.nu_image_scale_h = self.og_image_scale_w, self.og_image_scale_h
-        # Set the affine transformation matrix to display the entire image.
-        self.zoom_fit(self.current_img.width, self.current_img.height)
-        # To display the image
-        self.draw_image(self.current_img)
-        
-    def get_video_frame(self):
+    def get_frame(self):
         return self.current_frame
         
     def Next(self):
-        video_filetypes =  ["mp4", "mov", "webm", "ogv"]
+        animated_filetypes =  ["mp4", "mov", "webm", "ogv", "gif"]
         
         
-        if self.current_ext in video_filetypes:
+        if self.current_ext in animated_filetypes:
         
             if self.current_img == None:
                 return
@@ -1240,10 +1393,10 @@ class MediaFrameNav(ttk.Frame):
             if self.current_frame > self.frame_count - 1:
                 self.current_frame = self.current_frame%self.frame_count
             
-            self.video.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
+            self.media.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
             
             #img is a frame of the video
-            ret, img = self.video.read()
+            ret, img = self.media.read()
             #conversion from CV2 Image Data a into a Pillow Image        
             self.current_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
             
@@ -1259,11 +1412,14 @@ class MediaFrameNav(ttk.Frame):
             
             self.zoom_fit(self.current_img.width, self.current_img.height)
             self.update()
+
         
             
     def Back(self):
-        video_filetypes =  ["mp4", "mov", "webm", "ogv"]
-        if self.current_ext in video_filetypes:
+        animated_filetypes =  ["mp4", "mov", "webm", "ogv", "gif"]
+        
+        
+        if self.current_ext in animated_filetypes:
             if self.current_img == None:
                 return
             self.canvas.delete("image")
@@ -1273,10 +1429,10 @@ class MediaFrameNav(ttk.Frame):
             if self.current_frame < 0:
                 self.current_frame = abs(self.frame_count - self.frame_count) 
                 
-            self.video.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
+            self.media.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
             
             #img is a frame of the video
-            ret, img = self.video.read()
+            ret, img = self.media.read()
             #conversion from CV2 Image Data a into a Pillow Image        
             self.current_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
             
@@ -1291,6 +1447,7 @@ class MediaFrameNav(ttk.Frame):
             
             self.zoom_fit(self.current_img.width, self.current_img.height)
             self.update()
+
         
 
     
@@ -1314,7 +1471,6 @@ class MediaFrameNav(ttk.Frame):
                 )
         self.canvas.delete("rect")
         
-    
     def mouse_down_left(self, event):
         
         self.__old_event = event
@@ -1352,8 +1508,7 @@ class MediaFrameNav(ttk.Frame):
             if not self.rect:
                 #pass
                 self.rect = self.canvas.create_rectangle(self.rect_x, self.rect_y, 1, 1, outline='black', tags=("rect"))
-    
-        
+         
     def on_move_press(self, event):
         if self.current_img == None:
             return
@@ -1435,11 +1590,6 @@ class MediaFrameNav(ttk.Frame):
                     image_y2 = ih
                 )
                 
-    
-    
-                
-        
-
     def mouse_move_left(self, event):
         if self.current_img == None:
             return
@@ -1448,17 +1598,16 @@ class MediaFrameNav(ttk.Frame):
         self.redraw_image()
         #self.__old_event = event
 
-
-
     def mouse_double_click_left(self, event):
         if self.current_img == None:
             return
+        if self.current_ext != 'gif':
+            self.zoom_fit(self.current_img.width, self.current_img.height)
+            self.redraw_image() 
+        else:
+            self.zoom_fit(self.gif.width, self.gif.height)
+            self.redraw_image() 
         
-        self.zoom_fit(self.current_img.width, self.current_img.height)
-        self.redraw_image() 
-        
-        
-
     def mouse_wheel(self, event):
         
         
@@ -1502,9 +1651,13 @@ class MediaFrameNav(ttk.Frame):
         # Get the current scale
         scale = self.mat_affine[0, 0]
         
+        im_bounds_w = 0 
+        im_bounds_h = 0 
+        
+        
         im_bounds_w = self.current_img.width
         im_bounds_h = self.current_img.height
-        
+
         max_y = scale * im_bounds_h #3072
         max_x = scale * im_bounds_w #4096
         
@@ -1587,8 +1740,10 @@ class MediaFrameNav(ttk.Frame):
         # Convert coordinates from the image to the canvas by taking the inverse of the transformation matrix.
         mat_inv = np.linalg.inv(self.mat_affine)
         image_point = np.dot(mat_inv, (x, y, 1.))
+
         if  image_point[0] < 0 or image_point[1] < 0 or image_point[0] > self.current_img.width or image_point[1] > self.current_img.height:
             return []
+
 
         return image_point
 
@@ -1605,7 +1760,9 @@ class MediaFrameNav(ttk.Frame):
         if pil_image == None:
             return
 
+
         self.current_img = pil_image
+
 
         # Canvas size
         canvas_width = self.canvas.winfo_width()
@@ -1645,19 +1802,17 @@ class MediaFrameNav(ttk.Frame):
         self.image = im
         self.canvas.tag_raise("rect", "image")
         
-        
-        
-        
-        
-        
-        
-        
-
     def redraw_image(self):
         #Redraw the image
+        #if self.current_ext != "gif":
         if self.current_img == None:
             return
         self.draw_image(self.current_img)
+        #else:
+        #    if self.gif == None:
+        #        return
+        #    self.draw_image(self.gif)
+        
         
     
 

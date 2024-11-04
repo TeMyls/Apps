@@ -1,7 +1,7 @@
 # A basic GUI application using MoviePy, Pillow, OpenCV, and default Python modules
 Uses Tkinter and code from this ![repository](https://github.com/TeMyls/Simple-Scripts/tree/main/File%20Manipulation) to make a very simple app. </br>
 It uses OpenCV's python module, the Python Imaging Library, or PIL, MoviePy, and Numpy.
-The older version looks like and is main.py </br>
+The older version looks like and is FileManipOld.py </br>
 ![GUI Image](https://github.com/TeMyls/Apps/blob/main/Tkinter%20File%20Manipulation/feat.PNG)
 The version in progress looks like. Changes were made to include a crop option, as doing that without a visual guide is tedious. </br>
 It is in FileManip.py </br>

@@ -1,0 +1,10 @@
+ffmpeg==1.4
+ffmpeg-python==0.2.0
+ffmpy==0.3.0
+imageio==2.28.1
+imageio-ffmpeg==0.4.9
+moviepy==1.0.3
+numpy==1.24.3
+opencv-python==4.7.0.72
+pillow==10.2.0
+proglog==0.1.10

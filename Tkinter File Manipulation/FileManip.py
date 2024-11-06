@@ -425,8 +425,8 @@ class ParameterSelection(ttk.Frame):
         #Placement
         self.audio_label.grid(row = 3, column = 0, sticky="WE")
         self.audio_checkbutton.grid(row = 4, column = 0, sticky="N")
-        self.volume_scale.grid(row = 5, column = 0, sticky="N")
-        self.volume_label.grid(row = 6, column = 0, sticky="N")
+        self.volume_scale.grid(row = 5, column = 0, sticky="NEW", columnspan=2)
+        self.volume_label.grid(row = 6, column = 0, sticky="NEW", columnspan=2)
         #self.mute_checkbutton.grid(row = 2, column = 1, sticky="W")
         
         
@@ -434,21 +434,21 @@ class ParameterSelection(ttk.Frame):
         
         #Cut
         #Placement
-        self.cut_label.grid(row = 6, column = 0, sticky="WE")
-        self.cut_checkbutton.grid(row = 7, column = 0, sticky="N")
-        self.start_cut_label.grid(row = 8, column = 0, sticky="N")
-        self.end_cut_label.grid(row = 9, column = 0, sticky="N")
-        self.cut_start_spinbox.grid(row = 8, column = 1, sticky="N")
-        self.cut_end_spinbox.grid(row = 9, column = 1, sticky="N")
+        self.cut_label.grid(row = 7, column = 0, sticky="WE")
+        self.cut_checkbutton.grid(row = 8, column = 0, sticky="N")
+        self.start_cut_label.grid(row = 9, column = 0, sticky="N")
+        self.end_cut_label.grid(row = 10, column = 0, sticky="N")
+        self.cut_start_spinbox.grid(row = 9, column = 1, sticky="N")
+        self.cut_end_spinbox.grid(row = 10, column = 1, sticky="N")
         
         #Crop
         #Placement
-        self.crop_label.grid(row = 10, column = 0, sticky="WE")
-        self.crop_checkbutton.grid(row = 11, column = 0, sticky="N")
-        self.crop_canvas_xy1_coords.grid(row = 12, column = 0, sticky="N")
-        self.crop_canvas_xy2_coords.grid(row = 13, column = 0, sticky="N")
-        self.crop_image_xy1_coords.grid(row = 12, column = 1, sticky="N")
-        self.crop_image_xy2_coords.grid(row = 13, column = 1, sticky="N")
+        self.crop_label.grid(row = 11, column = 0, sticky="WE")
+        self.crop_checkbutton.grid(row = 12, column = 0, sticky="N")
+        self.crop_canvas_xy1_coords.grid(row = 13, column = 0, sticky="N")
+        self.crop_canvas_xy2_coords.grid(row = 14, column = 0, sticky="N")
+        self.crop_image_xy1_coords.grid(row = 13, column = 1, sticky="N")
+        self.crop_image_xy2_coords.grid(row = 14, column = 1, sticky="N")
         
         
         self.selected_file_path = ""
@@ -673,7 +673,7 @@ class ParameterSelection(ttk.Frame):
         
     
         
-        return [ self.volume_var, self.volume_label, self.volume_scale ]
+        return [ self.volume_label, self.volume_scale ]
       
     def setup_resize_widgets(self):
         #Parameters

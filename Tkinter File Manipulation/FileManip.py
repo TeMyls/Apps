@@ -8,7 +8,8 @@ from proglog import ProgressBarLogger
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import cv2
-import imageio
+#import imageio
+from imageio import mimsave
 import numpy as np  
 
 
@@ -113,7 +114,7 @@ class Application(tk.Tk):
         self.general_info.grid(row=0, column=0, sticky="N")
         self.frame_mavigator.grid(row=0, column=1, sticky="EW")
         self.parameter_arbiter.grid(row=0, column=2, sticky="N")
-        self.bar_progress.grid(row=1, column=0, sticky="EW")
+        self.bar_progress.grid(row=1, column=0, columnspan=3,sticky="EW")
         
         
         
@@ -134,7 +135,7 @@ class Application(tk.Tk):
                     ("mp4 files", "*.mp4"), 
                     ("mov files", "*.mov"), 
                     ("webm files", "*.webm"),
-                    ("ogv files", "*.ogv"),
+                    #("ogv files", "*.ogv"),
                     ("gif files", "*.gif")
                     #("gif files", "*.gif")
                     #("jpg files", ".jpg .jpeg"),
@@ -159,6 +160,11 @@ class Application(tk.Tk):
                 self.frame_mavigator.set_path_listbox(self.selected_file)
                 
                 self.current_directory = "\\".join(self.selected_file.split('/')[:-1]) + "\\"
+                
+                #closing all paramters
+                self.parameter_arbiter.has_file = False
+                self.parameter_arbiter.set_widget_states()
+                
                 self.parameter_arbiter.set_file(
                                                 "\\".join(self.selected_file.split('/')[-1:]), 
                                                 "\\".join(self.selected_file.split('/'))
@@ -347,6 +353,10 @@ class BarProgress(ttk.Frame):
         self.complete_progress_status_label = ttk.Label(self, text = "Idle")
             
         self.logger = self.MyBarLogger(self.complete_progress_bar, self.complete_progress_status_label, self)
+        
+        self.complete_progress_label.grid(row=10, column=0)
+        self.complete_progress_bar.grid(row=10, column=1)
+        self.complete_progress_status_label.grid(row=10, column=2)
             
     class MyBarLogger(ProgressBarLogger):
         #https://stackoverflow.com/questions/69423410/moviepy-getting-progress-bar-values
@@ -402,12 +412,15 @@ class ParameterSelection(ttk.Frame):
         
         self.crop_widgets = self.setup_crop_widgets()
         
+        self.extraction_widgets = self.setup_extractor_widgets()
+        
         
         self.convert_to_checkbutton.config(command=self.set_widget_states)
         self.audio_checkbutton.config(command=self.set_widget_states)
         self.resize_checkbutton.config(command=self.set_widget_states)
         self.cut_checkbutton.config(command=self.set_widget_states)
         self.crop_checkbutton.config(command=self.set_widget_states)
+        self.ext_checkbutton.config(command=self.set_widget_states)
         
         #Conversion
         #Placement
@@ -425,7 +438,7 @@ class ParameterSelection(ttk.Frame):
         #Placement
         self.audio_label.grid(row = 3, column = 0, sticky="WE")
         self.audio_checkbutton.grid(row = 4, column = 0, sticky="N")
-        self.volume_scale.grid(row = 5, column = 0, sticky="NEW", columnspan=2)
+        self.volume_scale.grid(row = 5, column = 0, sticky="EW", columnspan=2)
         self.volume_label.grid(row = 6, column = 0, sticky="NEW", columnspan=2)
         #self.mute_checkbutton.grid(row = 2, column = 1, sticky="W")
         
@@ -450,6 +463,14 @@ class ParameterSelection(ttk.Frame):
         self.crop_image_xy1_coords.grid(row = 13, column = 1, sticky="N")
         self.crop_image_xy2_coords.grid(row = 14, column = 1, sticky="N")
         
+        #Extraction
+        self.ext_label.grid(row = 15, column = 0, sticky="N")
+        self.ext_checkbutton.grid(row = 16, column = 0, sticky="N")
+        self.ext_frame_label.grid(row = 17, column = 0, sticky="N")
+        self.ext_combobox.grid(row = 18, column = 0, sticky="N")
+        
+        
+        
         
         self.selected_file_path = ""
         self.selected_file = ""
@@ -472,8 +493,15 @@ class ParameterSelection(ttk.Frame):
             
             
     def get_extension(self):
-        if self.convert_to_checkbool.get():
+        if self.ext_checkbool.get():
+            print("fo")
+         
+            return "." + self.ext_combobox.get()  
+          
+            
+        elif self.convert_to_checkbool.get():
             print("yo")
+            
             if self.convert_to_combobox.get() == "No Change":
                 print("yolo")
                 return "." + self.current_ext
@@ -488,9 +516,7 @@ class ParameterSelection(ttk.Frame):
             else:
                 print("foo")
                 return "."
-            
-            
-    
+               
     def hide_widget(self, widget):
         widget.grid_remove()
         
@@ -498,60 +524,64 @@ class ParameterSelection(ttk.Frame):
         widget.grid()
         
     def set_file(self, sel_file, full_file):
+        
         self.selected_file = sel_file
         self.selected_file_path = full_file
         self.current_ext = full_file.split(".")[-1]
-        self.has_file = True
+        self.convert_to_combobox["values"] = self.convert_to_options[self.current_ext]
         
+        self.has_file = True
         
     def set_widget_states(self):
         if self.has_file:
-        
-            if self.convert_to_checkbool.get():
-                #self.convert_to_checkbutton.config(text = "Enable")
-                for widget in self.conversion_widgets:
-                    self.show_widget(widget)
-            elif not self.convert_to_checkbool.get():
             
-                #self.convert_to_checkbutton.config(text = "Disabled")
-                for widget in  self.conversion_widgets:
-                    self.hide_widget(widget)
+            if not self.ext_checkbool.get():
+                if self.convert_to_checkbool.get():
+                    #self.convert_to_checkbutton.config(text = "Enable")
+                    for widget in self.conversion_widgets:
+                        self.show_widget(widget)
+                elif not self.convert_to_checkbool.get():
+                
+                    #self.convert_to_checkbutton.config(text = "Disabled")
+                    for widget in  self.conversion_widgets:
+                        self.hide_widget(widget)
                     
                     
+            if not self.ext_checkbool.get() and self.current_ext != 'gif':     
+                if self.audio_checkbool.get():
+                    #self.convert_to_checkbutton.config(text = "Enable")
+                    for widget in self.audio_widgets:
+                        self.show_widget(widget)
+                elif not self.audio_checkbool.get():
+                    self.volume_scale.set(100)
+                    #self.convert_to_checkbutton.config(text = "Disabled")
+                    for widget in self.audio_widgets:
+                        self.hide_widget(widget)
+            else:
+                self.audio_checkbool.set(False)
                     
-            if self.audio_checkbool.get():
-                #self.convert_to_checkbutton.config(text = "Enable")
-                for widget in self.audio_widgets:
-                    self.show_widget(widget)
-            elif not self.audio_checkbool.get():
-                self.volume_scale.set(100)
-                #self.convert_to_checkbutton.config(text = "Disabled")
-                for widget in self.audio_widgets:
-                    self.hide_widget(widget)
                     
-                    
-                    
+            
             if self.resize_checkbool.get():
                 #self.convert_to_checkbutton.config(text = "Enable")
                 for widget in self.resize_widgets:
                     self.show_widget(widget)
-            elif not self.resize_checkbool.get():
-                
+            elif not self.resize_checkbool.get():   
                 #self.convert_to_checkbutton.config(text = "Disabled")
                 for widget in self.resize_widgets:
                     self.hide_widget(widget)
                     
                     
-                    
-            if self.cut_checkbool.get():
-                #self.convert_to_checkbutton.config(text = "Enable")
-                for widget in self.cut_widgets:
-                    self.show_widget(widget)
-            elif not self.cut_checkbool.get():
-            
-                #self.convert_to_checkbutton.config(text = "Disabled")
-                for widget in self.cut_widgets:
-                    self.hide_widget(widget)
+            if not self.ext_checkbool.get():
+                if self.cut_checkbool.get():
+                    #self.convert_to_checkbutton.config(text = "Enable")
+                    for widget in self.cut_widgets:
+                        self.show_widget(widget)
+                elif not self.cut_checkbool.get():
+                
+                    #self.convert_to_checkbutton.config(text = "Disabled")
+                    for widget in self.cut_widgets:
+                        self.hide_widget(widget)
                     
                     
                     
@@ -565,12 +595,42 @@ class ParameterSelection(ttk.Frame):
                 for widget in self.crop_widgets:
                     self.hide_widget(widget)
                     
+                    
+            if self.ext_checkbool.get():
+                self.convert_to_checkbool.set(False)
+                self.audio_checkbool.set(False)
+                self.cut_checkbool.set(False)
+
+                
+                for widget in  self.conversion_widgets:
+                    self.hide_widget(widget)
+                
+                
+                for widget in self.audio_widgets:
+                    self.hide_widget(widget)
+                    
+
+                for widget in self.cut_widgets:
+                    self.hide_widget(widget)
+                    
+
+                
+                for widget in self.extraction_widgets:
+                    self.show_widget(widget)
+                    
+            elif not self.ext_checkbool.get():
+                #self.convert_to_checkbutton.config(text = "Disabled")
+                for widget in self.extraction_widgets:
+                    self.hide_widget(widget)
+                
+                    
         else:
             self.convert_to_checkbool.set(False)
             self.audio_checkbool.set(False)
             self.resize_checkbool.set(False)
             self.cut_checkbool.set(False)
             self.crop_checkbool.set(False)
+            self.ext_checkbool.set(False)
    
             for widget in  self.conversion_widgets:
                 self.hide_widget(widget)
@@ -595,6 +655,9 @@ class ParameterSelection(ttk.Frame):
 
             for widget in self.crop_widgets:
                 self.hide_widget(widget)  
+                
+            for widget in self.extraction_widgets:
+                    self.hide_widget(widget)
     
     def setup_conversion_widgets(self):
         
@@ -603,10 +666,58 @@ class ParameterSelection(ttk.Frame):
         self.convert_to_combobox = ttk.Combobox(self, width = 15,  textvariable = tk.StringVar()) 
         self.convert_to_combobox["values"] = (  "No Change",
                                                 "mp4",
-                                                "ogv",
+                                                "mov",
+                                                #"ogv",
                                                 "webm",
                                                 "gif",
                                               )
+        
+        self.convert_to_options = {
+            
+            'gif':(
+                    "No Change",
+                    "mp4",
+                    #"ogv",
+                    "mov",
+                    "webm"
+                   ),
+            
+            
+            "mp4": (
+                    "No Change",
+                    #"ogv",
+                    "mov",
+                    "webm",
+                    "gif"
+                    ),
+            
+            "mov": (
+                    "No Change",
+                    "mp4"
+                    #"ogv",
+                    "webm",
+                    "gif"
+                    ),
+            '''
+            "ogv":  (  
+                    "No Change",
+                    "mp4",
+                    "mov",
+                    "webm",
+                    "gif",
+                    ),
+            '''
+            
+            "webm": (
+                    "No Change",
+                    "mp4",
+                    "mov",
+                    #"ogv",
+                    "webm",
+                    "gif"
+                    )
+            
+                                        }
     
         
         #Enablement Bools
@@ -642,13 +753,14 @@ class ParameterSelection(ttk.Frame):
         #                                        ) 
         self.volume_var = tk.IntVar()
         
-        self.volume_label = ttk.Label(self, text = "Volume Percentage")
+        self.volume_label = ttk.Label(self, text = "Volume Percentage: 100")
         
         self.volume_scale = ttk.Scale(self,
                                       variable = self.volume_var,
                                       from_ = 0,
                                       to = 200,
-                                      orient = "horizontal"
+                                      orient = "horizontal",
+                                      command = self.set_volume_label
                                       )
         
         self.volume_scale.set(100)
@@ -799,32 +911,34 @@ class ParameterSelection(ttk.Frame):
     def setup_extractor_widgets(self):
         #Parameters
         
-        self.ext_frame = ttk.Label(self, text = "Selected_Frame: 0")
+        self.ext_frame_label = ttk.Label(self, text = "Selected_Frame: 0")
         self.ext_combobox = ttk.Combobox(self, width = 15,  textvariable = tk.StringVar()) 
-        self.ext_combobox["values"] = ( "No Change",
+        self.ext_combobox["values"] = ( "jpg",
                                         "png",
-                                        "jpg"
-   
-                                    )
-        
-
+                                        )
+        self.ext_frame = 0
+        self.ext_combobox.current(0)
         
         
         
         #Enablement Bools
-        self.ext_label = ttk.Label(self, text = "Image Frame")
+        self.ext_label = ttk.Label(self, text = "Extract Image")
  
         
         self.ext_checkbool = tk.BooleanVar()
         self.ext_checkbool.set(False)
         
         self.ext_checkbutton = ttk.Checkbutton(self,   
-                                                variable=self.crop_checkbool,
+                                                variable=self.ext_checkbool,
                                                 text= "Enabled"
                                      
                                                 ) 
 
-        return [ self.ext_frame, self.ext_combobox ]
+        return [ self.ext_frame_label, self.ext_combobox ]
+    
+    def update_current_ext_frame_label(self, current_frame):
+        self.ext_frame = current_frame
+        self.ext_frame_label.config(text=f"Selected_Frame: {self.ext_frame}")
     
     def update_crop_widget_labels(self, **kwargs):
         '''
@@ -858,6 +972,9 @@ class ParameterSelection(ttk.Frame):
             self.crop_ix2  =  round(kwargs["image_x2"])
         if kwargs.get("image_y2"):
             self.crop_iy2  =  round(kwargs["image_y2"])
+            
+            
+        
         
         if self.crop_cx1 == -1:
             self.crop_canvas_xy1_coords.config(text = "Canvas X1: 0, Canvas Y1: 0")
@@ -873,16 +990,9 @@ class ParameterSelection(ttk.Frame):
         
         #print(kwargs)
     
-    def _apply_changes(self, save_path):
-        video_filetypes =  ["mp4", "mov", "webm", "ogv"]
-        if self.selected_file:
-            
-            if  self.current_ext in video_filetypes:
-                self.edit_video(save_path)
-            else:
-                messagebox.showerror("showinfo", "Gif Stuff not Implemented yet")
-                pass
-                #self.edit_gif(save_path)
+    def set_volume_label(self, *args):
+        self.volume_label.config( text = f"Volume Percentage: {self.volume_var.get()}")
+        
                 
     def apply_changes(self, save_path):
         animated_filetypes =  ["mp4", "mov", "webm", "ogv", "gif"]
@@ -895,301 +1005,15 @@ class ParameterSelection(ttk.Frame):
                 pass
                 #self.edit_gif(save_path)
         
-    def edit_gif(self, save_path):
-        #if True:
-        #    return
-        
-        was_converted = False
-        was_cut = False
-        was_tuned = False
-        was_resized = False
-        was_cropped = False
-        codec_dict = {'mp4':'libx264','ogv':'libtheora','webm':'libvpx', "mov":'libx264'}
-        cdc = ""
-        
-        current_ext = self.current_ext
-        save_path = path_correction(save_path)
-        selected_file = path_correction(self.selected_file_path)
-        start_seconds = float(self.cut_start_spinbox.get()) 
-        end_seconds =  float(self.cut_end_spinbox.get()) 
-        conversion_value = self.convert_to_combobox.get()
-        
-        print()
-        print(save_path)
-        print(self.selected_file_path)
-        
-        video = VideoFileClip(
-                selected_file#,
-                #audio = was_tuned
-                
-            )
-        
-
-        video = VideoFileClip(selected_file)
-        if self.audio_checkbool.get():
-            pass
-        elif not self.audio_checkbool.get():
-            pass
-        
-        
-        
-        if self.cut_checkbool.get():
-            if start_seconds >= end_seconds or start_seconds < 0 or end_seconds < 0 or start_seconds > video.end or end_seconds > video.end:
-                pass
-            else:
-                was_cut = True
-                video = video.subclip(start_seconds, end_seconds)
-        elif not self.cut_checkbool.get():
-            pass
-        
-        if self.crop_checkbool.get():
-            video = vfx.crop(video,  x1=self.crop_ix1 , y1=self.crop_iy1 , x2=self.crop_ix2 , y2=self.crop_iy2)
-        elif not self.crop_checkbool.get():
-            pass
-        
-        
-        if self.resize_checkbool.get():
-            resize_value = int(self.resize_spinbox.get())
-            if resize_value == 100:
-                pass
-            else:
-                was_resized = True
-                video = video.resize(resize_value/100)
-        elif not self.resize_checkbool.get():
-            pass
-        
-        if self.convert_to_checkbool.get():
-            #"No Change", "mp4","ogv","webm","gif",   
-            
-            
-            
-            if conversion_value == "No Change" or conversion_value == current_ext:
-                #if current_ext != "gif":
-                cdc = codec_dict[current_ext]
-                save_path = save_path + "." + current_ext
-                #else:
-                #    save_path = save_path + "." + current_ext
-            else:
-                #if conversion_value != "gif":
-                cdc = codec_dict[conversion_value]
-                save_path = save_path + "." + conversion_value
-                #else:
-                #    save_path = save_path + ".gif" 
-                was_converted = True
-        elif not self.convert_to_checkbool.get():
-            cdc = codec_dict[current_ext]
     
-    def _edit_video(self, save_path):
-        
+
+    def gif_image_maker(self, **kwargs):
         was_converted = False
         was_cut = False
         was_tuned = False
         was_resized = False
         was_cropped = False
-        codec_dict = {'mp4':'libx264','ogv':'libtheora','webm':'libvpx', "mov":'libx264'}
-        cdc = ""
-        
-        current_ext = self.current_ext
-        save_path = path_correction(save_path)
-        selected_file = path_correction(self.selected_file_path)
-        start_seconds = float(self.cut_start_spinbox.get()) 
-        end_seconds =  float(self.cut_end_spinbox.get()) 
-        conversion_value = self.convert_to_combobox.get()
-        
-        print()
-        print(save_path)
-        print(self.selected_file_path)
-        
-        video = VideoFileClip(
-                selected_file#,
-                #audio = was_tuned
-                
-            )
-        
-
-        video = VideoFileClip(selected_file)
-        if self.audio_checkbool.get():
-            was_tuned = not self.mute_checkbool.get() 
-            if was_tuned:
-                video.set_audio(None)
-            else:
-                pass
-        elif not self.audio_checkbool.get():
-            pass
-        
-        if self.cut_checkbool.get():
-            
-            if start_seconds >= end_seconds or start_seconds < 0 or end_seconds < 0 or start_seconds > video.end or end_seconds > video.end:
-                pass
-            else:
-                was_cut = True
-                video = video.subclip(start_seconds, end_seconds)
-        elif not self.cut_checkbool.get():
-            pass
-        
-        if self.crop_checkbool.get():
-            video = vfx.crop(video,  x1=self.crop_ix1 , y1=self.crop_iy1 , x2=self.crop_ix2 , y2=self.crop_iy2)
-        elif not self.crop_checkbool.get():
-            pass
-        
-        
-        if self.resize_checkbool.get():
-            resize_value = int(self.resize_spinbox.get())
-            if resize_value == 100:
-                pass
-            else:
-                was_resized = True
-                video = video.resize(resize_value/100)
-        elif not self.resize_checkbool.get():
-            pass
-        
-        if self.convert_to_checkbool.get():
-            #"No Change", "mp4","ogv","webm","gif",   
-            
-            
-            
-            if conversion_value == "No Change" or conversion_value == current_ext:
-                #if current_ext != "gif":
-                cdc = codec_dict[current_ext]
-                save_path = save_path + "." + current_ext
-                #else:
-                #    save_path = save_path + "." + current_ext
-            else:
-                #if conversion_value != "gif":
-                cdc = codec_dict[conversion_value]
-                save_path = save_path + "." + conversion_value
-                #else:
-                #    save_path = save_path + ".gif" 
-                was_converted = True
-        elif not self.convert_to_checkbool.get():
-            cdc = codec_dict[current_ext]
-                
-                
-                
-        
-                
-                
-        
-                
-                
-                
-        
-                
-                
-                
-        
-        
-        if not was_converted and not was_cut and not was_tuned and not was_resized:
-            messagebox.showerror("showinfo", "Make some type of change")
-        else:
-            if conversion_value == "gif":
-                #if converting a video to a gif
-                
-                #Using OpenCV's stuff
-                video.close()
-                
-                #self.complete_progress_status_label["text"] =  "Loading"
-                
-                #https://gist.github.com/laygond/d62df2f2757671dea78af25a061bf234#file-writevideofromimages-py-L25
-                #https://theailearner.com/2021/05/29/creating-gif-from-video-using-opencv-and-imageio/
-                #https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
-                cap = cv2.VideoCapture(selected_file)
-                # Get General Info
-                fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
-                frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            
-                duration    = int(frame_count/fps)
-                width       = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # float
-                height      = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
-                
-                image_list = []
-                
-                
-                
-                
-
-                print("OPENCV LOOP")
-                start_time = 0
-                end_time = frame_count
-                if was_cut:
-                    start_time = start_seconds * fps
-                    end_time = end_seconds * fps
-                
-                
-                i = 0
-                
-                while True:
-                    is_reading, frame = cap.read()
-                    if not is_reading:
-                        break
-                    
-                    
-                    if i >= start_time and i <= end_time:
-                        frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        
-                        if was_resized:
-                            rw = int(width * (resize_value/100))
-                            rh = int(height * (resize_value/100))
-                            frame_rgb = cv2.resize(frame_rgb, (rw, rh ))
-                            
-                        image_list.append(frame_rgb)
-                        self.complete_progress_bar['value'] = int((i/(end_time - start_time)) * 100)
-                        
-                    
-                    
-                    i += 1
-                    
-                    #self.update_idletasks()
-                
-                    
-                    
-
-                
-                milliseconds = (1/fps) * 1000
-                        
-                print(fps, "\n", milliseconds)
-                
-                cap.release()
-                #self.complete_progress_status_label["text"] = "Saving"
-                
-                imageio.mimsave(save_path, image_list, duration = milliseconds)
-                #self.complete_progress_status_label["text"] = "Finished"
-                
-                #video.write_gif(save_path, progress_bar = True)
-                    
-            else:
-                #if current_ext == "gif" and conversion_value in codec_dict: 
-                    #Using MoviePy's VideoFileClip
-                
-                cap = cv2.VideoCapture(selected_file)
-                # Get General Info
-                fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
-                frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                cap.release()
-                #vid_size = os.path.getsize(selected_file)/1000000000
-                vid_size = os.path.getsize(selected_file)
-            
-                #print(vid_size)
-                #brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
-                brate = (vid_size * 8) / (frame_count / fps)
-                #print(brate)
-                
-                video.write_videofile(save_path, 
-                                    codec = cdc, 
-                                    #logger = s_logger, 
-                                    bitrate = str(brate)
-                )
-                                                        
-                                                        
-                                                        
-                        #self.complete_progress_status_label["text"] = "Finished"
-
-    def gif_maker(self, **kwargs):
-        was_converted = False
-        was_cut = False
-        was_tuned = False
-        was_resized = False
-        was_cropped = False
+        was_extracted = False
         
         codec_dict = {}
         cdc = ''
@@ -1200,6 +1024,9 @@ class ParameterSelection(ttk.Frame):
         start_seconds = 0.0
         end_seconds =  0.0
         conversion_value = ''
+        resize_value = 0
+        extraction_frame = 0
+        
         
         media = None
         
@@ -1208,48 +1035,261 @@ class ParameterSelection(ttk.Frame):
         
         
         if kwargs.get("was_converted"):
-            was_converted =  round(kwargs["was_converted"])
+            was_converted =  kwargs["was_converted"]
         if kwargs.get("was_cut"):
-            was_cut =  round(kwargs["was_cut"])
+            was_cut =  kwargs["was_cut"]
         if kwargs.get("was_tuned"):
-            was_tuned =  round(kwargs["was_tuned"])
+            was_tuned =  kwargs["was_tuned"]
         if kwargs.get("was_resized"):
-            was_resized =  round(kwargs["was_resized"])
+            was_resized =  kwargs["was_resized"]
         if kwargs.get("was_cropped"):
-            was_cropped =  round(kwargs["was_cropped"])
+            was_cropped =  kwargs["was_cropped"]
             
         if kwargs.get("codec_dict"):
-            codec_dict =  round(kwargs["codec_dict"])
+            codec_dict =  kwargs["codec_dict"]
         if kwargs.get("cdc"):
-            cdc =  round(kwargs["cdc"])
+            cdc =  kwargs["cdc"]
             
         if kwargs.get("current_ext"):
-            current_ext =  round(kwargs["current_ext"])
+            current_ext =  kwargs["current_ext"]
         if kwargs.get("save_path"):
-            save_path =  round(kwargs["save_path"])
+            save_path =  kwargs["save_path"]
         if kwargs.get("selected_file"):
-            selected_file =  round(kwargs["selected_file"])
+            selected_file =  kwargs["selected_file"]
         if kwargs.get("start_seconds"):
-            start_seconds =  round(kwargs["start_seconds"])
+            start_seconds =  kwargs["start_seconds"]
         if kwargs.get("end_seconds"):
-            end_seconds =  round(kwargs["end_seconds"])
+            end_seconds =  kwargs["end_seconds"]
         if kwargs.get("conversion_value"):
-            conversion_value =  round(kwargs["conversion_value"])
+            conversion_value =  kwargs["conversion_value"]
+        if kwargs.get("resize_value"):
+            resize_value =  kwargs["resize_value"]
+        if kwargs.get("extraction_frame"):
+            extraction_frame =  kwargs["extraction_frame"]
             
-        if kwargs.get("gif"):
-            conversion_value =  round(kwargs["conversion_value"])
+        if kwargs.get("media"):
+            media =  kwargs["media"]
+        
+        
+
+                
+        
+        
+        #self.complete_progress_status_label["text"] =  "Loading"
+        
+        #https://gist.github.com/laygond/d62df2f2757671dea78af25a061bf234#file-writevideofromimages-py-L25
+        #https://theailearner.com/2021/05/29/creating-gif-from-video-using-opencv-and-imageio/
+        #https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
+        cap = cv2.VideoCapture(selected_file)
+        # Get General Info
+        fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    
+        duration    = int(frame_count/fps)
+        width       = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # float
+        height      = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
+        
+        image_list = []
+        
+        
+        
+        
+
+        print("OPENCV LOOP")
+        
+        if not was_extracted:
+            #Using OpenCV's stuff
+            media.close()
+            
+            start_frame = 0
+            end_frame = frame_count
+            if was_cut:
+                start_frame = start_seconds * fps
+                end_frame = end_seconds * fps
+            
+            
+            frame_current = start_frame
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_current)
+            
+            while True:
+                is_reading, frame = cap.read()
+                if not is_reading:
+                    break
+                
+                if frame_current > end_frame:
+                    break
+                
+                
+                if frame_current >= start_frame and frame_current <= end_frame:
+                    frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    if was_cropped:
+                        #x1=self.crop_ix1 , y1=self.crop_iy1 , x2=self.crop_ix2 , y2=self.crop_iy2
+                        frame_rgb = frame_rgb[self.crop_iy1:self.crop_iy2, self.crop_ix1:self.crop_ix2]
+                    
+                    if was_resized:
+                        rw = int(width * (resize_value/100))
+                        rh = int(height * (resize_value/100))
+                        frame_rgb = cv2.resize(frame_rgb, (rw, rh ))
+                    
+                    frame_rgb = Image.fromarray(frame_rgb)
+                    image_list.append(frame_rgb)
+                
+                
+                #self.complete_progress_bar['value'] = int((frame_current/(end_frame - start_frame)) * 100)
+                    
+                
+                
+                frame_current += 1
+                
+                #self.update_idletasks()
+            
+                
+                
+
+            
+            milliseconds = (fps**-1) * 1000
+                    
+            print(fps, "\n", milliseconds)
+            
+            cap.release()
+            #self.complete_progress_status_label["text"] = "Saving"
+            
+            
+            #if PIL's Image.fromarray isn't used
+            #imageio.mimsave(save_path, image_list, duration = milliseconds)
+            #if PIL's Image.fromarray is used
+            image_list[0].save(save_path, format = "GIF", save_all=True, append_images=image_list,  duration = milliseconds, loop=0)
+            #self.complete_progress_status_label["text"] = "Finished"
+            
+            #video.write_gif(save_path, progress_bar = True)
+        else:
+            
+            '''
+            cap.set(cv2.CAP_PROP_POS_FRAMES, extraction_frame)
+            is_reading, frame = cap.read()
+            frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            if was_cropped:
+                #x1=self.crop_ix1 , y1=self.crop_iy1 , x2=self.crop_ix2 , y2=self.crop_iy2
+                frame_rgb = frame_rgb[self.crop_iy1:self.crop_iy2, self.crop_ix1:self.crop_ix2]
+            
+            if was_resized:
+                rw = int(width * (resize_value/100))
+                rh = int(height * (resize_value/100))
+                frame_rgb = cv2.resize(frame_rgb, (rw, rh ))
+            
+            frame_rgb = Image.fromarray(frame_rgb)
+            cap.release()
+            #frame_rgb.save(save_path + "." + self.ext_combobox.get())
+            cv2.imwrite(save_path + "." + self.ext_combobox.get(), frame_rgb)
+            print("done")
+            '''
+            if self.ext_combobox.get() == "png":
+                media.save_frame(save_path, t = extraction_frame * fps, withmask=True)
+            else:
+                media.save_frame(save_path, t = extraction_frame * fps)
+                
+            media.close()
+            cap.release()
+            
+            
+            
             
         
         
-        
+            
+            
         
     
         
-        pass
-        
     def video_maker(self,  **kwargs):
+        was_converted = False
+        was_cut = False
+        was_tuned = False
+        was_resized = False
+        was_cropped = False
+        was_extracted = False
         
-        pass
+        codec_dict = {}
+        cdc = ''
+        
+        current_ext = ''
+        save_path = ''
+        selected_file = ''
+        start_seconds = 0.0
+        end_seconds =  0.0
+        conversion_value = ''
+        resize_value = 0
+        extraction_frame = 0
+        
+        
+        media = None
+        
+        
+        
+        
+        
+        if kwargs.get("was_converted"):
+            was_converted =  kwargs["was_converted"]
+        if kwargs.get("was_cut"):
+            was_cut =  kwargs["was_cut"]
+        if kwargs.get("was_tuned"):
+            was_tuned =  kwargs["was_tuned"]
+        if kwargs.get("was_resized"):
+            was_resized =  kwargs["was_resized"]
+        if kwargs.get("was_cropped"):
+            was_cropped =  kwargs["was_cropped"]
+            
+        if kwargs.get("codec_dict"):
+            codec_dict =  kwargs["codec_dict"]
+        if kwargs.get("cdc"):
+            cdc =  kwargs["cdc"]
+            
+        if kwargs.get("current_ext"):
+            current_ext =  kwargs["current_ext"]
+        if kwargs.get("save_path"):
+            save_path =  kwargs["save_path"]
+        if kwargs.get("selected_file"):
+            selected_file =  kwargs["selected_file"]
+        if kwargs.get("start_seconds"):
+            start_seconds =  kwargs["start_seconds"]
+        if kwargs.get("end_seconds"):
+            end_seconds =  kwargs["end_seconds"]
+        if kwargs.get("conversion_value"):
+            conversion_value =  kwargs["conversion_value"]
+        if kwargs.get("resize_value"):
+            resize_value =  kwargs["resize_value"]
+        if kwargs.get("extraction_frame"):
+            extraction_frame =  kwargs["extraction_frame"]
+            
+        if kwargs.get("media"):
+            media =  kwargs["media"]
+        
+        cap = cv2.VideoCapture(selected_file)
+        # Get General Info
+        fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        duration    = int(frame_count/fps)
+        cap.release()
+        #vid_size = os.path.getsize(selected_file)/1000000000
+        vid_size = os.path.getsize(selected_file)
+    
+        #print(vid_size)
+        #brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
+        if was_cut:
+            frame_count = (end_seconds * fps) - (start_seconds * fps)
+            
+            
+        
+            
+        brate = (vid_size * 8) / (frame_count / fps)
+        #print(brate)
+        
+        media.write_videofile(save_path, 
+                            codec = cdc, 
+                            #logger = s_logger, 
+                            bitrate = str(brate)
+        )
+        
             
     def edit_animated_media(self, save_path):
         
@@ -1258,15 +1298,21 @@ class ParameterSelection(ttk.Frame):
         was_tuned = False
         was_resized = False
         was_cropped = False
+        was_extracted = False
         codec_dict = {'mp4':'libx264','ogv':'libtheora','webm':'libvpx', "mov":'libx264'}
         cdc = ""
         
         current_ext = self.current_ext
         save_path = path_correction(save_path)
         selected_file = path_correction(self.selected_file_path)
+        
         start_seconds = float(self.cut_start_spinbox.get()) 
         end_seconds =  float(self.cut_end_spinbox.get()) 
         conversion_value = self.convert_to_combobox.get()
+        resize_value = int(self.resize_spinbox.get())
+        volume_change = self.volume_scale.get()
+        extraction_ext = self.ext_combobox.get()
+        extraction_frame = self.ext_frame
         
         print()
         print(save_path)
@@ -1274,309 +1320,212 @@ class ParameterSelection(ttk.Frame):
         
  
         
+        
 
         video = VideoFileClip(selected_file)
-        if current_ext != "gif":
-            if self.audio_checkbool.get():
-                #was_tuned = not self.mute_checkbool.get() 
-                volume_change = self.volume_scale.get()
-                if volume_change == 100:
+        if not self.ext_checkbool.get():
+            if current_ext != "gif":
+                if self.audio_checkbool.get():
+                    #was_tuned = not self.mute_checkbool.get() 
+                
+                    if volume_change == 100:
+                        pass
+                    elif volume_change == 0:
+                        video.set_audio(None)
+                    
+                    else:
+                        video = afx.volumex(video, volume_change/100)
+                        was_tuned = True
+                elif not self.audio_checkbool.get():
+                    pass
+        
+        if not self.ext_checkbool.get():
+            if self.cut_checkbool.get():
+                
+                if start_seconds >= end_seconds or start_seconds < 0 or end_seconds < 0 or start_seconds > video.end or end_seconds > video.end:
                     pass
                 else:
-                    video = afx.volumex(video, volume_change/100)
-                    was_tuned = True
-            elif not self.audio_checkbool.get():
+                    was_cut = True
+                    video = video.subclip(start_seconds, end_seconds)
+            elif not self.cut_checkbool.get():
                 pass
-        
-        
-        if self.cut_checkbool.get():
             
-            if start_seconds >= end_seconds or start_seconds < 0 or end_seconds < 0 or start_seconds > video.end or end_seconds > video.end:
+            if self.crop_checkbool.get():
+                video = vfx.crop(video,  x1=self.crop_ix1 , y1=self.crop_iy1 , x2=self.crop_ix2 , y2=self.crop_iy2)
+                was_cropped = True
+            elif not self.crop_checkbool.get():
                 pass
-            else:
-                was_cut = True
-                video = video.subclip(start_seconds, end_seconds)
-        elif not self.cut_checkbool.get():
-            pass
-        
-        if self.crop_checkbool.get():
-            video = vfx.crop(video,  x1=self.crop_ix1 , y1=self.crop_iy1 , x2=self.crop_ix2 , y2=self.crop_iy2)
-            was_cropped = True
-        elif not self.crop_checkbool.get():
-            pass
         
         
         if self.resize_checkbool.get():
-            resize_value = int(self.resize_spinbox.get())
             if resize_value == 100:
                 pass
             else:
                 was_resized = True
                 video = video.resize(resize_value/100)
+                
         elif not self.resize_checkbool.get():
             pass
         
-        if self.convert_to_checkbool.get():
-            #"No Change", "mp4","ogv","webm","gif",   
-            if conversion_value == "No Change" or conversion_value == current_ext:
+        if not self.ext_checkbool.get():
+            if self.convert_to_checkbool.get():
+                #"No Change", "mp4","ogv","webm","gif",   
+                if conversion_value == "No Change" or conversion_value == current_ext:
+                    if current_ext != "gif":
+                        cdc = codec_dict[current_ext]
+                        save_path = save_path #+ "." + current_ext
+                    else:
+                        save_path = save_path #+ "." + current_ext
+                else:
+                    if conversion_value != "gif":
+                        cdc = codec_dict[conversion_value]
+                        save_path = save_path #+ "." + conversion_value
+                    else:
+                        save_path = save_path #+ ".gif" 
+                    was_converted = True
+            elif not self.convert_to_checkbool.get():
                 if current_ext != "gif":
                     cdc = codec_dict[current_ext]
-                    save_path = save_path #+ "." + current_ext
-                else:
-                    save_path = save_path #+ "." + current_ext
-            else:
-                #if conversion_value != "gif":
-                cdc = codec_dict[conversion_value]
-                save_path = save_path #+ "." + conversion_value
-                #else:
-                #    save_path = save_path + ".gif" 
-                was_converted = True
-        elif not self.convert_to_checkbool.get():
-            if current_ext != "gif":
-                cdc = codec_dict[current_ext]
-                
-                
-                
         
+        if self.ext_checkbool.get():
+            was_extracted = True
                 
                 
-        
-                
-                
-                
-        
-                
-                
-                
-        
-        
-        if not was_converted and not was_cut and not was_tuned and not was_resized and not was_cropped:
+
+        if not was_converted and not was_cut and not was_tuned and not was_resized and not was_cropped and not was_extracted:
             messagebox.showerror("showinfo", "Make some type of change")
         else:
-            
-            if current_ext != 'gif':
-                if conversion_value == "gif":
-                    #if converting a video to a gif
-                
-                    #Using OpenCV's stuff
-                    video.close()
-                    
-                    #self.complete_progress_status_label["text"] =  "Loading"
-                    
-                    #https://gist.github.com/laygond/d62df2f2757671dea78af25a061bf234#file-writevideofromimages-py-L25
-                    #https://theailearner.com/2021/05/29/creating-gif-from-video-using-opencv-and-imageio/
-                    #https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
-                    cap = cv2.VideoCapture(selected_file)
-                    # Get General Info
-                    fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
-                    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                
-                    duration    = int(frame_count/fps)
-                    width       = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # float
-                    height      = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
-                    
-                    image_list = []
-                    
-                    
-                    
-                    
-
-                    print("OPENCV LOOP")
-                    start_frame = 0
-                    end_frame = frame_count
-                    if was_cut:
-                        start_frame = start_seconds * fps
-                        end_frame = end_seconds * fps
-                    
-                    
-                    frame_current = 0
-                    
-                    while True:
-                        is_reading, frame = cap.read()
-                        if not is_reading:
-                            break
-                        
-                        
-                        if frame_current >= start_frame and frame_current <= end_frame:
-                            frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                            if was_cropped:
-                                #x1=self.crop_ix1 , y1=self.crop_iy1 , x2=self.crop_ix2 , y2=self.crop_iy2
-                                frame_rgb = frame_rgb[self.crop_iy1:self.crop_iy2, self.crop_ix1:self.crop_ix2]
+            if not was_extracted:
+                if current_ext != 'gif':
+                    if conversion_value == "gif":
+                        self.gif_image_maker(
+                            was_converted = was_converted,
+                            was_cut = was_cut,
+                            was_tuned = was_tuned,
+                            was_resized = was_resized,
+                            was_cropped = was_cropped,
+                            was_extracted = was_extracted,
                             
-                            if was_resized:
-                                rw = int(width * (resize_value/100))
-                                rh = int(height * (resize_value/100))
-                                frame_rgb = cv2.resize(frame_rgb, (rw, rh ))
+                            codec_dict = codec_dict,
+                            cdc = cdc,
                             
-                            frame_rgb = Image.fromarray(frame_rgb)
-                            image_list.append(frame_rgb)
-                            #self.complete_progress_bar['value'] = int((i/(end_time - start_time)) * 100)
+                            current_ext = current_ext,
+                            save_path = save_path,
+                            selected_file = selected_file,
+                            start_seconds = start_seconds,
+                            end_seconds =  end_seconds,
+                            conversion_value = conversion_value,
+                            resize_value = resize_value,
+                            extraction_ext = extraction_ext,
+                            extraction_frame = extraction_frame,
+                            media = video
+                        )
+                        
+                        
+                        
+                        
+                        
+                    else:
+                        #generic video edit
+                        self.video_maker(
+                            was_converted = was_converted,
+                            was_cut = was_cut,
+                            was_tuned = was_tuned,
+                            was_resized = was_resized,
+                            was_cropped = was_cropped,
+                            was_extracted = was_extracted,
                             
-                        
-                        
-                        frame_current += 1
-                        
-                        #self.update_idletasks()
-                    
-                        
-                        
-
-                    
-                    milliseconds = (fps**-1) * 1000
+                            codec_dict = codec_dict,
+                            cdc = cdc,
                             
-                    print(fps, "\n", milliseconds)
-                    
-                    cap.release()
-                    #self.complete_progress_status_label["text"] = "Saving"
-                    
-                    
-                    #if PIL's Image.fromarray isn't used
-                    #imageio.mimsave(save_path, image_list, duration = milliseconds)
-                    #if PIL's Image.fromarray is used
-                    image_list[0].save(save_path, format = "GIF", save_all=True, append_images=image_list,  duration = milliseconds, loop=0)
-                    
-                    
-                    #self.complete_progress_status_label["text"] = "Finished"
-                    
-                    #video.write_gif(save_path, progress_bar = True)
-                else:
-                    #generic video edit
-                    cap = cv2.VideoCapture(selected_file)
-                    # Get General Info
-                    fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
-                    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    duration    = int(frame_count/fps)
-                    cap.release()
-                    #vid_size = os.path.getsize(selected_file)/1000000000
-                    vid_size = os.path.getsize(selected_file)
-                
-                    #print(vid_size)
-                    #brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
-                    if was_cut:
-                        frame_count = (end_seconds * fps) - (start_seconds * fps)
+                            current_ext = current_ext,
+                            save_path = save_path,
+                            selected_file = selected_file,
+                            start_seconds = start_seconds,
+                            end_seconds =  end_seconds,
+                            conversion_value = conversion_value,
+                            resize_value = resize_value,
+                            extraction_ext = extraction_ext,
+                            extraction_frame = extraction_frame,
+                            media = video
+                        )
                         
+                elif current_ext == 'gif':
+                    if was_converted:
+                        #gif to video
+                        self.video_maker(
+                            was_converted = was_converted,
+                            was_cut = was_cut,
+                            was_tuned = was_tuned,
+                            was_resized = was_resized,
+                            was_cropped = was_cropped,
+                            was_extracted = was_extracted,
+                            
+                            codec_dict = codec_dict,
+                            cdc = cdc,
+                            
+                            current_ext = current_ext,
+                            save_path = save_path,
+                            selected_file = selected_file,
+                            start_seconds = start_seconds,
+                            end_seconds =  end_seconds,
+                            conversion_value = conversion_value,
+                            resize_value = resize_value,
+                            extraction_ext = extraction_ext,
+                            extraction_frame = extraction_frame,
+                            media = video
+                        )
                         
-                    
+                    else:
+                        #converting a gif to a gif
+                        self.gif_image_maker(
+                            was_converted = was_converted,
+                            was_cut = was_cut,
+                            was_tuned = was_tuned,
+                            was_resized = was_resized,
+                            was_cropped = was_cropped,
+                            was_extracted = was_extracted,
+                            
+                            codec_dict = codec_dict,
+                            cdc = cdc,
+                            
+                            current_ext = current_ext,
+                            save_path = save_path,
+                            selected_file = selected_file,
+                            start_seconds = start_seconds,
+                            end_seconds =  end_seconds,
+                            conversion_value = conversion_value,
+                            resize_value = resize_value,
+                            extraction_ext = extraction_ext,
+                            extraction_frame = extraction_frame,
+                            media = video
+                        )
+            else:
+                self.gif_image_maker(
+                        was_converted = was_converted,
+                        was_cut = was_cut,
+                        was_tuned = was_tuned,
+                        was_resized = was_resized,
+                        was_cropped = was_cropped,
+                        was_extracted = was_extracted,
                         
-                    brate = (vid_size * 8) / (frame_count / fps)
-                    #print(brate)
-                    
-                    video.write_videofile(save_path, 
-                                        codec = cdc, 
-                                        #logger = s_logger, 
-                                        bitrate = str(brate)
+                        codec_dict = codec_dict,
+                        cdc = cdc,
+                        
+                        current_ext = current_ext,
+                        save_path = save_path,
+                        selected_file = selected_file,
+                        start_seconds = start_seconds,
+                        end_seconds =  end_seconds,
+                        conversion_value = conversion_value,
+                        resize_value = resize_value,
+                        extraction_ext = extraction_ext,
+                        extraction_frame = extraction_frame,
+                        media = video
                     )
-            elif current_ext == 'gif':
-                if was_converted:
-                    #gif to video
-                    cap = cv2.VideoCapture(selected_file)
-                    # Get General Info
-                    fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
-                    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    cap.release()
-                    
-                    #vid_size = os.path.getsize(selected_file)/1000000000
-                    vid_size = os.path.getsize(selected_file)
-                    if was_cut:
-                        frame_count = (end_seconds * fps) - (start_seconds * fps)
-                    
-                    
-                    #print(vid_size)
-                    #brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
-                    brate = (vid_size * 8) / (frame_count / fps)
-                    #print(brate)
-                    
-                    video.write_videofile(save_path, 
-                                        codec = cdc, 
-                                        #logger = s_logger, 
-                                        bitrate = str(brate))
-                    
-                    
-                else:
-               
-                    #convertinf a gif to a video
                 
-                    #Using OpenCV's stuff
-                    video.close()
-                    
-                    #self.complete_progress_status_label["text"] =  "Loading"
-                    
-                    #https://gist.github.com/laygond/d62df2f2757671dea78af25a061bf234#file-writevideofromimages-py-L25
-                    #https://theailearner.com/2021/05/29/creating-gif-from-video-using-opencv-and-imageio/
-                    #https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
-                    cap = cv2.VideoCapture(selected_file)
-                    # Get General Info
-                    fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
-                    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                
-                    duration    = int(frame_count/fps)
-                    width       = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # float
-                    height      = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
-                    
-                    image_list = []
                     
                     
-                    
-                    
-
-                    print("OPENCV LOOP")
-                    start_frame = 0
-                    end_frame = frame_count
-                    if was_cut:
-                        start_frame = start_seconds * fps
-                        end_frame = end_seconds * fps
-                    
-                    
-                    frame_current = 0
-                    
-                    while True:
-                        is_reading, frame = cap.read()
-                        if not is_reading:
-                            break
-                        
-                        
-                        if frame_current >= start_frame and frame_current <= end_frame:
-                            frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                            if was_cropped:
-                                #x1=self.crop_ix1 , y1=self.crop_iy1 , x2=self.crop_ix2 , y2=self.crop_iy2
-                                frame_rgb = frame_rgb[self.crop_iy1:self.crop_iy2, self.crop_ix1:self.crop_ix2]
-                            
-                            if was_resized:
-                                rw = int(width * (resize_value/100))
-                                rh = int(height * (resize_value/100))
-                                frame_rgb = cv2.resize(frame_rgb, (rw, rh ))
-                            
-                            frame_rgb = Image.fromarray(frame_rgb)
-                            image_list.append(frame_rgb)
-                            #self.complete_progress_bar['value'] = int((i/(end_time - start_time)) * 100)
-                            
-                        
-                        
-                        frame_current += 1
-                        
-                        #self.update_idletasks()
-                    
-                        
-                        
-
-                    
-                    milliseconds = (fps**-1) * 1000
-                            
-                    print(fps, "\n", milliseconds)
-                    
-                    cap.release()
-                    #self.complete_progress_status_label["text"] = "Saving"
-                    
-                    
-                    #if PIL's Image.fromarray isn't used
-                    #imageio.mimsave(save_path, image_list, duration = milliseconds)
-                    #if PIL's Image.fromarray is used
-                    image_list[0].save(save_path, format = "GIF", save_all=True, append_images=image_list,  duration = milliseconds, loop=0)
-                    
-                    
-                    #self.complete_progress_status_label["text"] = "Finished"
-                    
-                    #video.write_gif(save_path, progress_bar = True)
             
             
 
@@ -1749,13 +1698,13 @@ class MediaFrameNav(ttk.Frame):
         arrangement = [
             
             [self.bck_btn, self.path_label   , self.nxt_btn                ],
-            [None        , self.path_listbox , None                        ],
-            [None        , self.path_scrollbar_x, None                     ],
+            [None        , self.path_listbox , self.interval_spinbox_label ],
+            [None        , self.path_scrollbar_x, self.interval_spinbox    ],
             [None        , self.canvas       , None                        ],
-            [None        , None              , self.interval_spinbox_label ],
-            [None        , None              , self.interval_spinbox       ],
-            [None        , None              , self.total_frame_label      ],
-            [None        , None              , self.current_frame_label    ]
+            [None        , None              , None                        ],
+            [None        , None              , None                        ],
+            [None        , None              , None                        ],
+            [None        , None              , None                        ]
                             
             
             
@@ -1806,6 +1755,9 @@ class MediaFrameNav(ttk.Frame):
             
             
             self.current_frame = 0
+            
+
+            
             file_size = os.path.getsize(file_path)
             
             #print(vid_size)
@@ -1830,6 +1782,9 @@ class MediaFrameNav(ttk.Frame):
                     
                     
                 )
+                
+            if self.arb_params != None:
+                self.arb_params.update_current_ext_frame_label(self.current_frame)
             
             #print("GIF FPS:{}".format(self.fps))
             
@@ -1911,6 +1866,9 @@ class MediaFrameNav(ttk.Frame):
                         current_frame = self.current_frame,
                         current_second = 0
                     )
+                     
+            if self.arb_params != None:
+                self.arb_params.update_current_ext_frame_label(self.current_frame)
             
             #cv2.imshow("video", img)
             #cv2.waitKey(0)
@@ -1962,6 +1920,9 @@ class MediaFrameNav(ttk.Frame):
                         current_frame = self.current_frame,
                         current_second = 0
                     )
+                     
+            if self.arb_params != None:
+                self.arb_params.update_current_ext_frame_label(self.current_frame)
             
             #cv2.imshow("video", img)
             #cv2.waitKey(0)
@@ -2076,14 +2037,19 @@ class MediaFrameNav(ttk.Frame):
             
         
         image_xy = self.to_image_point(rx, ry)
-        image_wh = self.to_image_point(rx + rw, ry + rh)
+        image_wh = self.to_image_point(rw, rh)
+        
+        #frame_rgb[self.crop_iy1:abs(self.crop_iy2 - self.crop_iy1), self.crop_ix1:abs(self.crop_ix2 - self.crop_ix1)]
         
 
         if len(image_xy) > 0 and len(image_wh) > 0:
             ix = image_xy[0]
             iy = image_xy[1]
-            iw = abs(ix - image_wh[0])
-            ih = abs(iy - image_wh[1])
+            #iw = abs(ix - image_wh[0])
+            #ih = abs(iy - image_wh[1])
+            
+            iw = image_wh[0]
+            ih = image_wh[1]
             
             #self.label_rx.config(text= "canvas rect x: {:.2f}".format(rx) + " image rect x: {:.2f}".format(ix))
             #self.label_ry.config(text= "canvas rect y: {:.2f}".format(ry) + " image rect y: {:.2f}".format(iy))
@@ -2108,8 +2074,9 @@ class MediaFrameNav(ttk.Frame):
                     canvas_y2 = ry + rh,
                     image_x1 = ix,
                     image_y1 = iy,
-                    image_x2 = iw,
-                    image_y2 = ih
+                    image_x2 = ix + iw,
+                    image_y2 = iy + ih,
+                    
                 )
                 
     def mouse_move_left(self, event):

@@ -130,11 +130,16 @@ class Application(tk.Tk):
                     ("mp4 files", "*.mp4"), 
                     ("mov files", "*.mov"), 
                     ("webm files", "*.webm"),
+                    ("avi files", "*.avi"),
+                    ("mkv files", ".mkv"),
                     #("ogv files", "*.ogv"),
-                    ("gif files", "*.gif")
+                    ("gif files", "*.gif"),
                     #("gif files", "*.gif")
-                    #("jpg files", ".jpg .jpeg"),
-                    #("png files", "*.png")
+                    ("jpg files", ".jpg .jpeg"),
+                    ("png files", "*.png"),
+                    ("webp files", "*.webp"),
+                    ("tiff files", ".tiff .tif"),
+                    ("bitmap files", "*.bmp")
                     
                     ]
         
@@ -235,11 +240,6 @@ class Application(tk.Tk):
         pass
         
     
-    
-        
-    
-        
-
 
 class GenInfoFrame(ttk.Frame):  
     def __init__(self, parent):
@@ -390,6 +390,10 @@ class ParameterSelection(ttk.Frame):
     def __init__(self, parent, completion_bar):
         super().__init__(parent)
         
+        self.static_filetypes = ['png', 'jpg', 'jpeg','webp', 'tiff', 'tif', 'webp', 'bmp']
+        self.animated_filetypes =  ["mp4", "mov", "webm", "gif", "avi", "mkv"] 
+        
+        
         self.conversion_widgets = self.setup_conversion_widgets()
         
         
@@ -484,32 +488,35 @@ class ParameterSelection(ttk.Frame):
         
         self.completion_bar = completion_bar
         
+
+        
+        
             
             
             
     def get_extension(self):
         if self.ext_checkbool.get():
-            print("fo")
+        
          
             return "." + self.ext_combobox.get()  
           
             
         elif self.convert_to_checkbool.get():
-            print("yo")
+
             
             if self.convert_to_combobox.get() == "No Change":
-                print("yolo")
+ 
                 return "." + self.current_ext
             else:
-                print("hoho")
+
                 return "." + self.convert_to_combobox.get()
         else:
-            print("lolo")
+
             if self.selected_file:
-                print("gofo")
+
                 return "." + self.current_ext
             else:
-                print("foo")
+
                 return "."
                
     def hide_widget(self, widget):
@@ -523,14 +530,26 @@ class ParameterSelection(ttk.Frame):
         self.selected_file = sel_file
         self.selected_file_path = full_file
         self.current_ext = full_file.split(".")[-1]
-        self.convert_to_combobox["values"] = self.convert_to_options[self.current_ext]
+        
+        if self.current_ext not in self.static_filetypes:
+            self.convert_to_combobox["values"] = self.convert_to_options[self.current_ext]
+        else:
+            self.convert_to_combobox["values"] = (  "No Change",
+                                                    "mp4",
+                                                    "mov",                 
+                                                    "webm",
+                                                    "mkv",
+                                                    "avi",
+                                                    "gif"
+                                              )
         self.completion_bar.complete_progress_bar['value'] = 0
         self.has_file = True
         
     def set_widget_states(self):
         if self.has_file:
             
-            if not self.ext_checkbool.get():
+            
+            if not self.ext_checkbool.get() and self.current_ext not in self.static_filetypes:
                 if self.convert_to_checkbool.get():
                     #self.convert_to_checkbutton.config(text = "Enable")
                     for widget in self.conversion_widgets:
@@ -540,9 +559,11 @@ class ParameterSelection(ttk.Frame):
                     #self.convert_to_checkbutton.config(text = "Disabled")
                     for widget in  self.conversion_widgets:
                         self.hide_widget(widget)
+            else:
+                self.convert_to_checkbool.set(False)
                     
                     
-            if not self.ext_checkbool.get() and self.current_ext != 'gif':     
+            if not self.ext_checkbool.get() and self.current_ext != 'gif' and self.current_ext not in self.static_filetypes:
                 if self.audio_checkbool.get():
                     #self.convert_to_checkbutton.config(text = "Enable")
                     for widget in self.audio_widgets:
@@ -567,7 +588,7 @@ class ParameterSelection(ttk.Frame):
                     self.hide_widget(widget)
                     
                     
-            if not self.ext_checkbool.get():
+            if not self.ext_checkbool.get() and self.current_ext not in self.static_filetypes:
                 if self.cut_checkbool.get():
                     #self.convert_to_checkbutton.config(text = "Enable")
                     for widget in self.cut_widgets:
@@ -577,6 +598,8 @@ class ParameterSelection(ttk.Frame):
                     #self.convert_to_checkbutton.config(text = "Disabled")
                     for widget in self.cut_widgets:
                         self.hide_widget(widget)
+            else:
+                self.cut_checkbool.set(False)
                     
                     
                     
@@ -661,18 +684,20 @@ class ParameterSelection(ttk.Frame):
         self.convert_to_combobox = ttk.Combobox(self, width = 15,  textvariable = tk.StringVar()) 
         self.convert_to_combobox["values"] = (  "No Change",
                                                 "mp4",
-                                                "mov",
-                                                #"ogv",
+                                                "mov",                 
                                                 "webm",
-                                                "gif",
+                                                "mkv",
+                                                "avi",
+                                                "gif"
                                               )
         
         self.convert_to_options = {
-            
+
             'gif':(
                     "No Change",
                     "mp4",
-                    #"ogv",
+                    "avi",
+                    "mkv",
                     "mov",
                     "webm"
                    ),
@@ -680,7 +705,8 @@ class ParameterSelection(ttk.Frame):
             
             "mp4": (
                     "No Change",
-                    #"ogv",
+                    "avi",
+                    "mkv",
                     "mov",
                     "webm",
                     "gif"
@@ -688,29 +714,44 @@ class ParameterSelection(ttk.Frame):
             
             "mov": (
                     "No Change",
-                    "mp4"
-                    #"ogv",
+                    "mp4",
+                    "mkv",
+                    "avi",
                     "webm",
                     "gif"
                     ),
-            '''
-            "ogv":  (  
-                    "No Change",
-                    "mp4",
-                    "mov",
-                    "webm",
-                    "gif",
-                    ),
-            '''
+   
             
             "webm": (
                     "No Change",
                     "mp4",
                     "mov",
-                    #"ogv",
-                    "webm",
+                    "avi",
+                    "mkv",
                     "gif"
+                    ),
+            
+            "mkv":(
+                    "No Change",
+                    "mp4",
+                    "gif",
+                    "avi",
+                    "mov",
+                    "webm"
+
+                    ),
+            
+            "avi":(
+                    "No Change",
+                    "mp4",
+                    "gif",
+                    "mkv",
+                    "mov",
+                    "webm"
+
                     )
+            
+            
             
                                         }
     
@@ -908,8 +949,15 @@ class ParameterSelection(ttk.Frame):
         
         self.ext_frame_label = ttk.Label(self, text = "Selected_Frame: 0")
         self.ext_combobox = ttk.Combobox(self, width = 15,  textvariable = tk.StringVar()) 
+
         self.ext_combobox["values"] = ( "jpg",
+                                        "jpeg",
                                         "png",
+                                        "bmp",
+                                        "tiff",
+                                        "tif",
+                                        "webp",
+                                        "gif"      
                                         )
         self.ext_frame = 0
         self.ext_combobox.current(0)
@@ -990,19 +1038,20 @@ class ParameterSelection(ttk.Frame):
         
                 
     def apply_changes(self, save_path):
-        animated_filetypes =  ["mp4", "mov", "webm", "ogv", "gif"]
+        
+        
         if self.selected_file:
             
-            if  self.current_ext in animated_filetypes:
+            if  self.current_ext in self.animated_filetypes:
                 self.edit_animated_media(save_path)
-            else:
-                messagebox.showerror("showinfo", "Gif Stuff not Implemented yet")
-                pass
-                #self.edit_gif(save_path)
-        
-    
+            elif self.current_ext in self.static_filetypes:
+                #messagebox.showerror("showinfo", "Gif Stuff not Implemented yet")
+                self.edit_static_media(save_path)
+               
 
     def gif_image_maker(self, **kwargs):
+
+        
         was_converted = False
         was_cut = False
         was_tuned = False
@@ -1070,98 +1119,135 @@ class ParameterSelection(ttk.Frame):
             media =  kwargs["media"]
         
 
-        #https://gist.github.com/laygond/d62df2f2757671dea78af25a061bf234#file-writevideofromimages-py-L25
-        #https://theailearner.com/2021/05/29/creating-gif-from-video-using-opencv-and-imageio/
-        #https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
-        cap = cv2.VideoCapture(selected_file)
-        # Get General Info
-        fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
-        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    
-        duration    = int(frame_count/fps)
-        width       = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # float
-        height      = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
-        
-        image_list = []
         
         
         
         
-        #Using OpenCV's stuff
-        #print("OPENCV LOOP")
+        if current_ext in self.animated_filetypes:
+            #https://gist.github.com/laygond/d62df2f2757671dea78af25a061bf234#file-writevideofromimages-py-L25
+            #https://theailearner.com/2021/05/29/creating-gif-from-video-using-opencv-and-imageio/
+            #https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
+            cap = cv2.VideoCapture(selected_file)
+            # Get General Info
+            fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
+            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+            duration    = int(frame_count/fps)
+            width       = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # float
+            height      = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
+            
+            image_list = []
+            
+            #Using OpenCV's stuff
+            #print("OPENCV LOOP")
 
-        if not was_extracted:
-            #making a gif from a video or keeping a gif the same
-            media.close()
-            start_frame = 0
-            end_frame = frame_count
-            if was_cut:
-                start_frame = start_seconds * fps
-                end_frame = end_seconds * fps
-            
-            
-            frame_current = start_frame
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_current)
-            
-            while True:
-                is_reading, frame = cap.read()
-                if not is_reading:
-                    break
-                
-                if frame_current > end_frame:
-                    break
+            if not was_extracted:
+                #making a gif from a video or keeping a gif the same
+                media.close()
+                start_frame = 0
+                end_frame = frame_count
+                if was_cut:
+                    start_frame = start_seconds * fps
+                    end_frame = end_seconds * fps
                 
                 
-                if frame_current >= start_frame and frame_current <= end_frame:
-                    frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    if was_cropped:
+                frame_current = start_frame
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_current)
+                
+                while True:
+                    is_reading, frame = cap.read()
+                    if not is_reading:
+                        break
+                    
+                    if frame_current > end_frame:
+                        break
+                    
+                    
+                    if frame_current >= start_frame and frame_current <= end_frame:
+                        frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        if was_cropped:
+                            
+                            frame_rgb = frame_rgb[self.crop_iy1:self.crop_iy2, self.crop_ix1:self.crop_ix2]
                         
-                        frame_rgb = frame_rgb[self.crop_iy1:self.crop_iy2, self.crop_ix1:self.crop_ix2]
+                        if was_resized:
+                            rw = int(width * (resize_value/100))
+                            rh = int(height * (resize_value/100))
+                            frame_rgb = cv2.resize(frame_rgb, (rw, rh ))
+                        
+                        frame_rgb = Image.fromarray(frame_rgb)
+                        image_list.append(frame_rgb)
                     
-                    if was_resized:
-                        rw = int(width * (resize_value/100))
-                        rh = int(height * (resize_value/100))
-                        frame_rgb = cv2.resize(frame_rgb, (rw, rh ))
+                    self.completion_bar.complete_progress_bar['value'] = int((frame_current/(end_frame - start_frame)) * 100)
                     
-                    frame_rgb = Image.fromarray(frame_rgb)
-                    image_list.append(frame_rgb)
-                
-                self.completion_bar.complete_progress_bar['value'] = int((frame_current/(end_frame - start_frame)) * 100)
+                        
+                    
+                    
+                    frame_current += 1
+                    
+                    self.update_idletasks()
                 
                     
-                
-                
-                frame_current += 1
-                
-                self.update_idletasks()
-            
-                
-                
+                    
 
-            
-            milliseconds = (fps**-1) * 1000
+                
+                milliseconds = (fps**-1) * 1000
 
-            
-            cap.release()
-            self.completion_bar.complete_progress_status_label["text"] = "Saving"
-            #self.complete_progress_status_label["text"] = "Saving"
-            
-            
-            #if PIL's Image.fromarray isn't used
-            #imageio.mimsave(save_path, image_list, duration = milliseconds)
-            #if PIL's Image.fromarray is used
-            image_list[0].save(save_path, format = "GIF", save_all=True, append_images=image_list,  duration = milliseconds, loop=0)
-            self.completion_bar.complete_progress_status_label["text"] = "Finished"
-            #self.complete_progress_status_label["text"] = "Finished"
-            
-            #video.write_gif(save_path, progress_bar = True)
-        else:
-            #converting a frame of a video or gif to an image
-            
-            
-            cap.set(cv2.CAP_PROP_POS_FRAMES, extraction_frame)
-            is_reading, frame = cap.read()
-            frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                
+                cap.release()
+                self.completion_bar.complete_progress_status_label["text"] = "Saving"
+                #self.complete_progress_status_label["text"] = "Saving"
+                
+                
+                #if PIL's Image.fromarray isn't used
+                #imageio.mimsave(save_path, image_list, duration = milliseconds)
+                #if PIL's Image.fromarray is used
+                image_list[0].save(save_path, format = "GIF", save_all=True, append_images=image_list,  duration = milliseconds, loop=0)
+                self.completion_bar.complete_progress_status_label["text"] = "Finished"
+                #self.complete_progress_status_label["text"] = "Finished"
+                
+                #video.write_gif(save_path, progress_bar = True)
+            else:
+                #converting a frame of a video or gif to an image
+                
+                
+                cap.set(cv2.CAP_PROP_POS_FRAMES, extraction_frame)
+                is_reading, frame = cap.read()
+                frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                if was_cropped:
+                    #x1=self.crop_ix1 , y1=self.crop_iy1 , x2=self.crop_ix2 , y2=self.crop_iy2
+                    frame_rgb = frame_rgb[self.crop_iy1:self.crop_iy2, self.crop_ix1:self.crop_ix2]
+                
+                if was_resized:
+                    rw = int(width * (resize_value/100))
+                    rh = int(height * (resize_value/100))
+                    frame_rgb = cv2.resize(frame_rgb, (rw, rh ))
+                
+                #Using Pillow's image methods
+                frame_rgb = Image.fromarray(frame_rgb)
+                #below only works on pngs
+                #frame_rgb = frame_rgb.quantize(method=Image.MEDIANCUT)
+                frame_rgb.save(save_path)
+                #OpenCV stuff
+                #cv2.imwrite(save_path, frame_rgb)
+                
+                #MoviePy Stuff
+                #frame = media.get_frame(extraction_frame * fps)
+                #frame = Image.fromarray(frame)
+                #frame.save(save_path)
+                #media.save_frame(save_path, t = extraction_frame * fps)
+                
+                #print("done")
+                media.close()
+                cap.release()
+        elif current_ext in self.static_filetypes:
+            #https://stackoverflow.com/questions/60048149/how-to-convert-png-to-jpg-in-python
+            #https://www.geeksforgeeks.org/reading-image-opencv-using-python/
+            frame_rgb  = cv2.imread(selected_file)
+            height, width, _ = frame_rgb.shape
+            #This doesn't work with transparent images
+            #frame_rgb  = cv2.imread(selected_file, cv2.IMREAD_COLOR)
+            #This for PIL to OPENCV conversion
+            #frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             if was_cropped:
                 #x1=self.crop_ix1 , y1=self.crop_iy1 , x2=self.crop_ix2 , y2=self.crop_iy2
                 frame_rgb = frame_rgb[self.crop_iy1:self.crop_iy2, self.crop_ix1:self.crop_ix2]
@@ -1172,32 +1258,18 @@ class ParameterSelection(ttk.Frame):
                 frame_rgb = cv2.resize(frame_rgb, (rw, rh ))
             
             #Using Pillow's image methods
-            frame_rgb = Image.fromarray(frame_rgb)
+            #frame_rgb = Image.fromarray(frame_rgb)
+            #below only works on pngs
+            #frame_rgb = frame_rgb.quantize(method=Image.MEDIANCUT)
+            #frame_rgb.save(save_path)
             
-            frame_rgb.save(save_path)
             #OpenCV stuff
-            #cv2.imwrite(save_path, frame_rgb)
-            
-            #MoviePy Stuff
-            #frame = media.get_frame(extraction_frame * fps)
-            #frame = Image.fromarray(frame)
-            #frame.save(save_path)
-            #media.save_frame(save_path, t = extraction_frame * fps)
-            
-            print("done")
-            media.close()
-            cap.release()
-            
-            
-            
-            
-        
-        
-            
-            
-        
-    
-        
+            if self.ext_combobox.get() in ["jpg", "jpeg"]:
+                cv2.imwrite(save_path, frame_rgb, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+            else:
+                cv2.imwrite(save_path, frame_rgb)
+                
+   
     def video_maker(self,  **kwargs):
         was_converted = False
         was_cut = False
@@ -1288,7 +1360,8 @@ class ParameterSelection(ttk.Frame):
         )
         self.completion_bar.complete_progress_status_label["text"] = "Finished"
         
-            
+ 
+          
     def edit_animated_media(self, save_path):
         
         was_converted = False
@@ -1297,7 +1370,16 @@ class ParameterSelection(ttk.Frame):
         was_resized = False
         was_cropped = False
         was_extracted = False
-        codec_dict = {'mp4':'libx264','ogv':'libtheora','webm':'libvpx', "mov":'libx264'}
+
+        codec_dict = {
+                    
+                    'mp4':'libx264',
+                    'webm':'libvpx',
+                    "mov":'libx264',
+                    "avi":'libx264',
+                    "mkv":'libx264',
+                      
+                      }
         cdc = ""
         
         current_ext = self.current_ext
@@ -1529,8 +1611,75 @@ class ParameterSelection(ttk.Frame):
                         extraction_frame = extraction_frame,
                         media = video
                     )
+    
+    def edit_static_media(self, save_path):
+        was_converted = False
+        was_cut = False
+        was_tuned = False
+        was_resized = False
+        was_cropped = False
+        was_extracted = False
+        codec_dict = {'mp4':'libx264','ogv':'libtheora','webm':'libvpx', "mov":'libx264'}
+        cdc = ""
+        
+        current_ext = self.current_ext
+        save_path = path_correction(save_path)
+        selected_file = path_correction(self.selected_file_path)
+        
+        start_seconds = float(self.cut_start_spinbox.get()) 
+        end_seconds =  float(self.cut_end_spinbox.get()) 
+        conversion_value = self.convert_to_combobox.get()
+        resize_value = int(self.resize_spinbox.get())
+        volume_change = self.volume_scale.get()
+        extraction_ext = self.ext_combobox.get()
+        extraction_frame = self.ext_frame
+        
+        #CROP 
+        if self.crop_checkbool.get():
+            was_cropped = True
+        elif not self.crop_checkbool.get():
+            pass
+        
+        #RESIZE
+        if self.resize_checkbool.get():
+            if resize_value == 100:
+                pass
+            else:
+                was_resized = True
                 
+                
+        elif not self.resize_checkbool.get():
+            pass
+        
+        
+        if not was_resized and not was_cropped and not was_extracted:
+            messagebox.showerror("showinfo", "Make some type of change")
+        else:
+            if not was_extracted:
+                #print("not extracting frame")
+   
+                self.gif_image_maker(
+                    was_converted = was_converted,
+                    was_cut = was_cut,
+                    was_tuned = was_tuned,
+                    was_resized = was_resized,
+                    was_cropped = was_cropped,
+                    was_extracted = was_extracted,
                     
+                    codec_dict = codec_dict,
+                    cdc = cdc,
+                    
+                    current_ext = current_ext,
+                    save_path = save_path,
+                    selected_file = selected_file,
+                    start_seconds = start_seconds,
+                    end_seconds =  end_seconds,
+                    conversion_value = conversion_value,
+                    resize_value = resize_value,
+                    extraction_ext = extraction_ext,
+                    extraction_frame = extraction_frame,
+                    
+                )
                     
             
             
@@ -1549,7 +1698,9 @@ class MediaFrameNav(ttk.Frame):
     
     def __init__(self, parent, canvas_width: int, canvas_height: int, **kwargs):
         super().__init__(parent)
-        
+
+        self.static_filetypes = ['png', 'jpg', 'jpeg','webp', 'tiff', 'tif', 'webp', 'bmp']
+        self.animated_filetypes =  ["mp4", "mov", "webm", "gif", "avi", "mkv"] 
 
         #self.columnconfigure(0, weight=1)
         #self.columnconfigure(1, weight=3)
@@ -1726,29 +1877,23 @@ class MediaFrameNav(ttk.Frame):
                 else:
                  
                     arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "EW")
-                    
-                    
-                    
-    def set_path_label(self, filepath):
-        self.path_label.config(text = filepath)
         
     def set_path_listbox(self, filepath):
         if self.path_listbox.size() > 0:
             self.path_listbox.delete(0, tk.END)
         self.path_listbox.insert(0, filepath)
         
-
-        
     def set_frame(self, file_path):
         if not file_path:
             return
         
         
-        animated_filetypes =  ["mp4", "mov", "webm", "ogv", "gif"]
+        
+        
         self.current_ext = file_path.split(".")[-1]
         self.file_name = "\\".join(file_path.split('/')[-1:])
         print("File Current EXT: {}".format(self.current_ext))
-        if self.current_ext in animated_filetypes:
+        if self.current_ext in self.animated_filetypes:
             if self.media != None:
                 self.media.release()
             
@@ -1826,18 +1971,91 @@ class MediaFrameNav(ttk.Frame):
             self.zoom_fit(self.current_img.width, self.current_img.height)
             # To display the image
             self.draw_image(self.current_img)
+        elif self.current_ext in self.static_filetypes:
+            if self.media != None:
+                self.media.release()
+                
+            self.media =  cv2.imread(file_path)
+            self.fps         = 0      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
+            self.frame_count = 1
+            self.duration    = 0
+            self.width, self.height, _ = self.media.shape       
             
+            
+            self.current_frame = 0
+            
+
+            
+            file_size = os.path.getsize(file_path)
+            
+            #print(vid_size)
+            #brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
+            brate = 1
+            
+            
+            if self.gen_info != None:
+                self.gen_info.set_info(
+                    
+                    file_name = self.file_name,
+                    fps = self.fps,
+                    frame_count = self.frame_count,
+                    duration = self.duration,
+                    width = self.width,
+                    height = self.height,
+                    current_frame = self.current_frame,
+                    current_second = 1,
+                    bitrate = brate
+                    
+                    
+                    
+                    
+                )
+                
+            if self.arb_params != None:
+                self.arb_params.update_current_ext_frame_label(self.current_frame)
+            
+            #print("GIF FPS:{}".format(self.fps))
+            
+            
+            #self.media.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
+            
+            #img is a frame of the video
+            #ret, img = self.media.read()
+            #conversion from CV2 Image Data a into a Pillow Image        
+            self.current_img = Image.fromarray(cv2.cvtColor(self.media, cv2.COLOR_BGR2RGB))
+            
+            
+            #self.img_label = ttk.Label(self, image = self.current_img)
+            #self.img_label.pack()
+            self.interval_spinbox.config(from_ = 0, to = 1)
             
     
+            #self.interval_spinbox.set(1)
+            
+            
+            
+            
+            self.total_frame_label.config(text = f"Total Frames: {self.frame_count}")
+            #print("Gif Width:{} Gif Height:{}".format(self.current_img.width, self.current_img.height))
+            #can be image width or height
+            #original image width before resize
+            self.og_image_scale = self.width
+            
+            #self.canvas.config(width=self.current_img.width, height=self.current_img.height)
+            
+            #self.nu_image_scale_w, self.nu_image_scale_h = self.og_image_scale_w, self.og_image_scale_h
+            # Set the affine transformation matrix to display the entire image.
+            self.zoom_fit(self.current_img.width, self.current_img.height)
+            # To display the image
+            self.draw_image(self.current_img)
         
     def get_frame(self):
         return self.current_frame
         
     def Next(self):
-        animated_filetypes =  ["mp4", "mov", "webm", "ogv", "gif"]
+
         
-        
-        if self.current_ext in animated_filetypes:
+        if self.current_ext in self.animated_filetypes:
         
             if self.current_img == None:
                 return
@@ -1878,14 +2096,15 @@ class MediaFrameNav(ttk.Frame):
 
             self.zoom_fit(self.current_img.width, self.current_img.height)
             self.update()
+        elif self.current_ext in self.static_filetypes:
+            pass
 
         
             
     def Back(self):
-        animated_filetypes =  ["mp4", "mov", "webm", "ogv", "gif"]
+
         
-        
-        if self.current_ext in animated_filetypes:
+        if self.current_ext in self.animated_filetypes:
             if self.current_img == None:
                 return
             self.canvas.delete("image")
@@ -1925,6 +2144,8 @@ class MediaFrameNav(ttk.Frame):
             
             self.zoom_fit(self.current_img.width, self.current_img.height)
             self.update()
+        elif self.current_ext in self.static_filetypes:
+            pass
 
         
 

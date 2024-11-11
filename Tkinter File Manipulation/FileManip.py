@@ -1,15 +1,16 @@
 import os
-import sys
 from PIL import Image, ImageTk
 from moviepy.editor import VideoFileClip, vfx, afx
-import math
 from proglog import ProgressBarLogger
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-import cv2
+#import cv2
+from cv2 import VideoCapture, CAP_PROP_FPS, CAP_PROP_FRAME_COUNT, CAP_PROP_FRAME_WIDTH, CAP_PROP_FRAME_HEIGHT, CAP_PROP_POS_FRAMES, cvtColor, COLOR_BGR2RGB, imwrite, imread, resize, IMWRITE_JPEG_QUALITY
 #import imageio
 #from imageio import mimsave
-import numpy as np  
+from numpy import eye, dot, linalg
+
+
 
 
 def path_correction(path):
@@ -132,9 +133,9 @@ class Application(tk.Tk):
                     ("webm files", "*.webm"),
                     ("avi files", "*.avi"),
                     ("mkv files", ".mkv"),
-                    #("ogv files", "*.ogv"),
+
                     ("gif files", "*.gif"),
-                    #("gif files", "*.gif")
+       
                     ("jpg files", ".jpg .jpeg"),
                     ("png files", "*.png"),
                     ("webp files", "*.webp"),
@@ -385,7 +386,6 @@ class BarProgress(ttk.Frame):
 
 
 
-
 class ParameterSelection(ttk.Frame):
     def __init__(self, parent, completion_bar):
         super().__init__(parent)
@@ -487,13 +487,7 @@ class ParameterSelection(ttk.Frame):
         
         
         self.completion_bar = completion_bar
-        
-
-        
-        
-            
-            
-            
+                
     def get_extension(self):
         if self.ext_checkbool.get():
         
@@ -1035,8 +1029,7 @@ class ParameterSelection(ttk.Frame):
     
     def set_volume_label(self, *args):
         self.volume_label.config( text = f"Volume Percentage: {self.volume_var.get()}")
-        
-                
+              
     def apply_changes(self, save_path):
         
         
@@ -1048,7 +1041,6 @@ class ParameterSelection(ttk.Frame):
                 #messagebox.showerror("showinfo", "Gif Stuff not Implemented yet")
                 self.edit_static_media(save_path)
                
-
     def gif_image_maker(self, **kwargs):
 
         
@@ -1127,14 +1119,14 @@ class ParameterSelection(ttk.Frame):
             #https://gist.github.com/laygond/d62df2f2757671dea78af25a061bf234#file-writevideofromimages-py-L25
             #https://theailearner.com/2021/05/29/creating-gif-from-video-using-opencv-and-imageio/
             #https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
-            cap = cv2.VideoCapture(selected_file)
+            cap = VideoCapture(selected_file)
             # Get General Info
-            fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
-            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            fps         = cap.get(CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
+            frame_count = int(cap.get(CAP_PROP_FRAME_COUNT))
         
             duration    = int(frame_count/fps)
-            width       = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # float
-            height      = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
+            width       = int(cap.get(CAP_PROP_FRAME_WIDTH))  # float
+            height      = int(cap.get(CAP_PROP_FRAME_HEIGHT)) # float
             
             image_list = []
             
@@ -1152,7 +1144,7 @@ class ParameterSelection(ttk.Frame):
                 
                 
                 frame_current = start_frame
-                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_current)
+                cap.set(CAP_PROP_POS_FRAMES, frame_current)
                 
                 while True:
                     is_reading, frame = cap.read()
@@ -1164,7 +1156,7 @@ class ParameterSelection(ttk.Frame):
                     
                     
                     if frame_current >= start_frame and frame_current <= end_frame:
-                        frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        frame_rgb =  cvtColor(frame, COLOR_BGR2RGB)
                         if was_cropped:
                             
                             frame_rgb = frame_rgb[self.crop_iy1:self.crop_iy2, self.crop_ix1:self.crop_ix2]
@@ -1172,7 +1164,7 @@ class ParameterSelection(ttk.Frame):
                         if was_resized:
                             rw = int(width * (resize_value/100))
                             rh = int(height * (resize_value/100))
-                            frame_rgb = cv2.resize(frame_rgb, (rw, rh ))
+                            frame_rgb = resize(frame_rgb, (rw, rh ))
                         
                         frame_rgb = Image.fromarray(frame_rgb)
                         image_list.append(frame_rgb)
@@ -1201,7 +1193,7 @@ class ParameterSelection(ttk.Frame):
                 #if PIL's Image.fromarray isn't used
                 #imageio.mimsave(save_path, image_list, duration = milliseconds)
                 #if PIL's Image.fromarray is used
-                image_list[0].save(save_path, format = "GIF", save_all=True, append_images=image_list,  duration = milliseconds, loop=0)
+                image_list[0].save(save_path, format = "GIF", save_all=True, append_images=image_list[1:],  duration = milliseconds, loop=0)
                 self.completion_bar.complete_progress_status_label["text"] = "Finished"
                 #self.complete_progress_status_label["text"] = "Finished"
                 
@@ -1210,9 +1202,9 @@ class ParameterSelection(ttk.Frame):
                 #converting a frame of a video or gif to an image
                 
                 
-                cap.set(cv2.CAP_PROP_POS_FRAMES, extraction_frame)
+                cap.set(CAP_PROP_POS_FRAMES, extraction_frame)
                 is_reading, frame = cap.read()
-                frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame_rgb =  cvtColor(frame, COLOR_BGR2RGB)
                 if was_cropped:
                     #x1=self.crop_ix1 , y1=self.crop_iy1 , x2=self.crop_ix2 , y2=self.crop_iy2
                     frame_rgb = frame_rgb[self.crop_iy1:self.crop_iy2, self.crop_ix1:self.crop_ix2]
@@ -1220,7 +1212,7 @@ class ParameterSelection(ttk.Frame):
                 if was_resized:
                     rw = int(width * (resize_value/100))
                     rh = int(height * (resize_value/100))
-                    frame_rgb = cv2.resize(frame_rgb, (rw, rh ))
+                    frame_rgb = resize(frame_rgb, (rw, rh ))
                 
                 #Using Pillow's image methods
                 frame_rgb = Image.fromarray(frame_rgb)
@@ -1242,7 +1234,7 @@ class ParameterSelection(ttk.Frame):
         elif current_ext in self.static_filetypes:
             #https://stackoverflow.com/questions/60048149/how-to-convert-png-to-jpg-in-python
             #https://www.geeksforgeeks.org/reading-image-opencv-using-python/
-            frame_rgb  = cv2.imread(selected_file)
+            frame_rgb  = imread(selected_file)
             height, width, _ = frame_rgb.shape
             #This doesn't work with transparent images
             #frame_rgb  = cv2.imread(selected_file, cv2.IMREAD_COLOR)
@@ -1255,7 +1247,7 @@ class ParameterSelection(ttk.Frame):
             if was_resized:
                 rw = int(width * (resize_value/100))
                 rh = int(height * (resize_value/100))
-                frame_rgb = cv2.resize(frame_rgb, (rw, rh ))
+                frame_rgb = resize(frame_rgb, (rw, rh ))
             
             #Using Pillow's image methods
             #frame_rgb = Image.fromarray(frame_rgb)
@@ -1265,9 +1257,9 @@ class ParameterSelection(ttk.Frame):
             
             #OpenCV stuff
             if self.ext_combobox.get() in ["jpg", "jpeg"]:
-                cv2.imwrite(save_path, frame_rgb, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+                imwrite(save_path, frame_rgb, [int(IMWRITE_JPEG_QUALITY), 100])
             else:
-                cv2.imwrite(save_path, frame_rgb)
+                imwrite(save_path, frame_rgb)
                 
    
     def video_maker(self,  **kwargs):
@@ -1333,10 +1325,10 @@ class ParameterSelection(ttk.Frame):
         if kwargs.get("media"):
             media =  kwargs["media"]
         
-        cap = cv2.VideoCapture(selected_file)
+        cap = VideoCapture(selected_file)
         # Get General Info
-        fps         = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
-        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps         = cap.get(CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
+        frame_count = int(cap.get(CAP_PROP_FRAME_COUNT))
         duration    = int(frame_count/fps)
         
         cap.release()
@@ -1682,8 +1674,6 @@ class ParameterSelection(ttk.Frame):
                 )
                     
             
-            
-
 
 class MediaFrameNav(ttk.Frame):
     #https://techvidvan.com/tutorials/python-image-viewer/
@@ -1897,12 +1887,12 @@ class MediaFrameNav(ttk.Frame):
             if self.media != None:
                 self.media.release()
             
-            self.media =  cv2.VideoCapture(file_path)
-            self.fps         = self.media.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
-            self.frame_count = int(self.media.get(cv2.CAP_PROP_FRAME_COUNT))
+            self.media =  VideoCapture(file_path)
+            self.fps         = self.media.get(CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
+            self.frame_count = int(self.media.get(CAP_PROP_FRAME_COUNT))
             self.duration    = int(self.frame_count/self.fps)
-            self.width       = int(self.media.get(cv2.CAP_PROP_FRAME_WIDTH))  # float
-            self.height      = int(self.media.get(cv2.CAP_PROP_FRAME_HEIGHT)) # float
+            self.width       = int(self.media.get(CAP_PROP_FRAME_WIDTH))  # float
+            self.height      = int(self.media.get(CAP_PROP_FRAME_HEIGHT)) # float
             
             
             self.current_frame = 0
@@ -1940,12 +1930,12 @@ class MediaFrameNav(ttk.Frame):
             #print("GIF FPS:{}".format(self.fps))
             
             
-            self.media.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
+            self.media.set(CAP_PROP_POS_FRAMES, self.current_frame)
             
             #img is a frame of the video
             ret, img = self.media.read()
             #conversion from CV2 Image Data a into a Pillow Image        
-            self.current_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            self.current_img = Image.fromarray(cvtColor(img, COLOR_BGR2RGB))
             
             
             #self.img_label = ttk.Label(self, image = self.current_img)
@@ -1975,7 +1965,7 @@ class MediaFrameNav(ttk.Frame):
             if self.media != None:
                 self.media.release()
                 
-            self.media =  cv2.imread(file_path)
+            self.media =  imread(file_path)
             self.fps         = 0      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
             self.frame_count = 1
             self.duration    = 0
@@ -2022,7 +2012,7 @@ class MediaFrameNav(ttk.Frame):
             #img is a frame of the video
             #ret, img = self.media.read()
             #conversion from CV2 Image Data a into a Pillow Image        
-            self.current_img = Image.fromarray(cv2.cvtColor(self.media, cv2.COLOR_BGR2RGB))
+            self.current_img = Image.fromarray(cvtColor(self.media, COLOR_BGR2RGB))
             
             
             #self.img_label = ttk.Label(self, image = self.current_img)
@@ -2068,12 +2058,12 @@ class MediaFrameNav(ttk.Frame):
             if self.current_frame > self.frame_count - 1:
                 self.current_frame = self.current_frame%self.frame_count
             
-            self.media.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
+            self.media.set(CAP_PROP_POS_FRAMES, self.current_frame)
             
             #img is a frame of the video
             ret, img = self.media.read()
             #conversion from CV2 Image Data a into a Pillow Image        
-            self.current_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            self.current_img = Image.fromarray(cvtColor(img, COLOR_BGR2RGB))
             
             #self.img_label.config(image=self.current_img)
             self.current_frame_label.config(text = f"Current Frame: {self.current_frame}")
@@ -2114,12 +2104,12 @@ class MediaFrameNav(ttk.Frame):
             if self.current_frame < 0:
                 self.current_frame = abs(self.frame_count - self.frame_count) 
                 
-            self.media.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
+            self.media.set(CAP_PROP_POS_FRAMES, self.current_frame)
             
             #img is a frame of the video
             ret, img = self.media.read()
             #conversion from CV2 Image Data a into a Pillow Image        
-            self.current_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            self.current_img = Image.fromarray(cvtColor(img, COLOR_BGR2RGB))
             
             
             
@@ -2337,10 +2327,10 @@ class MediaFrameNav(ttk.Frame):
     # -------------------------------------------------------------------------------
 
     def reset_transform(self):
-        self.mat_affine = np.eye(3) # 3x3の単位行列
+        self.mat_affine = eye(3) # 3x3の単位行列
 
     def translate(self, offset_x, offset_y,zoom = False):
-        mat = np.eye(3) # 3x3 identity matrix
+        mat = eye(3) # 3x3 identity matrix
         mat[0, 2] = float(offset_x)
         mat[1, 2] = float(offset_y)
         # Get the current canvas size
@@ -2360,7 +2350,7 @@ class MediaFrameNav(ttk.Frame):
         max_y = scale * im_bounds_h #3072
         max_x = scale * im_bounds_w #4096
         
-        self.mat_affine = np.dot(mat, self.mat_affine)
+        self.mat_affine = dot(mat, self.mat_affine)
 
         if not zoom:
             if abs(self.mat_affine[0,2]) > abs(max_x-canvas_width):
@@ -2374,13 +2364,13 @@ class MediaFrameNav(ttk.Frame):
             self.mat_affine[1,2]  = 0.0
 
     def scale(self, scale:float):
-        mat = np.eye(3) # 3x3 identity matrix
+        mat = eye(3) # 3x3 identity matrix
 
         mat[0, 0] = scale
         mat[1, 1] = scale
         
         
-        self.mat_affine = np.dot(mat, self.mat_affine)
+        self.mat_affine = dot(mat, self.mat_affine)
 
     def scale_at(self, scale:float, cx:float, cy:float):
         #self.scale_label.config(text=f"scale: {scale}")
@@ -2437,8 +2427,8 @@ class MediaFrameNav(ttk.Frame):
         if self.current_img == None:
             return []
         # Convert coordinates from the image to the canvas by taking the inverse of the transformation matrix.
-        mat_inv = np.linalg.inv(self.mat_affine)
-        image_point = np.dot(mat_inv, (x, y, 1.))
+        mat_inv = linalg.inv(self.mat_affine)
+        image_point = dot(mat_inv, (x, y, 1.))
 
         if  image_point[0] < 0 or image_point[1] < 0 or image_point[0] > self.current_img.width or image_point[1] > self.current_img.height:
             return []
@@ -2469,7 +2459,7 @@ class MediaFrameNav(ttk.Frame):
 
         # Calculate the affine transformation matrix from canvas to image data
         # (Calculate the inverse of the display affine transformation matrix)
-        mat_inv = np.linalg.inv(self.mat_affine)
+        mat_inv = linalg.inv(self.mat_affine)
 
         # Convert the numpy array to a tuple for affine transformation
         affine_inv = (

@@ -1,4 +1,5 @@
-import os
+#import os
+from os import getcwd, path 
 from PIL import Image, ImageTk
 from moviepy.editor import VideoFileClip, vfx, afx
 from proglog import ProgressBarLogger
@@ -13,12 +14,12 @@ from numpy import eye, dot, linalg
 
 
 
-def path_correction(path):
+def path_correction(file_path):
     foward_slash = "/"
     back_slash = "\\"
-    path = path.replace(foward_slash, back_slash)
+    file_path = file_path.replace(foward_slash, back_slash)
 
-    return path
+    return file_path
 
 class Application(tk.Tk):
     def __init__(self):
@@ -117,7 +118,7 @@ class Application(tk.Tk):
         
         
        
-        self.current_directory = os.getcwd()
+        self.current_directory = getcwd()
         self.selected_file = ""
         self.selected_file_list = [] 
     
@@ -205,31 +206,29 @@ class Application(tk.Tk):
         
 
         
-        u = filetypes = [
+        filetypes = [
                     ("All files", "*.*"),
-                    #("mp4 files", "*.mp4"), 
-                    #("mov files", "*.mov"), 
-                    #("webm files", "*.webm"),
-                    #("ogv files", "*.ogv"),
-                    #("gif files", "*.gif")
-                    #("jpg files", ".jpg .jpeg"),
-                    #("png files", "*.png")
+      
                     
                     ]
         
-        dext = self.parameter_arbiter.get_extension()
-        save_path = filedialog.asksaveasfilename(
-            
-                                     initialdir=self.current_directory,
-                                     defaultextension = dext, 
-                                     #filetypes= filetypes #[("PNG", ".png"),("JPG",".jpg")] 
-                                     ) 
+        if self.mode_type.get() == 1:
         
-        #print(dext, " worked")
-        #print(self.selected_file)
-        self.current_directory = "\\".join(save_path.split('/')[:-1]) + "\\"
-        self.parameter_arbiter.apply_changes(save_path)
-        #self.last_folder = self.current_directory
+            dext = self.parameter_arbiter.get_extension()
+            save_path = filedialog.asksaveasfilename(
+                
+                                        initialdir=self.current_directory,
+                                        defaultextension = dext, 
+                                        #filetypes= filetypes #[("PNG", ".png"),("JPG",".jpg")] 
+                                        ) 
+            
+            #print(dext, " worked")
+            #print(self.selected_file)
+            self.current_directory = "\\".join(save_path.split('/')[:-1]) + "\\"
+            self.parameter_arbiter.apply_changes(save_path)
+            #self.last_folder = self.current_directory
+        else:
+            messagebox.showerror("showinfo", "Multiple Files Not Implemented")
         
         
             
@@ -329,13 +328,13 @@ class GenInfoFrame(ttk.Frame):
             
         self.file_name_listbox.insert(0, self.file_name)
         self.fps_label.config(text= "FPS:{}".format(self.fps))
-        self.duration_label.config(text= "Duration:{} Seconds".format(self.duration))
+        self.duration_label.config(text= "Duration:{} seconds".format(self.duration))
         self.frame_count_label.config(text= "Frame Count:{}".format(self.frame_count))
         self.current_frame_label.config(text= "Current Frame:{}".format(self.current_frame))
         self.current_second_label.config(text= "Current Second:{:.3f}".format(self.current_second))
-        self.width_label.config(text= "Width:{}".format(str(self.width)))
-        self.height_label.config(text= "Height:{}".format(str(self.height)))
-        self.bitrate_label.config(text= "Bitrate:{}".format(str(round(self.bitrate))))
+        self.width_label.config(text= "Width:{} pixels".format(str(self.width)))
+        self.height_label.config(text= "Height:{} pixels".format(str(self.height)))
+        self.bitrate_label.config(text= "Bitrate:{} bps".format(str(round(self.bitrate))))
         
            
             
@@ -1261,7 +1260,6 @@ class ParameterSelection(ttk.Frame):
             else:
                 imwrite(save_path, frame_rgb)
                 
-   
     def video_maker(self,  **kwargs):
         was_converted = False
         was_cut = False
@@ -1332,7 +1330,7 @@ class ParameterSelection(ttk.Frame):
         duration    = int(frame_count/fps)
         
         cap.release()
-        vid_size = os.path.getsize(selected_file)
+        vid_size = path.getsize(selected_file)
     
 
         if was_cut:
@@ -1351,9 +1349,7 @@ class ParameterSelection(ttk.Frame):
                             bitrate = str(brate)
         )
         self.completion_bar.complete_progress_status_label["text"] = "Finished"
-        
- 
-          
+
     def edit_animated_media(self, save_path):
         
         was_converted = False
@@ -1899,7 +1895,7 @@ class MediaFrameNav(ttk.Frame):
             
 
             
-            file_size = os.path.getsize(file_path)
+            file_size = path.getsize(file_path)
             
             #print(vid_size)
             #brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
@@ -1976,7 +1972,7 @@ class MediaFrameNav(ttk.Frame):
             
 
             
-            file_size = os.path.getsize(file_path)
+            file_size = path.getsize(file_path)
             
             #print(vid_size)
             #brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
@@ -2102,7 +2098,7 @@ class MediaFrameNav(ttk.Frame):
             self.current_frame -= int(self.interval_spinbox.get())
             
             if self.current_frame < 0:
-                self.current_frame = abs(self.frame_count - self.frame_count) 
+                self.current_frame = abs(self.frame_count + self.current_frame) 
                 
             self.media.set(CAP_PROP_POS_FRAMES, self.current_frame)
             

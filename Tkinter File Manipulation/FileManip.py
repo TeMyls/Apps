@@ -1222,7 +1222,7 @@ class ParameterSelection(ttk.Frame):
                     end_frame = end_seconds * fps
                 
                 
-                frame_current = start_frame
+                frame_current = 0
                 cap.set(CAP_PROP_POS_FRAMES, frame_current)
                 
                 while True:
@@ -1248,14 +1248,14 @@ class ParameterSelection(ttk.Frame):
                         frame_rgb = Image.fromarray(frame_rgb)
                         image_list.append(frame_rgb)
                     
-                    self.completion_bar.complete_progress_bar['value'] = int((frame_current/(end_frame - start_frame)) * 100)
-                    
+                        self.completion_bar.complete_progress_bar['value'] = int((frame_current/(end_frame - start_frame)) * 100)
+                        self.update_idletasks()
                         
                     
                     
                     frame_current += 1
                     
-                    self.update_idletasks()
+                    
                 
                     
                     
@@ -1280,6 +1280,48 @@ class ParameterSelection(ttk.Frame):
             else:
                 #converting a frame of a video or gif to an image
                 
+                #why this, when there's three alternate, instanteous, methods under it
+                #when trying to get frames from longer videos, greater than 10 minutes, it often fetched the wrong frame
+    
+                frame_current = 0
+                end_frame = frame_count
+                while True:
+                    is_reading, frame = cap.read()
+                    if not is_reading:
+                        break
+                    
+                    if frame_current > end_frame:
+                        break
+                    
+                    
+                    if frame_current == extraction_frame:
+                        frame_rgb =  cvtColor(frame, COLOR_BGR2RGB)
+                        if was_cropped:
+                            #x1=self.crop_ix1 , y1=self.crop_iy1 , x2=self.crop_ix2 , y2=self.crop_iy2
+                            frame_rgb = frame_rgb[self.crop_iy1:self.crop_iy2, self.crop_ix1:self.crop_ix2]
+                        
+                        if was_resized:
+                            rw = int(width * (resize_value/100))
+                            rh = int(height * (resize_value/100))
+                            frame_rgb = resize(frame_rgb, (rw, rh ))
+                        
+                        #Using Pillow's image methods
+                        frame_rgb = Image.fromarray(frame_rgb)
+                        #below only works on pngs
+                        #frame_rgb = frame_rgb.quantize(method=Image.MEDIANCUT)
+                        self.completion_bar.complete_progress_status_label["text"] = "Saving"
+                        frame_rgb.save(save_path)
+                        self.completion_bar.complete_progress_status_label["text"] = "Finished"
+                        print("finished")
+                        break
+                    
+                    self.completion_bar.complete_progress_bar['value'] = int((frame_current/extraction_frame) * 100)
+                    self.update_idletasks()
+                        
+                    
+                    
+                    frame_current += 1
+                '''
                 
                 cap.set(CAP_PROP_POS_FRAMES, extraction_frame)
                 is_reading, frame = cap.read()
@@ -1298,6 +1340,7 @@ class ParameterSelection(ttk.Frame):
                 #below only works on pngs
                 #frame_rgb = frame_rgb.quantize(method=Image.MEDIANCUT)
                 frame_rgb.save(save_path)
+                '''
                 #OpenCV stuff
                 #cv2.imwrite(save_path, frame_rgb)
                 
@@ -2043,8 +2086,8 @@ class MediaFrameNav(ttk.Frame):
         self.file_name = "\\".join(file_path.split('/')[-1:])
         print("File Current EXT: {}".format(self.current_ext))
         if self.current_ext in self.animated_filetypes:
-            if self.media != None:
-                self.media.release()
+            #if self.media != None:
+            #    self.media.release()
             
             self.media =  VideoCapture(file_path)
             self.fps         = self.media.get(CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
@@ -2125,8 +2168,8 @@ class MediaFrameNav(ttk.Frame):
             # To display the image
             self.draw_image(self.current_img)
         elif self.current_ext in self.static_filetypes:
-            if self.media != None:
-                self.media.release()
+            #if self.media != None:
+            #    self.media.release()
                 
             self.media =  imread(file_path)
             self.fps         = 0      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"

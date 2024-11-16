@@ -395,23 +395,17 @@ class ParameterSelection(ttk.Frame):
         
         self.conversion_widgets = self.setup_conversion_widgets()
         
-        
-        
         self.audio_widgets = self.setup_audio_widgets()
-        
-        
-        
+    
         self.resize_widgets = self.setup_resize_widgets()
         
-        
-        
         self.cut_widgets = self.setup_cut_widgets()
-        
         
         self.crop_widgets = self.setup_crop_widgets()
         
         self.extraction_widgets = self.setup_extractor_widgets()
         
+        self.bitrate_widgets = self.setup_bitrate_widgets()
         
         self.convert_to_checkbutton.config(command=self.set_widget_states)
         self.audio_checkbutton.config(command=self.set_widget_states)
@@ -419,6 +413,7 @@ class ParameterSelection(ttk.Frame):
         self.cut_checkbutton.config(command=self.set_widget_states)
         self.crop_checkbutton.config(command=self.set_widget_states)
         self.ext_checkbutton.config(command=self.set_widget_states)
+        self.bitrate_checkbutton.config(command=self.set_widget_states)
         
         #Conversion
         #Placement
@@ -426,11 +421,13 @@ class ParameterSelection(ttk.Frame):
         self.convert_to_checkbutton.grid(row = 1, column=0, sticky="N")
         self.convert_to_combobox.grid(row = 2, column= 0, sticky="N")
         
+        
         #Resize
         #Placement
         self.resize_label.grid(row = 0, column = 1, sticky="WE")
         self.resize_checkbutton.grid(row = 1, column = 1, sticky="N")
         self.resize_spinbox.grid(row = 2, column = 1, sticky="N")
+        
         
         #Audio
         #Placement
@@ -438,10 +435,7 @@ class ParameterSelection(ttk.Frame):
         self.audio_checkbutton.grid(row = 4, column = 0, sticky="N")
         self.volume_scale.grid(row = 5, column = 0, sticky="EW", columnspan=2)
         self.volume_label.grid(row = 6, column = 0, sticky="NEW", columnspan=2)
-        #self.mute_checkbutton.grid(row = 2, column = 1, sticky="W")
-        
-        
-        
+
         
         #Cut
         #Placement
@@ -452,6 +446,7 @@ class ParameterSelection(ttk.Frame):
         self.cut_start_spinbox.grid(row = 9, column = 1, sticky="N")
         self.cut_end_spinbox.grid(row = 10, column = 1, sticky="N")
         
+        
         #Crop
         #Placement
         self.crop_label.grid(row = 11, column = 0, sticky="WE")
@@ -461,11 +456,18 @@ class ParameterSelection(ttk.Frame):
         self.crop_image_xy1_coords.grid(row = 13, column = 1, sticky="N")
         self.crop_image_xy2_coords.grid(row = 14, column = 1, sticky="N")
         
+        
         #Extraction
         self.ext_label.grid(row = 15, column = 0, sticky="N")
         self.ext_checkbutton.grid(row = 16, column = 0, sticky="N")
         self.ext_frame_label.grid(row = 17, column = 0, sticky="N")
         self.ext_combobox.grid(row = 18, column = 0, sticky="N")
+        
+        #Bitrate
+        self.bitrate_label.grid(row = 19, column = 0, sticky="N")
+        self.bitrate_checkbutton.grid(row = 20, column = 0, sticky="N")
+        self.final_bitrate_label.grid(row = 21, column = 0, sticky="N")
+        self.final_bitrate_spinbox.grid(row = 22, column = 0, sticky="N")
         
         
         
@@ -480,9 +482,7 @@ class ParameterSelection(ttk.Frame):
         
         
         
-        self.progress_bar = None
-        self.label_bar = None
-        self.status_bar = None
+
         
         
         self.completion_bar = completion_bar
@@ -633,6 +633,20 @@ class ParameterSelection(ttk.Frame):
                 #self.convert_to_checkbutton.config(text = "Disabled")
                 for widget in self.extraction_widgets:
                     self.hide_widget(widget)
+                    
+                    
+                    
+            if not self.ext_checkbool.get() and self.current_ext != 'gif' and self.current_ext not in self.static_filetypes:
+                if self.bitrate_checkbool.get():
+                    #self.convert_to_checkbutton.config(text = "Enable")
+                    for widget in self.bitrate_widgets:
+                        self.show_widget(widget)
+                elif not self.bitrate_checkbool.get():
+                    #self.convert_to_checkbutton.config(text = "Disabled")
+                    for widget in self.bitrate_widgets:
+                        self.hide_widget(widget)
+            else:
+                self.bitrate_checkbool.set(False)
                 
                     
         else:
@@ -642,6 +656,7 @@ class ParameterSelection(ttk.Frame):
             self.cut_checkbool.set(False)
             self.crop_checkbool.set(False)
             self.ext_checkbool.set(False)
+            self.bitrate_checkbool.set(False)
    
             for widget in  self.conversion_widgets:
                 self.hide_widget(widget)
@@ -972,6 +987,62 @@ class ParameterSelection(ttk.Frame):
 
         return [ self.ext_frame_label, self.ext_combobox ]
     
+    def setup_bitrate_widgets(self):
+        #Parameters
+        
+        
+        self.final_bitrate_label = ttk.Label(self, text = "Bits per Second: 0")
+        
+        
+
+        
+        
+        self.final_bitrate_spinbox = ttk.Spinbox(self, 
+                                        from_ = 0, 
+                                        to = 1800000000,
+                                        #textvariable=tk.DoubleVar(value=0.00),
+                                        increment=1
+                                        
+                                        ) 
+        
+       
+  
+        self.og_bitrate = 0
+        
+        self.final_bitrate_spinbox.set(0)
+        
+        
+        
+        
+        
+        
+        
+        #Enablement Bools
+        self.bitrate_label = ttk.Label(self, text = "Bitrate bps")
+ 
+        
+        self.bitrate_checkbool = tk.BooleanVar()
+        self.bitrate_checkbool.set(False)
+        
+        self.bitrate_checkbutton = ttk.Checkbutton(self,   
+                                                variable=self.bitrate_checkbool,
+                                                text= "Enabled"
+
+                                                ) 
+        
+        
+        
+ 
+ 
+        
+        return [ self.final_bitrate_label, self.final_bitrate_spinbox ]
+    
+    def update_final_bitrate(self, bitrate):
+        bitrate = round(bitrate)
+        self.og_bitrate = bitrate
+        self.final_bitrate_label.config(text = "Bits per Second: {}".format(bitrate))
+        self.final_bitrate_spinbox.set(bitrate)
+    
     def update_current_ext_frame_label(self, current_frame):
         self.ext_frame = current_frame
         self.ext_frame_label.config(text=f"Selected_Frame: {self.ext_frame}")
@@ -1049,6 +1120,7 @@ class ParameterSelection(ttk.Frame):
         was_resized = False
         was_cropped = False
         was_extracted = False
+        was_bytten =  False
         
         codec_dict = {}
         cdc = ''
@@ -1061,6 +1133,7 @@ class ParameterSelection(ttk.Frame):
         conversion_value = ''
         resize_value = 0
         extraction_frame = 0
+        byte_value = 0
         
         
         media = None
@@ -1081,6 +1154,8 @@ class ParameterSelection(ttk.Frame):
             was_cropped =  kwargs["was_cropped"]
         if kwargs.get("was_extracted"):
             was_extracted =  kwargs["was_extracted"]
+        if kwargs.get("was_bytten"):
+            was_bytten =  kwargs["was_bytten"]
             
             
         if kwargs.get("codec_dict"):
@@ -1104,6 +1179,8 @@ class ParameterSelection(ttk.Frame):
             resize_value =  kwargs["resize_value"]
         if kwargs.get("extraction_frame"):
             extraction_frame =  kwargs["extraction_frame"]
+        if kwargs.get("byte_value"):
+            byte_value =  kwargs["byte_value"]
         
             
         if kwargs.get("media"):
@@ -1129,6 +1206,9 @@ class ParameterSelection(ttk.Frame):
             
             image_list = []
             
+            
+            '''
+            '''
             #Using OpenCV's stuff
             #print("OPENCV LOOP")
 
@@ -1267,6 +1347,7 @@ class ParameterSelection(ttk.Frame):
         was_resized = False
         was_cropped = False
         was_extracted = False
+        was_bytten =  False
         
         codec_dict = {}
         cdc = ''
@@ -1279,6 +1360,7 @@ class ParameterSelection(ttk.Frame):
         conversion_value = ''
         resize_value = 0
         extraction_frame = 0
+        byte_value = 0
         
         
         media = None
@@ -1297,6 +1379,8 @@ class ParameterSelection(ttk.Frame):
             was_resized =  kwargs["was_resized"]
         if kwargs.get("was_cropped"):
             was_cropped =  kwargs["was_cropped"]
+        if kwargs.get("was_bytten"):
+            was_bytten =  kwargs["was_bytten"]
             
         if kwargs.get("codec_dict"):
             codec_dict =  kwargs["codec_dict"]
@@ -1319,6 +1403,8 @@ class ParameterSelection(ttk.Frame):
             resize_value =  kwargs["resize_value"]
         if kwargs.get("extraction_frame"):
             extraction_frame =  kwargs["extraction_frame"]
+        if kwargs.get("byte_value"):
+            byte_value =  kwargs["byte_value"]
             
         if kwargs.get("media"):
             media =  kwargs["media"]
@@ -1329,17 +1415,68 @@ class ParameterSelection(ttk.Frame):
         frame_count = int(cap.get(CAP_PROP_FRAME_COUNT))
         duration    = int(frame_count/fps)
         
+        
+        width       = int(cap.get(CAP_PROP_FRAME_WIDTH))  # float
+        height      = int(cap.get(CAP_PROP_FRAME_HEIGHT)) # float
+        
+        og_width = width
+        og_height = height
+        
+        
+        
         cap.release()
-        vid_size = path.getsize(selected_file)
-    
+        brate = 0
 
+       
+        '''
         if was_cut:
+            byte_size = path.getsize(selected_file)
             frame_count = (end_seconds * fps) - (start_seconds * fps)
+            duration = (frame_count / fps)
+            brate = (byte_size * 8) / duration
+        '''
+        byte_size = path.getsize(selected_file) #width * height * 24
+        if not was_bytten:
+           
+            if was_cropped or was_resized or was_cut:
+                
+                
+                if was_cropped:
+                    width = self.crop_ix2 - self.crop_ix1
+                    height = self.crop_iy2 - self.crop_iy1
+                
+                resize_percent = resize_value/100
+                
+                if was_resized:
+                    width = int(width * resize_percent)
+                    height = int(height * resize_percent)
+                    
+                
+                
+                
             
-            
+                if was_cut:
+                    frame_count = (end_seconds * fps) - (start_seconds * fps)
+                    duration = (frame_count / fps)
+                    
+                    brate = (byte_size * 8) / duration
+                    if og_width != width or og_height != height:
+                        brate = brate * (width * height)/(og_width * og_height)
+                else:
+                    brate = (byte_size * 8) / duration
+                    if og_width != width or og_height != height:
+                        brate = brate * (width * height)/(og_width * og_height)
+                    
+            else:
+                brate = (byte_size * 8) / duration
+        else:
+            brate = byte_value
         
             
-        brate = (vid_size * 8) / (frame_count / fps)
+        
+        
+            
+        
         #print(brate)
         
         self.completion_bar.complete_progress_status_label["text"] = "Saving"
@@ -1358,6 +1495,7 @@ class ParameterSelection(ttk.Frame):
         was_resized = False
         was_cropped = False
         was_extracted = False
+        was_bytten = False
 
         codec_dict = {
                     
@@ -1381,6 +1519,7 @@ class ParameterSelection(ttk.Frame):
         volume_change = self.volume_scale.get()
         extraction_ext = self.ext_combobox.get()
         extraction_frame = self.ext_frame
+        byte_value = int(self.final_bitrate_spinbox.get())
         
         #print()
         #print(save_path)
@@ -1400,9 +1539,10 @@ class ParameterSelection(ttk.Frame):
                     if volume_change == 100:
                         pass
                     elif volume_change == 0:
-                        video.set_audio(None)
-                    
+                        video = video.set_audio(None)
+                        was_tuned = True
                     else:
+                        print("vol changed")
                         video = afx.volumex(video, volume_change/100)
                         was_tuned = True
                 elif not self.audio_checkbool.get():
@@ -1457,16 +1597,23 @@ class ParameterSelection(ttk.Frame):
             elif not self.convert_to_checkbool.get():
                 if current_ext != "gif":
                     cdc = codec_dict[current_ext]
-        
-        
+        #BITRATE DECIDER
+        if not self.ext_checkbool.get():
+            if self.bitrate_checkbool.get():
+                #if self.final_bitrate_spinbox.get() not in self.final_bitrate_label:
+                byte_value = self.final_bitrate_spinbox.get()
+                was_bytten = True
+    
         #FRAME EXTRACTION
         if self.ext_checkbool.get():
             was_extracted = True
             #print("yep was extarcted")
+            
+        
                 
                 
         #Applying Changes
-        if not was_converted and not was_cut and not was_tuned and not was_resized and not was_cropped and not was_extracted:
+        if not was_converted and not was_cut and not was_tuned and not was_resized and not was_cropped and not was_extracted and not was_bytten and not was_extracted:
             messagebox.showerror("showinfo", "Make some type of change")
         else:
             if not was_extracted:
@@ -1480,6 +1627,7 @@ class ParameterSelection(ttk.Frame):
                             was_resized = was_resized,
                             was_cropped = was_cropped,
                             was_extracted = was_extracted,
+                            was_bytten = was_bytten,
                             
                             codec_dict = codec_dict,
                             cdc = cdc,
@@ -1493,6 +1641,7 @@ class ParameterSelection(ttk.Frame):
                             resize_value = resize_value,
                             extraction_ext = extraction_ext,
                             extraction_frame = extraction_frame,
+                            
                             media = video
                         )
                         
@@ -1509,6 +1658,7 @@ class ParameterSelection(ttk.Frame):
                             was_resized = was_resized,
                             was_cropped = was_cropped,
                             was_extracted = was_extracted,
+                            was_bytten = was_bytten,
                             
                             codec_dict = codec_dict,
                             cdc = cdc,
@@ -1522,6 +1672,8 @@ class ParameterSelection(ttk.Frame):
                             resize_value = resize_value,
                             extraction_ext = extraction_ext,
                             extraction_frame = extraction_frame,
+                            byte_value = byte_value,
+                            
                             media = video
                         )
                         
@@ -1535,6 +1687,7 @@ class ParameterSelection(ttk.Frame):
                             was_resized = was_resized,
                             was_cropped = was_cropped,
                             was_extracted = was_extracted,
+                            was_bytten = was_bytten,
                             
                             codec_dict = codec_dict,
                             cdc = cdc,
@@ -1548,6 +1701,8 @@ class ParameterSelection(ttk.Frame):
                             resize_value = resize_value,
                             extraction_ext = extraction_ext,
                             extraction_frame = extraction_frame,
+                            byte_value = byte_value,
+                            
                             media = video
                         )
                         
@@ -1560,6 +1715,7 @@ class ParameterSelection(ttk.Frame):
                             was_resized = was_resized,
                             was_cropped = was_cropped,
                             was_extracted = was_extracted,
+                            was_bytten = was_bytten,
                             
                             codec_dict = codec_dict,
                             cdc = cdc,
@@ -1607,6 +1763,7 @@ class ParameterSelection(ttk.Frame):
         was_resized = False
         was_cropped = False
         was_extracted = False
+        
         codec_dict = {'mp4':'libx264','ogv':'libtheora','webm':'libvpx', "mov":'libx264'}
         cdc = ""
         
@@ -1621,6 +1778,7 @@ class ParameterSelection(ttk.Frame):
         volume_change = self.volume_scale.get()
         extraction_ext = self.ext_combobox.get()
         extraction_frame = self.ext_frame
+        byte_value = int(self.final_bitrate_spinbox.get())
         
         #CROP 
         if self.crop_checkbool.get():
@@ -1639,35 +1797,40 @@ class ParameterSelection(ttk.Frame):
         elif not self.resize_checkbool.get():
             pass
         
+        #FRAME EXTRACTION
+        if self.ext_checkbool.get():
+            was_extracted = True
+            print("yep was extarcted")
+        
         
         if not was_resized and not was_cropped and not was_extracted:
             messagebox.showerror("showinfo", "Make some type of change")
         else:
-            if not was_extracted:
+            #if not was_extracted:
                 #print("not extracting frame")
    
-                self.gif_image_maker(
-                    was_converted = was_converted,
-                    was_cut = was_cut,
-                    was_tuned = was_tuned,
-                    was_resized = was_resized,
-                    was_cropped = was_cropped,
-                    was_extracted = was_extracted,
-                    
-                    codec_dict = codec_dict,
-                    cdc = cdc,
-                    
-                    current_ext = current_ext,
-                    save_path = save_path,
-                    selected_file = selected_file,
-                    start_seconds = start_seconds,
-                    end_seconds =  end_seconds,
-                    conversion_value = conversion_value,
-                    resize_value = resize_value,
-                    extraction_ext = extraction_ext,
-                    extraction_frame = extraction_frame,
-                    
-                )
+            self.gif_image_maker(
+                was_converted = was_converted,
+                was_cut = was_cut,
+                was_tuned = was_tuned,
+                was_resized = was_resized,
+                was_cropped = was_cropped,
+                was_extracted = was_extracted,
+                
+                codec_dict = codec_dict,
+                cdc = cdc,
+                
+                current_ext = current_ext,
+                save_path = save_path,
+                selected_file = selected_file,
+                start_seconds = start_seconds,
+                end_seconds =  end_seconds,
+                conversion_value = conversion_value,
+                resize_value = resize_value,
+                extraction_ext = extraction_ext,
+                extraction_frame = extraction_frame,
+                
+            )
                     
             
 
@@ -1897,9 +2060,12 @@ class MediaFrameNav(ttk.Frame):
             
             file_size = path.getsize(file_path)
             
-            #print(vid_size)
-            #brate = int((vid_size/((video.duration/60) * .0075)) * 1000000 * 0.9)
-            brate = (file_size * 8) / (self.frame_count / self.fps)
+            
+            brate = 0
+            if self.current_ext == "gif":
+                brate = 1
+            else:
+                brate = (file_size * 8) / (self.frame_count / self.fps)
             
             
             if self.gen_info != None:
@@ -1922,6 +2088,7 @@ class MediaFrameNav(ttk.Frame):
                 
             if self.arb_params != None:
                 self.arb_params.update_current_ext_frame_label(self.current_frame)
+                self.arb_params.update_final_bitrate(brate)
             
             #print("GIF FPS:{}".format(self.fps))
             

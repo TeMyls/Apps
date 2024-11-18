@@ -24,7 +24,7 @@ def path_correction(file_path):
 class Application(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("File Edit App")
+        self.title("PIVET")
         #https://tkdocs.com/tutorial/menus.html
         #https://www.geeksforgeeks.org/python-menu-widget-in-tkinter/
         #https://pythonassets.com/posts/menubar-in-tk-tkinter/

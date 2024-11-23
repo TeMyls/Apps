@@ -2351,6 +2351,9 @@ class MediaFrameNav(ttk.Frame):
             
             self.current_frame = self.frame_slider.get()
             #self.interval_spinbox.set(self.cru)
+
+            if self.current_frame > self.frame_count - 1:
+                self.current_frame = self.current_frame%self.frame_count
             
             self.media.set(CAP_PROP_POS_FRAMES, self.current_frame)
             

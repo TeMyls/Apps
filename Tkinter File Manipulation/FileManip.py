@@ -1902,8 +1902,19 @@ class MediaFrameNav(ttk.Frame):
         
         self.nxt_btn = ttk.Button(self, text='Next',command=self.Next)
         
+        self.slide_frame_var = tk.IntVar()
         
-        
+        self.frame_slider = tk.Scale(
+            self,
+            variable = self.slide_frame_var,
+            from_ = 0,
+            to = 100,
+            orient = "horizontal",
+            length=canvas_width,
+            command = self.slide_frame
+            
+            
+        )
         
         #canvas crop
         #self.pil_image = None   # Image data to be displayed
@@ -1949,10 +1960,10 @@ class MediaFrameNav(ttk.Frame):
         
         self.current_frame_label = ttk.Label(self, text = f"Current Frame: 0")
         
+        self.slider_frame_label = ttk.Label(self, text = f"Frame: ")
         
         #self.general_info_label = ttk.Label(self, text = f"Current Frame: 0")
-        
-        
+    
         #self.scale_label = tk.Label(self, text = "scale:")
         #self.scale_label.pack()
         
@@ -2024,36 +2035,18 @@ class MediaFrameNav(ttk.Frame):
         #Placement
         
         
-        '''
-        self.nxt_btn.grid(row=0, column=0)
-        self.bck_btn.grid(row=0, column=2)
-        self.canvas.grid(row=4, column=1)
-        self.current_frame_label.grid(row=3, column=2)
-        self.interval_spinbox.grid(row=1, column=2)
-        
-        self.position_mouse_label.grid(row=0, column=1)
-        self.image_pos_mouse_label.grid(row=1, column=1)
-        self.image_scale_ratio_label.grid(row=2, column=1)
-        self.image_scale_ratio_label2.grid(row=3, column=1)
-        self.label_rx.grid(row = 5, column = 1)
-        self.label_ry.grid(row = 6, column = 1)
-        self.label_rw.grid(row = 7, column = 1)
-        self.label_rh.grid(row = 9, column = 1)
-        self.total_frame_label.grid(row=2, column=2)
-        '''
-        
         
         
         arrangement = [
             
-            [self.bck_btn, self.path_label   , self.nxt_btn                ],
-            [None        , self.path_listbox , self.interval_spinbox_label ],
-            [None        , self.path_scrollbar_x, self.interval_spinbox    ],
-            [None        , self.canvas       , None                        ],
-            [None        , None              , None                        ],
-            [None        , None              , None                        ],
-            [None        , None              , None                        ],
-            [None        , None              , None                        ]
+            [self.bck_btn           , self.path_label   , self.nxt_btn                ],
+            [None                   , self.path_listbox , self.interval_spinbox_label ],
+            [None                   , self.path_scrollbar_x, self.interval_spinbox    ],
+            [None                   , self.canvas       , None                        ],
+            [self.slider_frame_label, self.frame_slider , None                        ],
+            [None                   , None              , None                        ],
+            [None                   , None              , None                        ],
+            [None                   , None              , None                        ]
                             
             
             
@@ -2099,7 +2092,12 @@ class MediaFrameNav(ttk.Frame):
             
             self.current_frame = 0
             
-
+            self.frame_slider.set(self.current_frame)
+            self.frame_slider.config(to = self.frame_count)
+            if self.frame_count > 1000:
+                self.frame_slider.config(resolution=50)
+            else:
+                self.frame_slider.config(resolution=1)
             
             file_size = path.getsize(file_path)
             
@@ -2180,6 +2178,8 @@ class MediaFrameNav(ttk.Frame):
             
             self.current_frame = 0
             
+            self.frame_slider.set(self.current_frame)
+            self.frame_slider.config(to = self.frame_count)
 
             
             file_size = path.getsize(file_path)
@@ -2257,13 +2257,12 @@ class MediaFrameNav(ttk.Frame):
                 return
             
             self.canvas.delete("image")
-            #global i
-            #i = i + 1
-            #try:
+
             self.current_frame += int(self.interval_spinbox.get())
             if self.current_frame > self.frame_count - 1:
                 self.current_frame = self.current_frame%self.frame_count
             
+            self.frame_slider.set(self.current_frame)
             self.media.set(CAP_PROP_POS_FRAMES, self.current_frame)
             
             #img is a frame of the video
@@ -2294,9 +2293,7 @@ class MediaFrameNav(ttk.Frame):
             self.update()
         elif self.current_ext in self.static_filetypes:
             pass
-
-        
-            
+     
     def Back(self):
 
         
@@ -2310,6 +2307,8 @@ class MediaFrameNav(ttk.Frame):
             if self.current_frame < 0:
                 self.current_frame = abs(self.frame_count + self.current_frame) 
                 
+                
+            self.frame_slider.set(self.current_frame)
             self.media.set(CAP_PROP_POS_FRAMES, self.current_frame)
             
             #img is a frame of the video
@@ -2343,6 +2342,48 @@ class MediaFrameNav(ttk.Frame):
         elif self.current_ext in self.static_filetypes:
             pass
 
+    def slide_frame(self, *args):
+        if self.current_ext in self.animated_filetypes:
+            if self.current_img == None:
+                return
+            
+            self.canvas.delete("image")
+            
+            self.current_frame = self.frame_slider.get()
+            #self.interval_spinbox.set(self.cru)
+            
+            self.media.set(CAP_PROP_POS_FRAMES, self.current_frame)
+            
+            #img is a frame of the video
+            ret, img = self.media.read()
+            #conversion from CV2 Image Data a into a Pillow Image        
+            self.current_img = Image.fromarray(cvtColor(img, COLOR_BGR2RGB))
+            
+            #self.img_label.config(image=self.current_img)
+            self.current_frame_label.config(text = f"Current Frame: {self.current_frame}")
+            
+            if self.gen_info != None:
+                if self.current_frame != 0:
+                    self.gen_info.set_info(
+                        current_frame = self.current_frame,
+                        current_second = (self.fps**-1) * self.current_frame
+                    )
+                else:
+                     self.gen_info.set_info(
+                        current_frame = self.current_frame,
+                        current_second = 0
+                    )
+                     
+            if self.arb_params != None:
+                self.arb_params.update_current_ext_frame_label(self.current_frame)
+            
+
+            self.zoom_fit(self.current_img.width, self.current_img.height)
+            self.update()
+        elif self.current_ext in self.static_filetypes:
+            pass
+            
+            
         
 
     

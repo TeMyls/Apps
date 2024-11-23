@@ -2,6 +2,8 @@
 Uses Tkinter and code from this ![repository](https://github.com/TeMyls/Simple-Scripts/tree/main/File%20Manipulation) to make a very simple app. </br>
 It uses OpenCV's python module, the Python Imaging Library, or PIL, MoviePy, and Numpy.</br>
 
+Also available at this repository named ![PIVET](https://github.com/TeMyls/PIVET/tree/main). PIVET.py is the same as FileManip.py
+
 ### The latest version can deal with several file types.
 * mp4
 * mov

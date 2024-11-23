@@ -8,7 +8,7 @@ class App(tk.Tk):
         super().__init__()
         self.title("Polygon Transform App") 
         self.t2d_poly = TransformPolygon2D(self, 500, 400)
-        self.t2d_poly.grid()
+        self.t2d_poly.grid(sticky="")
         #self.main_canvas = MainCanvas(self)
         #self.main_canvas.grid()
         
@@ -21,29 +21,7 @@ class TransformPolygon2D(ttk.Frame):
 
         self.poly_points = []
         
-        self.angle = 180
-        
-        self.shear_x = 1
-        self.shear_y = 1
-        self.shear_og_x = 1
-        self.shear_og_y = 1
-        
-        self.translate_x = 1
-        self.translate_y = 1
-        self.translate_og_x = 1
-        self.translate_og_y = 1
-        
-        self.scale_x = 1
-        self.scale_y = 1
-        self.scale_og_x = 1
-        self.scale_og_y = 1
-        
-        self.reflect_x = 1
-        self.reflect_y = 1
-        self.reflect_og_x = 1
-        self.reflect_og_y = 1
-        
-        
+
         
         
         self.anchor_size = 5
@@ -90,9 +68,10 @@ class TransformPolygon2D(ttk.Frame):
                             )
         
         
-        og_val = 1
+        
         
         #ROTATION
+        self.angle = 180
         self.rotate_var = tk.IntVar()
         self.rotate_label = ttk.Label(self, text = "Rotation Angle:{}".format(self.angle))
         self.rotate_slider = tk.Scale(
@@ -101,8 +80,9 @@ class TransformPolygon2D(ttk.Frame):
             from_ = 0,
             to = 360,
             orient = "horizontal",
-            length=c_height,
-            command = self.apply_rotation
+            length=c_width,
+            command = self.apply_rotation,
+            troughcolor='#fc671c'
         )
         
         self.rotate_slider.set(self.angle)
@@ -122,7 +102,9 @@ class TransformPolygon2D(ttk.Frame):
             orient = "horizontal",
             length=c_width,
             command = self.apply_shear,
-            resolution= 0.1
+            resolution= 0.1,
+            troughcolor='#2bd8ff'
+            
         )
         
         
@@ -136,15 +118,16 @@ class TransformPolygon2D(ttk.Frame):
             orient = "vertical",
             length= c_height,
             command = self.apply_shear,
-            resolution= 0.1
+            resolution= 0.1,
+            troughcolor='#2bd8ff'
         )
         
-        self.shear_x_slider.set(1)
-        self.shear_y_slider.set(1)
-        self.shear_x = 1
-        self.shear_y = 1
-        self.shear_og_x = 1
-        self.shear_og_y = 1
+        self.shear_x_slider.set(0)
+        self.shear_y_slider.set(0)
+        self.shear_x = 0
+        self.shear_y = 0
+        self.shear_og_x = 0
+        self.shear_og_y = 0
         
         self.shear_widgets = [self.shear_label, self.shear_x_slider, self.shear_y_slider]
         
@@ -159,7 +142,9 @@ class TransformPolygon2D(ttk.Frame):
             to = c_width//2,
             orient = "horizontal",
             length=c_width,
-            command = self.apply_translation
+            command = self.apply_translation,
+            troughcolor='#ffff19'
+            
         )
         
         
@@ -171,7 +156,8 @@ class TransformPolygon2D(ttk.Frame):
             to = c_height//2,
             orient = "vertical",
             length= c_height,
-            command = self.apply_translation
+            command = self.apply_translation,
+            troughcolor='#ffff19'
         )
         
         self.translate_x_slider.set(1)
@@ -196,7 +182,8 @@ class TransformPolygon2D(ttk.Frame):
             orient = "horizontal",
             length=c_width,
             command = self.apply_reflection,
-            resolution= 0.15
+            resolution= 0.15,
+            troughcolor='#bddbdb'
         )
         
         
@@ -209,7 +196,8 @@ class TransformPolygon2D(ttk.Frame):
             orient = "vertical",
             length= c_height,
             command = self.apply_reflection,
-            resolution= 0.15
+            resolution= 0.15,
+            troughcolor='#bddbdb'
         )
         
         self.reflect_x_slider.set(1)
@@ -233,7 +221,8 @@ class TransformPolygon2D(ttk.Frame):
             orient = "horizontal",
             length=c_width,
             command = self.apply_scale,
-            resolution= 0.1
+            resolution= 0.1,
+            troughcolor='#2eb314'
         )
         
         
@@ -246,7 +235,8 @@ class TransformPolygon2D(ttk.Frame):
             orient = "vertical",
             length= c_height,
             command = self.apply_scale,
-            resolution= 0.1
+            resolution= 0.1,
+            troughcolor='#2eb314'
             
         )
         
@@ -294,6 +284,8 @@ class TransformPolygon2D(ttk.Frame):
                                                            command=self.widget_states)
         self.transform_selection_svar.set("Rotation")
         
+        self.all_reset = ttk.Button()
+        self.rotation_reset = ttk.Button()
        
         
         
@@ -701,10 +693,6 @@ class TransformPolygon2D(ttk.Frame):
             
             cur_x_reflect = (self.reflect_x / self.reflect_og_x) * self.reflect_og_x
             cur_y_reflect = (self.reflect_y / self.reflect_og_y) * self.reflect_og_y
-            
-            
-            inc_x = prev_x_reflect - (self.reflect_x - prev_x_reflect/prev_x_reflect) 
-            inc_y = prev_y_reflect - (self.reflect_y - prev_y_reflect/prev_y_reflect)
             
             
             #scale relative percentage change

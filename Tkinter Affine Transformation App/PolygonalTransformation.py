@@ -13,7 +13,7 @@ class App(tk.Tk):
         self.undo_button.grid(row=0,column=0)
         self.redo_button.grid(row=0,column=1)
         
-        '''
+        
         self.t2d_poly = TransformPolygon2D(self, 500, 400)
         self.t2d_poly.grid(row=1,column=2)
         
@@ -23,7 +23,7 @@ class App(tk.Tk):
         
         self.undo_button.config(command=self.t2d_poly.undo)
         self.redo_button.config(command=self.t2d_poly.redo)
-        '''
+        
         
         
         

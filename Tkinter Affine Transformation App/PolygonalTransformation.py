@@ -12,7 +12,6 @@ class App(tk.Tk):
         self.title("Polygon Transform App") 
         
         #2D Widgets 
-        
         self.undo_button_2d = tk.Button(self, text = "undo")
         self.redo_button_2d = tk.Button(self, text = "redo")
         self.undo_button_2d.grid(row=0,column=0)
@@ -67,24 +66,16 @@ class App(tk.Tk):
             
         )
         
-        
 
-        
         # Menu Placement
-        
         self.menubar.add_cascade(label ='Mode', menu = self.settings_menu) 
         self.settings_menu.add_cascade(label="2D or 3D", menu=self.mode_menu)
-        
-        
         
         # display Menu 
         self.config(menu = self.menubar) 
         
-        
-        
         self.set_frame_visibility()
-        
-        
+             
     def hide_widget(self, widget):
         widget.grid_remove()
         
@@ -115,7 +106,7 @@ class App(tk.Tk):
             self.bind("<Control-y>", None)
             
             
-
+            
 class TransformPolygon2D(ttk.Frame):
     def __init__(self, parent, c_width, c_height,  *args, **kwargs):
         super().__init__(parent)
@@ -131,7 +122,7 @@ class TransformPolygon2D(ttk.Frame):
         
 
         
-        
+        #ANCHOR/PIVOT
         self.anchor_size = 5
         
         self.anchor_point = [c_width//2, c_height//2]
@@ -175,7 +166,31 @@ class TransformPolygon2D(ttk.Frame):
                             tags=("anchor")
                             )
         
-        
+        #RESET BUTTONS
+        self.all_reset_btn = ttk.Button(self,
+            text = "Reset All",
+            command = self.clear_all
+        )
+        self.rotation_reset_btn = ttk.Button(self,
+            text = "Reset Rotation",
+            command = self.clear_rotation
+        )
+        self.shear_reset_btn = ttk.Button(self,
+            text = "Reset Shear",
+            command = self.clear_shearing
+        )
+        self.translate_reset_btn = ttk.Button(self,
+            text = "Reset Translation",
+            command = self.clear_translation
+        )
+        self.scale_reset_btn = ttk.Button(self,
+            text = "Reset Scaling",
+            command = self.clear_scaling
+        )
+        self.reflect_reset_btn = ttk.Button(self,
+            text = "Reset Reflection",
+            command = self.clear_reflection
+        )
         
         
         #ROTATION
@@ -193,13 +208,14 @@ class TransformPolygon2D(ttk.Frame):
             troughcolor='#fc671c'
         )
         
+        self.angle_og = 180
         self.rotate_slider.set(self.angle)
         
 
         self.rotate_slider.bind("<ButtonPress>", self.on_rotation)
         
         
-        self.rotate_widgets = [self.rotate_label, self.rotate_slider]
+        self.rotate_widgets = [self.rotate_label, self.rotate_slider, self.rotation_reset_btn]
         
         
         
@@ -246,7 +262,7 @@ class TransformPolygon2D(ttk.Frame):
         self.shear_x_slider.bind("<ButtonPress>", self.on_shearing)
         self.shear_y_slider.bind("<ButtonPress>", self.on_shearing)
         
-        self.shear_widgets = [self.shear_label, self.shear_x_slider, self.shear_y_slider]
+        self.shear_widgets = [self.shear_label, self.shear_x_slider, self.shear_y_slider, self.shear_reset_btn]
         
         #TRANSLATION
         self.translate_var_x = tk.IntVar()
@@ -288,7 +304,7 @@ class TransformPolygon2D(ttk.Frame):
         self.translate_x_slider.bind("<ButtonPress>", self.on_translation)
         self.translate_y_slider.bind("<ButtonPress>", self.on_translation)
         
-        self.translate_widgets = [self.translate_label, self.translate_x_slider, self.translate_y_slider]
+        self.translate_widgets = [self.translate_label, self.translate_x_slider, self.translate_y_slider, self.translate_reset_btn]
         
         #REFLECTION
         self.reflect_var_x = tk.IntVar()
@@ -330,7 +346,7 @@ class TransformPolygon2D(ttk.Frame):
         self.reflect_x_slider.bind("<ButtonPress>", self.on_reflection)
         self.reflect_y_slider.bind("<ButtonPress>", self.on_reflection)
         
-        self.reflect_widgets = [self.reflect_label, self.reflect_x_slider, self.reflect_y_slider]
+        self.reflect_widgets = [self.reflect_label, self.reflect_x_slider, self.reflect_y_slider, self.reflect_reset_btn]
         
         #SCALING
         self.scale_var_x = tk.DoubleVar()
@@ -374,7 +390,7 @@ class TransformPolygon2D(ttk.Frame):
         self.scale_x_slider.bind("<ButtonPress>", self.on_reflection)
         self.scale_y_slider.bind("<ButtonPress>", self.on_reflection)
         
-        self.scale_widgets = [self.scale_label, self.scale_x_slider, self.scale_y_slider]
+        self.scale_widgets = [self.scale_label, self.scale_x_slider, self.scale_y_slider, self.scale_reset_btn]
         
         
         
@@ -411,43 +427,20 @@ class TransformPolygon2D(ttk.Frame):
         self.transform_selection_svar.set("Rotation")
         
         
-        '''
-        self.all_reset_btn = ttk.Button(self,
-            text = "Reset All",
-            command = self.clear_all
-        )
-        self.rotation_reset_btn = ttk.Button(self,
-            text = "Reset Rotation",
-            command = None
-        )
-        self.shear_reset_btn = ttk.Button(self,
-            text = "Reset Shear",
-            command = self.clear_shearing
-        )
-        self.translate_reset_btn = ttk.Button(self,
-            text = "Reset Translation",
-            command = self.clear_translation
-        )
-        self.scale_reset_btn = ttk.Button(self,
-            text = "Reset Scaling",
-            command = self.clear_scaling
-        )
-        self.reflect_reset_btn = ttk.Button(self,
-            text = "Reset Reflection",
-            command = self.clear_reflection
-        )
-       '''
+        
+        
+    
         
         
         arrangement = [
             
-            [self.anchor_y_slider  , self.canvas                   , self.shear_y_slider, self.translate_y_slider, self.scale_y_slider, self.reflect_y_slider, None],
-            [self.anchor_label     , self.anchor_x_slider          , self.all_selection_radiobutton      , None, None, None, None], #self.all_reset_btn         , None, None, None],
-            [self.rotate_label     , self.rotate_slider            , self.rotation_selection_radiobutton , None, None, None, None], #self.rotation_reset_btn    , None, None, None],
-            [self.shear_label      , self.shear_x_slider           , self.shear_selection_radiobutton    , None, None, None, None], #self.shear_reset_btn       , None, None, None],
-            [self.translate_label  , self.translate_x_slider       , self.translate_selection_radiobutton, None, None, None, None], #self.translate_reset_btn   , None, None, None],
-            [self.scale_label      , self.scale_x_slider           , self.scale_selection_radiobutton    , None, None, None, None], #self.scale_reset_btn       , None, None, None],
-            [self.reflect_label    , self.reflect_x_slider         , self.reflect_selection_radiobutton  , None, None, None, None] #self.reflect_reset_btn     , None, None, None]
+            [self.anchor_y_slider  , self.canvas                   , self.shear_y_slider                  , self.translate_y_slider , self.scale_y_slider , self.reflect_y_slider, None],
+            [self.anchor_label     , self.anchor_x_slider          , self.all_selection_radiobutton       , self.all_reset_btn      , None                , None                 , None],
+            [self.rotate_label     , self.rotate_slider            , self.rotation_selection_radiobutton  , self.rotation_reset_btn , None                , None                 , None],
+            [self.shear_label      , self.shear_x_slider           , self.shear_selection_radiobutton     , self.shear_reset_btn    , None                , None                 , None],
+            [self.translate_label  , self.translate_x_slider       , self.translate_selection_radiobutton , self.translate_reset_btn, None                , None                 , None],
+            [self.scale_label      , self.scale_x_slider           , self.scale_selection_radiobutton     , self.scale_reset_btn    , None                , None                 , None],
+            [self.reflect_label    , self.reflect_x_slider         , self.reflect_selection_radiobutton   , self.reflect_reset_btn  , None                , None                 , None]
             
         ]
         for ind_y in range(len(arrangement)):
@@ -456,8 +449,10 @@ class TransformPolygon2D(ttk.Frame):
                 if arrangement[ind_y][ind_x] == None:
                     pass
                 else:
-                    #if isinstance(arrangement[ind_y][ind_x], tk.Label):
-                    arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "W")
+                    if isinstance(arrangement[ind_y][ind_x], tk.Button):
+                        arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "NEWS")
+                    else:
+                        arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "W")
 
         self.canvas.bind("<ButtonPress-3>", self.clear_points)
         self.canvas.bind("<ButtonPress-1>", self.place_point)  
@@ -615,72 +610,50 @@ class TransformPolygon2D(ttk.Frame):
         if len(self.poly_points) > 2:
             self.undo_stack.append(self.poly_points.copy())
     
+    def clear_all(self, *args):
+        self.clear_rotation()
+        self.clear_shearing()
+        self.clear_translation()
+        self.clear_scaling()
+        self.clear_reflection()
+        
+    def clear_rotation(self, *args):
+        self.rotate_slider.set(self.angle_og)
+        self.apply_rotation()
+        
+    def clear_shearing(self, *args):
+        self.shear_x_slider.set(self.shear_og_x)
+        self.shear_y_slider.set(self.shear_og_y)
+        self.apply_shearing()
+    
+    def clear_translation(self, *args):
+        self.translate_x_slider.set(self.translate_og_x)
+        self.translate_y_slider.set(self.translate_og_y)
+        self.apply_translation()
+    
+    def clear_scaling(self, *args):
+        self.scale_x_slider.set(self.scale_og_x)
+        self.scale_y_slider.set(self.scale_og_y)
+        self.apply_scaling()
+    
+    def clear_reflection(self, *args):
+        self.reflect_x_slider.set(self.reflect_og_x)
+        self.reflect_y_slider.set(self.reflect_og_y)
+        self.apply_reflection()
+    
     def degrees_to_radians(self, deg):
         return (deg * math.pi)/180
     
-    def clear_all(self, *args):
-        pass
-    
-    def clear_rotation(self, *args):
-        pass
-        
-    def clear_shearing(self, *args):
-        pass
-    
-    def clear_translation(self, *args):
-        pass
-    
-    def clear_scaling(self, *args):
-        pass
-    
-    def clear_reflection(self, *args):
-        pass
-    
     def apply_rotation(self, *args):
-        #canvas_width = self.canvas.winfo_width()
-        #canvas_height = self.canvas.winfo_height()
-        cx = self.anchor_point[0]
-        cy = self.anchor_point[1]
-        
-        
         if len(self.poly_points) > 2:
             prev_angle = self.angle
+            
             self.angle = self.rotate_slider.get()
-            #self.rotate_label.config(text = "Rotation Angle:{}".format(round(self.angle)))
-            
-            self.canvas.delete("shapes")
-            
-            current_anchor = translation_matrix2D(-cx, -cy)
-            anchor_current = translation_matrix2D(cx, cy)
-            rotation = rotation_matrix2D(self.degrees_to_radians(prev_angle - self.angle))#self.rotate_slider.get()))
-            
-            
-            for i in range(0, len(self.poly_points), 2):
 
-                xny_coords = set_matrix2D(self.poly_points[i], self.poly_points[i + 1])
-                xny_coords = matrix_multiply(current_anchor, xny_coords)
-                xny_coords = matrix_multiply(rotation, xny_coords)
-                xny_coords = matrix_multiply(anchor_current, xny_coords)
-                #print(d)
-                x, y = get_2D_vertices(xny_coords)
-                if i < len(self.poly_points) and i + 1 < len(self.poly_points):
-                    self.poly_points[i] = round(x, 2)
-                    self.poly_points[i + 1] = round(y, 2)
-              
-    
-            
-            self.canvas.create_polygon(self.poly_points, tags=("shapes"))
-            self.rotate_label.config(text = "Rotation Angle:{}".format(round(self.angle)))
-            #self.rotating = True
-            #print("updated")
+            rotation = rotation_matrix2D(self.degrees_to_radians(prev_angle - self.angle))
+            self.apply_transformation(rotation, self.rotate_label, "Rotation", self.angle)
     
     def apply_scaling(self, *args):
-        cx = self.anchor_point[0]
-        cy = self.anchor_point[1]
-        
-        
-        
-        
         
         if len(self.poly_points) > 2:
             prev_x_scale = self.scale_x
@@ -688,9 +661,6 @@ class TransformPolygon2D(ttk.Frame):
             
             self.scale_x = self.scale_x_slider.get()
             self.scale_y = self.scale_y_slider.get()
-            
-            
-            #ternary if = 1 if self.scale_x - prev_x_scale < 0 else 1
             
             #overall scale change
             old_x_scale = (prev_x_scale / self.scale_og_x) * self.scale_og_x
@@ -703,56 +673,10 @@ class TransformPolygon2D(ttk.Frame):
             inc_x_percent = (cur_x_scale - old_x_scale)/prev_x_scale + 1
             inc_y_percent = (cur_y_scale - old_y_scale)/prev_y_scale + 1
             
-
-            
-            #print('inc {}'.format(inc_x_percent))
-            
-            #self.scale_label.config(text = "Scale X:{} Y:{}".format(self.scale_x, self.scale_y))
-            
-            self.canvas.delete("shapes")
-            current_anchor = translation_matrix2D(-cx, -cy)
-            anchor_current = translation_matrix2D(cx, cy)
-            
-
-            
-            
-            scale = scale_matrix2D(inc_x_percent, inc_y_percent)  #rotation_matrix2D(self.degrees_to_radians(prev_angle - self.rotate_slider.get()))
+            scale = scale_matrix2D(inc_x_percent, inc_y_percent)  
+            self.apply_transformation(scale, self.scale_label, "Scale", self.scale_x, self.scale_y)
         
-            for i in range(0, len(self.poly_points), 2):
-
-                xny_coords = set_matrix2D(self.poly_points[i], self.poly_points[i + 1])
-                xny_coords = matrix_multiply(current_anchor, xny_coords)
-                xny_coords = matrix_multiply(scale, xny_coords)
-                xny_coords = matrix_multiply(anchor_current, xny_coords)
-                #print(d)
-                x, y = get_2D_vertices(xny_coords)
-                if i < len(self.poly_points) and i + 1 < len(self.poly_points):
-                    self.poly_points[i] = round(x, 2)
-                    self.poly_points[i + 1] = round(y, 2)
-            
-
-                
-              
-            '''
-            xny_list = "["
-            for i in self.poly_points:
-                xny_list = xny_list + f"{round(i)}"+ ", "
-               
-            xny_list = xny_list + "]"
-            
-            print(xny_list)
-            '''
-            
-            self.canvas.create_polygon(self.poly_points, tags=("shapes"))
-            self.scale_label.config(text = "Scale X:{} Y:{}".format(self.scale_x, self.scale_y))
-    
     def apply_shearing(self, *args):
-        cx = self.anchor_point[0]
-        cy = self.anchor_point[1]
-        
-        
-        
-        
         
         if len(self.poly_points) > 2:
             prev_x_shear = self.shear_x
@@ -761,126 +685,28 @@ class TransformPolygon2D(ttk.Frame):
             self.shear_x = self.shear_x_slider.get()
             self.shear_y = self.shear_y_slider.get()
             
-            
-            #ternary if = 1 if self.scale_x - prev_x_scale < 0 else 1
-            
             inc_x = self.shear_x - prev_x_shear
             inc_y = self.shear_y - prev_y_shear
-
-            #print('inc {} points {}'.format(inc_x, self.poly_points))
             
-            #self.shear_label.config(text = "Shear X:{} Y:{}".format(self.shear_x, self.shear_y))
-            
-            self.canvas.delete("shapes")
-            current_anchor = translation_matrix2D(-cx, -cy)
-            anchor_current = translation_matrix2D(cx, cy)
-            
-
-
             shear = shear_matrix2D(inc_x, inc_y)
+            self.apply_transformation(shear, self.shear_label, "Shear", self.shear_x, self.shear_y)
             
-            for i in range(0, len(self.poly_points), 2):
-
-                xny_coords = set_matrix2D(self.poly_points[i], self.poly_points[i + 1])
-                xny_coords = matrix_multiply(current_anchor, xny_coords)
-                xny_coords = matrix_multiply(shear, xny_coords)
-                xny_coords = matrix_multiply(anchor_current, xny_coords)
-                #print(d)
-                x, y = get_2D_vertices(xny_coords)
-                if i < len(self.poly_points) and i + 1 < len(self.poly_points):
-                    self.poly_points[i] = round(x, 2)
-                    self.poly_points[i + 1] = round(y, 2)
-            
-
-                
-              
-            '''
-            xny_list = "["
-            for i in self.poly_points:
-                xny_list = xny_list + f"{round(i)}"+ ", "
-               
-            xny_list = xny_list + "]"
-            
-            print(xny_list)
-            '''
-            
-            
-            self.canvas.create_polygon(self.poly_points, tags=("shapes"))
-            self.shear_label.config(text = "Shear X:{} Y:{}".format(self.shear_x, self.shear_y))
-    
     def apply_translation(self, *args):
         
-        
-        
-        
-        if len(self.poly_points) > 2:
-            cx = self.anchor_point[0]
-            cy = self.anchor_point[1]
-            
+        if len(self.poly_points) > 2:            
             prev_x_translate = self.translate_x
             prev_y_translate = self.translate_y
             
             self.translate_x = self.translate_x_slider.get()
             self.translate_y = self.translate_y_slider.get()
 
-            
-            
             inc_x = self.translate_x - prev_x_translate
             inc_y = self.translate_y - prev_y_translate
             
-            
-        
-
-            #print('inc {} points {}'.format(inc_x, self.poly_points))
-            #self.translate_label.config(text = "Translate X:{} Y:{}".format(self.translate_x, self.translate_y))
-            
-            
-            self.canvas.delete("shapes")
-            current_anchor = translation_matrix2D(-cx, -cy)
-            anchor_current = translation_matrix2D(cx, cy)
-            
-            
-
-            #shear = shear_matrix2D(inc_x, inc_y)
-            #reflect = reflect_matrix2D(inc_x, inc_y)
             translate = translation_matrix2D(inc_x, inc_y)
+            self.apply_transformation(translate, self.translate_label, "Translation", self.translate_x, self.translate_y)
             
-            for i in range(0, len(self.poly_points), 2):
-
-                xny_coords = set_matrix2D(self.poly_points[i], self.poly_points[i + 1])
-                xny_coords = matrix_multiply(current_anchor, xny_coords)
-                xny_coords = matrix_multiply(translate, xny_coords)
-                xny_coords = matrix_multiply(anchor_current, xny_coords)
-                #print(d)
-                x, y = get_2D_vertices(xny_coords)
-                if i < len(self.poly_points) and i + 1 < len(self.poly_points):
-                    self.poly_points[i] = round(x, 2)
-                    self.poly_points[i + 1] = round(y, 2)
-            
-
-                
-              
-            '''
-            xny_list = "["
-            for i in self.poly_points:
-                xny_list = xny_list + f"{round(i)}"+ ", "
-               
-            xny_list = xny_list + "]"
-            
-            print(xny_list)
-            '''
-            
-            
-            self.canvas.create_polygon(self.poly_points, tags=("shapes"))
-            self.translate_label.config(text = "Translate X:{} Y:{}".format(self.translate_x, self.translate_y))
-    
     def apply_reflection(self, *args):
-        cx = self.anchor_point[0]
-        cy = self.anchor_point[1]
-        
-       
-        
-        
         
         if len(self.poly_points) > 2:
             prev_x_reflect = self.reflect_x
@@ -889,10 +715,6 @@ class TransformPolygon2D(ttk.Frame):
             self.reflect_x = self.reflect_x_slider.get()
             self.reflect_y = self.reflect_y_slider.get()
             
-            sign_x = -1 if prev_x_reflect <= 0 else 1
-            sign_y = -1 if prev_y_reflect <= 0 else 1
-            
-            
             #overall scale change
             old_x_reflect = (prev_x_reflect / self.reflect_og_x) * self.reflect_og_x
             old_y_reflect = (prev_y_reflect / self.reflect_og_y) * self.reflect_og_y
@@ -900,53 +722,53 @@ class TransformPolygon2D(ttk.Frame):
             cur_x_reflect = (self.reflect_x / self.reflect_og_x) * self.reflect_og_x
             cur_y_reflect = (self.reflect_y / self.reflect_og_y) * self.reflect_og_y
             
-            
             #scale relative percentage change
             inc_x_percent =  (cur_x_reflect - old_x_reflect)/prev_x_reflect + 1
             inc_y_percent =  (cur_y_reflect - old_y_reflect)/prev_y_reflect + 1
-
-            #print('inc {} points {}'.format(inc_x, self.poly_points))
             
-            #self.reflect_label.config(text = "Reflect X:{} Y:{}".format(self.reflect_x, self.reflect_y))
-            #if prev_x_reflect != 0 and prev_y_reflect != 0 
-            
-            self.canvas.delete("shapes")
-            current_anchor = translation_matrix2D(-cx, -cy)
-            anchor_current = translation_matrix2D(cx, cy)
-            
-            new_poly = []
-
-            #shear = shear_matrix2D(inc_x, inc_y)
             reflect = reflect_matrix2D(inc_x_percent, inc_y_percent)
-            
-            for i in range(0, len(self.poly_points), 2):
+            self.apply_transformation(reflect, self.reflect_label, "Reflect", self.reflect_x, self.reflect_y)
 
-                xny_coords = set_matrix2D(self.poly_points[i], self.poly_points[i + 1])
-                xny_coords = matrix_multiply(current_anchor, xny_coords)
-                xny_coords = matrix_multiply(reflect, xny_coords)
-                xny_coords = matrix_multiply(anchor_current, xny_coords)
-                #print(d)
-                x, y = get_2D_vertices(xny_coords)
-                if i < len(self.poly_points) and i + 1 < len(self.poly_points):
-                    self.poly_points[i] = round(x, 2)
-                    self.poly_points[i + 1] = round(y, 2)
-            
+    def apply_transformation(self, transform_matrix, label, text, x_val, y_val = None):  
+        self.canvas.delete("shapes")
+        
+        cx = self.anchor_point[0]
+        cy = self.anchor_point[1]
+        
+        current_anchor = translation_matrix2D(-cx, -cy)
+        anchor_current = translation_matrix2D(cx, cy)
+        
+        for i in range(0, len(self.poly_points), 2):
 
-                
-              
-            '''
-            xny_list = "["
-            for i in self.poly_points:
-                xny_list = xny_list + f"{round(i)}"+ ", "
-               
-            xny_list = xny_list + "]"
+            xny_coords = set_matrix2D(self.poly_points[i], self.poly_points[i + 1])
+            xny_coords = matrix_multiply(current_anchor, xny_coords)
+            xny_coords = matrix_multiply(transform_matrix, xny_coords)
+            xny_coords = matrix_multiply(anchor_current, xny_coords)
+     
+            x, y = get_2D_vertices(xny_coords)
+            if i < len(self.poly_points) and i + 1 < len(self.poly_points):
+                self.poly_points[i] = round(x, 2)
+                self.poly_points[i + 1] = round(y, 2)
+        
+
             
-            print(xny_list)
-            '''
             
+        '''
+        xny_list = "["
+        for i in self.poly_points:
+            xny_list = xny_list + f"{round(i)}"+ ", "
             
-            self.canvas.create_polygon(self.poly_points, tags=("shapes"))
-            self.reflect_label.config(text = "Reflect X:{} Y:{}".format(self.reflect_x, self.reflect_y))
+        xny_list = xny_list + "]"
+        
+        print(xny_list)
+        '''
+        
+        
+        self.canvas.create_polygon(self.poly_points, tags=("shapes"))
+        if y_val != None:
+            label.config(text = "{} X:{} Y:{}".format(text, x_val, y_val))
+        else:
+            label.config(text = "{} Angle:{}".format(text, x_val))
 
     def place_point(self, event):
         x = self.canvas.canvasx(event.x)
@@ -962,13 +784,13 @@ class TransformPolygon2D(ttk.Frame):
             #print(self.poly_points)
             #self.undo_stack.append(self.poly_points.copy())
             self.canvas.create_polygon(self.poly_points, tags=("shapes"))
-            
-         
+               
     def clear_points(self, event):
         self.poly_points.clear()
         self.canvas.delete("shapes")
-    
-    
+        
+        
+        
 class CanvasFrame3d(ttk.Frame):  
     def __init__(self, parent, c_width, c_height):
         super().__init__(parent)
@@ -986,9 +808,9 @@ class CanvasFrame3d(ttk.Frame):
     
     def get_canvas(self):
         return self.canvas
+      
+      
         
-
-
 class TransformPolyhedron3d(ttk.Frame):
     def __init__(self, parent, canvas_frame,  *args, **kwargs):
         
@@ -1003,8 +825,7 @@ class TransformPolyhedron3d(ttk.Frame):
         self.canvas_width = canvas_frame.get_width()  #c_width #self.canvas.winfo_width()
         self.canvas_height = canvas_frame.get_height() #self.canvas.winfo_height()
     
-        
-        
+
         self.undo_stack = []
         self.redo_queue = []
         
@@ -1021,7 +842,7 @@ class TransformPolyhedron3d(ttk.Frame):
         self.z_min = 1
         self.z_max = 10
         
-        #camera planes
+        #camera planes 
         self.near = 1
         self.far = -1
         self.scale = 1
@@ -1031,10 +852,6 @@ class TransformPolyhedron3d(ttk.Frame):
         self.left = -1
         self.right = 1
         self.bottom = -1
-        
-        
-        
-        
         
         #x y z
         self.camera_position = [0.0, 0.0, -self.far/2]
@@ -1047,9 +864,6 @@ class TransformPolyhedron3d(ttk.Frame):
 
         #MATRICES
         
-        
-        
-
         a = self.scale/self.camera_position[2]
         self.weak_perspective_matrix = [
                     [a, 0, 0, 0], #x
@@ -1103,27 +917,30 @@ class TransformPolyhedron3d(ttk.Frame):
                     [0, 0,-1, 0] 
         ]
         
-        self.current_matrix = self.true_perspective_matrix.copy()   #self.weak_perspective_matrix.copy() # self.true_perspective_matrix.copy()   # self.ortho_perspective_matrix.copy() 
+        self.current_matrix = self.true_perspective_matrix.copy()  #self.weak_perspective_matrix.copy() # self.true_perspective_matrix.copy()   # self.ortho_perspective_matrix.copy() 
         
         
         #GRIDLINES
         
         divides = 10
-        view_percent = 1
-        #2 is the amount of space occupied by clip space on the x plane 
-        spacing = 2/divides
+        
+        #The total amount of space occupied by clip space on the x y and z plane 
+        total_space = abs(self.far - self.near)
+        spacing = total_space/divides
+        #spacing multipliers
+        sxm, szm, exm, ezm = 1, 1, 1, 1
         
         #ugliest list comprehension
         self.grid_lines_x = [
             #x spanning, points are xyz pairs of lines 
             #world space
             #start x, y,z end x, y, z
-            [round(x * spacing + -1, 2) * view_percent, 
-             0, 
-             self.near * view_percent, 
-             round(x * spacing + -1, 2) * view_percent, 
-             0, 
-             self.far * view_percent] for x in range(divides + 1)
+            [round(x * spacing + -1, 2) * sxm, 
+             0.0, 
+             self.near * szm, 
+             round(x * spacing + -1, 2) * exm, 
+             0.0, 
+             self.far * ezm] for x in range(divides + 1)
         ]
         
         print(self.grid_lines_x)
@@ -1136,17 +953,18 @@ class TransformPolyhedron3d(ttk.Frame):
         print(self.grid_lines_x)
         print()
         
-        #
+        sxm, szm, exm, ezm = 1, 1, 1, 1
+        
         self.grid_lines_z = [
-            #x spanning, points are xyz pairs of lines 
+            #z spanning, points are xyz pairs of lines 
             #world space
             #start x, y,z end x, y, z
-            [1 * view_percent, 
-             0, 
-             round(z * spacing + -1, 2) * view_percent, 
-             -1 * view_percent, 
-             0, 
-             round(z * spacing + -1, 2) * view_percent] for z in range(divides + 1)
+            [1 * sxm, 
+             0.0, 
+             round(z * spacing + -1, 2) * szm, 
+             -1 * exm, 
+             0.0, 
+             round(z * spacing + -1, 2) * ezm] for z in range(divides + 1)
         ]
         
         print(self.grid_lines_z)
@@ -1169,7 +987,7 @@ class TransformPolyhedron3d(ttk.Frame):
         
         #ANCHOR/PIVOT
         self.anchor_point = [0.0, 0.0, 0.0]
-        self.anchor_label = ttk.Label(self, text = "Pivot Point")
+        self.anchor_label = ttk.Label(self, text = "Pivot Point XYZ")
         self.anchor_x_spinbox = ttk.Spinbox(
             self,
             #variable=self.rotate_var,
@@ -1279,9 +1097,9 @@ class TransformPolyhedron3d(ttk.Frame):
                                         exportselection=False
                                         )
         
-        self.edge_keep_button = tk.Button(self, text="Keep Edge", command=None)
-        self.edge_delete_button = tk.Button(self, text="Delete Edge", command=None)
-        self.edge_clear_button = tk.Button(self, text="Clear Edges", command=None)
+        self.edge_keep_button = tk.Button(self, text="Keep Edge", command=self.keep_edge)
+        self.edge_delete_button = tk.Button(self, text="Delete Edge", command=self.remove_edge)
+        self.edge_clear_button = tk.Button(self, text="Clear Edges", command=self.clear_edges)
         
         self.edge_scrollbar_y.config(command=self.edge_listbox.yview)
         self.edge_scrollbar_x.config(command=self.edge_listbox.xview)
@@ -1299,11 +1117,11 @@ class TransformPolyhedron3d(ttk.Frame):
         #RADIOBUTTON
         #self.transform_selection_label = ttk.Label(self, text = "Transform Type")
         self.transform_selection_svar = tk.StringVar()
-        
+        self.transform_selection_svar.set("Rotation")
         
         self.anchor_radiobutton = ttk.Radiobutton(self, text="Anchor", 
                                                            variable=self.transform_selection_svar,
-                                                           value = "All",
+                                                           value = "Anchor",
                                                            command=self.widget_states)
         
         
@@ -1379,9 +1197,9 @@ class TransformPolyhedron3d(ttk.Frame):
 
         elif transformation_type == "Rotation":
             for widget in self.rotate_widgets:
-                self.hide_widget(widget)
-            for widget in self.anchor_widgets:
                 self.show_widget(widget)
+            for widget in self.anchor_widgets:
+                self.hide_widget(widget)
     
     def world_to_screen(self, x, y, z):
         #this is the function that projects 3d points from the world to the scren
@@ -1420,6 +1238,7 @@ class TransformPolyhedron3d(ttk.Frame):
                         )
         
         x, y = self.world_to_screen(self.world_xyz[0], self.world_xyz[1], self.world_xyz[2])
+        
         oval_size = (1 - (self.zed - 1)/(self.far - self.near)) * self.z_max
         self.canvas.delete("w-coords")
         self.canvas.create_oval(
@@ -1453,7 +1272,7 @@ class TransformPolyhedron3d(ttk.Frame):
             else:
                 self.z_size = self.z_max
                 
-        self.zed = 1 + (self.z_size/(self.z_max - self.z_min)) * (self.far - self.near) 
+        self.zed = 1 + (self.z_size/(self.z_max - self.z_min)) * (self.far - self.near)  + 0.22
         
         self.world_xyz[2] = self.zed
         
@@ -1493,7 +1312,7 @@ class TransformPolyhedron3d(ttk.Frame):
     
     def apply_rotation_x(self, *args):
         self.angle_x = self.apply_rotation(self.angle_x, self.rotate_x_spinbox, x_rotation_matrix3D)
-                 
+                        
     def apply_rotation_y(self, *args):
         self.angle_y = self.apply_rotation(self.angle_y, self.rotate_y_spinbox, y_rotation_matrix3D)
         
@@ -1618,19 +1437,19 @@ class TransformPolyhedron3d(ttk.Frame):
         #Grid Square Edges, 
         #The beginning x, y, z triplet in the gridlines array
         #The ending x, y, z triplet in gridlines array
-        bx, by, bz = one_sign * grid_lines[0], one_sign * grid_lines[1], one_sign * grid_lines[2]
-        ex, ey, ez = one_sign * grid_lines[-3], one_sign * grid_lines[-2], one_sign * grid_lines[-1]
-        deci = 2
-        color = "red"
-        min_font_size = 8
-        font_mult = 5
         
-        
-        tx1, ty1 = self.world_to_screen(bx, by, bz)
-        tx2, ty2 = self.world_to_screen(ex, ey, ez)
         
         if one_sign > 0:
+            bx, by, bz = one_sign * grid_lines[0], one_sign * grid_lines[1], one_sign * grid_lines[2]
+            ex, ey, ez = one_sign * grid_lines[-3], one_sign * grid_lines[-2], one_sign * grid_lines[-1]
+            deci = 2
+            color = "red"
+            min_font_size = 8
+            font_mult = 5
             
+            
+            tx1, ty1 = self.world_to_screen(bx, by, bz)
+            tx2, ty2 = self.world_to_screen(ex, ey, ez)
         
         
             self.canvas.create_text(tx1, 
@@ -1646,14 +1465,24 @@ class TransformPolyhedron3d(ttk.Frame):
                                     font = ("Arial", round((1 - (ez - 1)/(self.far - self.near)) * font_mult) + min_font_size),
                                     tags=("gridlinelabels"))
         else:
+            bx, by, bz = one_sign * grid_lines[3], one_sign * grid_lines[4], one_sign * grid_lines[5]
+            ex, ey, ez = one_sign * grid_lines[-6], one_sign * grid_lines[-5], one_sign * grid_lines[-4]
+            deci = 2
+            color = "red"
+            min_font_size = 8
+            font_mult = 5
+            
+            
+            tx1, ty1 = self.world_to_screen(bx, by, bz)
+            tx2, ty2 = self.world_to_screen(ex, ey, ez)
             self.canvas.create_text(tx1, 
-                                    ty2,
+                                    ty1,
                                     text="x:{}\ny:{}\nz:{}".format(round(bx, deci), round(by, deci), round(bz, deci)),
                                     fill=color,
                                     font = ("Arial", round((1 - (bz - 1)/(self.far - self.near)) * font_mult) + min_font_size),
                                     tags=("gridlinelabels"))
             self.canvas.create_text(tx2, 
-                                    ty1,
+                                    ty2,
                                     text="x:{}\ny:{}\nz:{}".format(round(ex, deci), round(ey, deci), round(ez, deci)),
                                     fill=color,
                                     font = ("Arial", round((1 - (ez - 1)/(self.far - self.near)) * font_mult) + min_font_size),
@@ -1665,6 +1494,8 @@ class TransformPolyhedron3d(ttk.Frame):
             end_point = []
             
             
+            
+            line_num = len(grid_lines)
             for i in range(0, len(grid_lines), 3):
                 
                 gx, gy, gz = grid_lines[i], grid_lines[i + 1], grid_lines[i + 2]
@@ -1686,13 +1517,26 @@ class TransformPolyhedron3d(ttk.Frame):
                     ex, ey = self.world_to_screen(end_point[0], end_point[1], end_point[2])
                     
                     
-                    
-                    self.canvas.create_line(sx, sy, ex, ey, tags=("gridlines"))
+                    line_z_max = max(start_point[2], end_point[2])
+                    thick_max = 3
+                    z_percent = (1 - (line_z_max - 1)/(self.far - self.near))
+                    line_size = round(z_percent * thick_max, 6)
+                    pixel_spacing = line_num
+                    #z percentage * distance formula calculation of gridline on screen
+                    #dash_size = int(250 * z_percent + 1)
+                    #print(dash_size)
+                    #print(z_percent, dash_size, pixel_spacing)
+                    self.canvas.create_line(sx, sy, ex, ey,
+                                            tags=("gridlines"),
+                                            width=line_size
+                                            #tuple(dash_size - pixel_spacing)
+                                            #dash=(dash_size, 1)
+                                            )
                     
                     start_point.clear()
                     end_point.clear()
     
-    def draw_anchor(self, *args):
+    def draw_anchor(self):
         ax = float(self.anchor_x_spinbox.get())
         ay = float(self.anchor_y_spinbox.get())
         az = float(self.anchor_z_spinbox.get())  
@@ -1712,9 +1556,7 @@ class TransformPolyhedron3d(ttk.Frame):
                         fill = "red",
                         tags=("anchors")
                         )
-            
-    
-                            
+                                    
     def draw_projected_points(self):
         if len(self.vertices) > 0:
             
@@ -1745,8 +1587,6 @@ class TransformPolyhedron3d(ttk.Frame):
                                 tags=("verts")
                                 )
             
-         
-        
     def place_vertex(self, event):
         #x = self.canvas.canvasx(event.x)
         #y = self.canvas.canvasy(event.y)
@@ -1756,12 +1596,9 @@ class TransformPolyhedron3d(ttk.Frame):
         self.vertices.append(wx)
         self.vertices.append(wy)
         self.vertices.append(wz)
-        
-        
+         
         deci = 2
         rwx, rwy, rwz = round(wx, deci), round(wy, deci), round(wz, deci)
-        
-        
         
         self.vertex_listbox.insert(0, "x:{}:y:{}:z:{}".format(rwx, rwy, rwz))
         
@@ -1769,7 +1606,7 @@ class TransformPolyhedron3d(ttk.Frame):
             
             x, y = self.world_to_screen(wx, wy, wz)
             oval_size = (1 - (wz - 1)/(self.far - self.near)) * self.z_max
-            
+            #print(1 - (wz - 1)/(self.far - self.near))
             self.canvas.create_oval(
                             x - oval_size, 
                             y - oval_size,
@@ -1781,9 +1618,11 @@ class TransformPolyhedron3d(ttk.Frame):
             
             #print("New Vertex x:{}:y:{}:z:{}".format(rwx, rwy, rwz))
             #print(self.vertices)
-
+    
+    #VERTEX BUTTONS
+    
     def remove_vertex(self):
-        if len(self.vertices) > 0 and self.vertex_listbox.curselection():
+        if len(self.vertices) > 0 and len(self.vertex_listbox.curselection()) > 0:
             deci = 2
             for ind in self.vertex_listbox.curselection():
                 sel_verts = self.vertex_listbox.get(ind).split(':')
@@ -1808,14 +1647,28 @@ class TransformPolyhedron3d(ttk.Frame):
         self.canvas.delete("verts")
         self.draw_projected_points()
         #self.print_vertices()
+    
     def clear_vertices(self):
         self.canvas.delete("verts")    
         self.vertex_listbox.delete(0, tk.END)
         self.vertices.clear()
     
     def add_edge(self):
+        if len(self.vertices) > 0 and len(self.vertex_listbox.curselection()) > 0:
+            self.edge_listbox.delete(0, tk.END)
+            for ind in self.vertex_listbox.curselection():
+                pass
+    
+    #EDGE BUTTONS
+                
+    def keep_edge(self):
         pass
         
+    def remove_edge(self):
+        pass
+    
+    def clear_edges(self):
+        pass
                 
     def print_vertices(self):
         if False:
@@ -1848,13 +1701,13 @@ class TransformPolyhedron3d(ttk.Frame):
                 
         return coordinates
 
-
-
-    
 if __name__ == "__main__":
     app = App()
     #app.geometry("800x600")
     app.resizable()
     app.mainloop()
+
+
+
 
 

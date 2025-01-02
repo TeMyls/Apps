@@ -2354,7 +2354,7 @@ class TransformPolyhedron3d(ttk.Frame):
             self.edges.pop(v_ind)
             #self.edge_options.pop(v_ind)
             dict_new = {}
-            if self.edge_ind > v_ind:
+            if self.edge_ind >= v_ind:
                 self.edge_ind = 0
         
             for key in self.edges:

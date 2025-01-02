@@ -839,6 +839,8 @@ class TransformPolyhedron3d(ttk.Frame):
         #The values are a list of vertex connections:
         # {0: [], 6: [1, 2, 0, 3], 3: [0, 2], 1: [2, 0], 5: [0, 3, 4], 4: [1, 2]}
         self.edges = {}
+        # A List of lists of vertices forming faces from their egdes
+        # uses in the same x indexes vertices as above
         #Formed from a Depth First Search Graph Cycle Detecton Algorithm on the edges
         self.faces = []
         
@@ -1129,6 +1131,7 @@ class TransformPolyhedron3d(ttk.Frame):
         
         self.rotate_widgets = [self.rotate_x_spinbox, self.rotate_y_spinbox, self.rotate_z_spinbox]
         
+        
         #VERTEX
         self.vertex_label = ttk.Label(self, text="Vertices")
         self.vertex_scrollbar_y = ttk.Scrollbar(self, orient='vertical')
@@ -1143,7 +1146,7 @@ class TransformPolyhedron3d(ttk.Frame):
         self.vertex_scrollbar_y.config(command=self.vertex_listbox.yview)
         self.vertex_scrollbar_x.config(command=self.vertex_listbox.xview)
         
-        #self.vertex_add_button = tk.Button(self, text="Add Edge", command=self.add_edge)
+        self.vertex_select_button = tk.Button(self, text="Select Vertex", command=self.select_vertex)
         self.vertex_delete_button = tk.Button(self, text="Delete Vertex", command=self.remove_vertex)
         self.vertex_clear_button = tk.Button(self, text="Clear Vertices", command=self.clear_vertices)
         
@@ -1153,79 +1156,114 @@ class TransformPolyhedron3d(ttk.Frame):
                                                     variable=self.vertex_checkvar,
                                                     onvalue = 1,
                                                     offvalue=0,
-                                                    command=self.edge_check_states
+                                                    command=None
         )
+            #edge_check_states
         
         #EDGES
-        self.edge_label = ttk.Label(self, text="Edges")
+        
+        self.edge_label = ttk.Label(self, text="Vertex:? - Edges")
         
         
-        self.edge_checkvar = tk.IntVar()
-        self.edge_checkvar.set(0)
-        self.edge_checkbutton = tk.Checkbutton(self, text = "Vertex:?",
-                                                    variable=self.edge_checkvar,
-                                                    onvalue = 1,
-                                                    offvalue= 0,
-                                                    state="disabled",
-                                                    command=self.connect_vertices
-        )
-        self.edge_next = tk.Button(self, text="Next Vertex", command=self.next_vertex, state="disabled")
-        self.edge_prev = tk.Button(self, text="Prev Vertex", command=self.prev_vertex, state="disabled")
+        #https://blog.teclado.com/tkinter-scrollable-frames/
+        #the widget beliw the only widget that has to be gridded in arrangement
+        self.edge_mn_frame = ttk.Frame(self)
+        self.edge_canvas = tk.Canvas(self.edge_mn_frame, width=100, height=150) #about the width of a listbox with no specificied width and heoght
+        self.edge_scrollbar_y = ttk.Scrollbar(self.edge_mn_frame, orient='vertical', command=self.edge_canvas.yview)
+        self.edge_scrl_frame = ttk.Frame(self.edge_canvas)
         
-        #FACE
-        self.vertex_label = ttk.Label(self, text="Vertices")
-        self.vertex_scrollbar_y = ttk.Scrollbar(self, orient='vertical')
-        self.vertex_scrollbar_x = ttk.Scrollbar(self, orient='horizontal')
-        self.vertex_listbox = tk.Listbox(self, 
-                                        yscrollcommand = self.vertex_scrollbar_y.set,
-                                        xscrollcommand = self.vertex_scrollbar_x.set,
-                                        selectmode="single", 
-                                        exportselection=False
-                                        )
+        self.edge_ind = 0
+        self.edge_keys_ls = None #self.edges.keys()
+        self.edge_cur_key = None #will be self.edge_keys_ls[self.edge_ind]
+        #below keeps track for the dynamic checkboxes generated
+        #will be the edges and whether they're connected tp other edges,
+        # a dictionary of dictionarys and bools 
+        self.edge_options = {} 
+        #collection of th shown checkbox, deleted and regenerated frequently
+        self.edge_checklist = []
         
-        self.vertex_scrollbar_y.config(command=self.vertex_listbox.yview)
-        self.vertex_scrollbar_x.config(command=self.vertex_listbox.xview)
         
-        #self.vertex_add_button = tk.Button(self, text="Add Edge", command=self.add_edge)
-        self.vertex_delete_button = tk.Button(self, text="Delete Vertex", command=self.remove_vertex)
-        self.vertex_clear_button = tk.Button(self, text="Clear Vertices", command=self.clear_vertices)
-        
-        self.vertex_checkvar = tk.IntVar()
-        self.vertex_checkvar.set(0)
-        self.vertex_checkbutton = tk.Checkbutton(self, text = "Edge Connection",
-                                                    variable=self.vertex_checkvar,
-                                                    onvalue = 1,
-                                                    offvalue=0,
-                                                    command=self.edge_check_states
+        self.edge_scrl_frame.bind(
+            "<Configure>",
+            lambda e: self.edge_canvas.configure(
+                scrollregion=self.edge_canvas.bbox("all")
+            )
         )
         
-        #VERTEX
-        self.faces_label = ttk.Label(self, text="Faces")
-        self.faces_scrollbar_y = ttk.Scrollbar(self, orient='vertical')
-        self.faces_scrollbar_x = ttk.Scrollbar(self, orient='horizontal')
-        self.faces_listbox = tk.Listbox(self, 
-                                        yscrollcommand = self.faces_scrollbar_y.set,
-                                        xscrollcommand = self.faces_scrollbar_x.set,
-                                        selectmode="single", 
-                                        exportselection=False
-                                        )
+        self.edge_canvas.create_window((0, 0), window=self.edge_scrl_frame, anchor="nw")
+        self.edge_canvas.configure(yscrollcommand=self.edge_scrollbar_y.set)
         
-        self.faces_scrollbar_y.config(command=self.faces_listbox.yview)
-        self.faces_scrollbar_x.config(command=self.faces_listbox.xview)
+        self.edge_canvas.grid(row=0, column=0)#pack(side="left", fill="both", expand=True)
+        self.edge_scrollbar_y.grid(row=0, column=1, sticky="NS")#pack(side="right", fill="y")
         
-        #self.vertex_add_button = tk.Button(self, text="Add Edge", command=self.add_edge)
-        self.vertex_delete_button = tk.Button(self, text="Delete Vertex", command=self.remove_vertex)
-        self.vertex_clear_button = tk.Button(self, text="Clear Vertices", command=self.clear_vertices)
         
-        self.vertex_checkvar = tk.IntVar()
-        self.vertex_checkvar.set(0)
-        self.vertex_checkbutton = tk.Checkbutton(self, text = "Edge Connection",
-                                                    variable=self.vertex_checkvar,
-                                                    onvalue = 1,
-                                                    offvalue=0,
-                                                    command=self.edge_check_states
+        '''
+        #Test
+        options = ["Option " + str(i) for i in range(1,50)]
+        i = 0
+        for option in options:
+            var = tk.BooleanVar()
+            chk = tk.Checkbutton(self.edge_scrl_frame, text=option, variable=var, command=None).grid(row=i, column=1)#pack()
+            i += 1
+        '''
+        
+        
+        
+    
+        self.edge_next = tk.Button(self,
+                                   text="Next Vertex",
+                                   command=self.next_vertex,
+                                   #state="disabled"
+                                   )
+        self.edge_prev = tk.Button(self, 
+                                   text="Prev Vertex", 
+                                   command=self.prev_vertex, 
+                                   #state="disabled"
+                                   )
+        #FACES
+
+        self.face_label = ttk.Label(self, text="Faces")
+
+        self.face_mn_frame = ttk.Frame(self)
+        self.face_canvas = tk.Canvas(self.face_mn_frame, width=100, height=150) #about the width of a listbox with no specificied width and heoght
+        self.face_scrollbar_y = ttk.Scrollbar(self.face_mn_frame, orient='vertical', command=self.face_canvas.yview)
+        self.face_scrollbar_x = ttk.Scrollbar(self.face_mn_frame, orient='horizontal', command=self.face_canvas.xview)
+        self.face_scrl_frame = ttk.Frame(self.face_canvas)
+        
+        
+        #below keeps track for the dynamic checkboxes generated
+        
+
+        #collection of th shown checkbox, deleted and regenerated frequently
+        self.face_checklist = []
+        #Dictionary of the face vertex indexes as lists of X Y Z vertices, the face color, and the z average of faces
+        self.faces_data = {}
+        
+        self.face_scrl_frame.bind(
+            "<Configure>",
+            lambda e: self.face_canvas.configure(
+                scrollregion=self.face_canvas.bbox("all")
+            )
         )
         
+        self.face_canvas.create_window((0, 0), window=self.face_scrl_frame, anchor="nw")
+        self.face_canvas.configure(yscrollcommand=self.face_scrollbar_y.set)
+        self.face_canvas.configure(xscrollcommand=self.face_scrollbar_x.set)
+        
+        self.face_canvas.grid(row=0, column=0)#pack(side="left", fill="both", expand=True)
+        self.face_scrollbar_y.grid(row=0, column=1, sticky="NS")#pack(side="right", fill="y")
+        self.face_scrollbar_x.grid(row=1, column=0, sticky="EW")
+        
+        #Test
+        '''
+        options = ["Option " + str(i) for i in range(1,10)]
+        i = 0
+        for option in options:
+            var = tk.BooleanVar()
+            chk = tk.Checkbutton(self.face_scrl_frame, text=option, variable=var, command=None).grid(row=i, column=1)#pack()
+            i += 1
+        '''
+  
         #self.edge_widgets = [self.edge_checkbutton, self.edge_next, self.edge_prev]
         
         #SCREEN AND WORLD MOUSE COORDINATES
@@ -1264,7 +1302,7 @@ class TransformPolyhedron3d(ttk.Frame):
         self.canvas.bind("<ButtonPress-3>", self.place_vertex)  
         self.canvas.bind("<B1-Motion>", self.z_pos) # <B1-Motion>
         self.canvas.bind("<MouseWheel>", self.set_depth)  
-        self.vertex_listbox.bind("<<ListboxSelect>>", self.clear_edge_check)
+        #self.vertex_listbox.bind("<<ListboxSelect>>", self.clear_edge_check)
         
         #GRIDLINES
         self.grid_lines_x = []
@@ -1277,22 +1315,25 @@ class TransformPolyhedron3d(ttk.Frame):
         arrangement = [
                         #[None                   , None                   , None                  , None                 ],
                        
-                        [self.world_xyz_label   , None                   , self.screen_xy_label, None                              , None],
-                        [self.ortho_radiobutton , None                   , self.true_persp_radiobutton, None                       , None],
-                        [self.vertex_label      , None                   , self.edge_label     , None                              , None],
-                        [self.vertex_listbox    , self.vertex_scrollbar_y, self.edge_checkbutton, None                             , None],
-                        [self.vertex_scrollbar_x, None                   , None                , None                              , None],
-                        [self.vertex_delete_button,None                  , self.edge_next      , None                              , None],
-                        [self.vertex_clear_button, None                  , self.edge_prev      , None                              , None],
-                        [self.vertex_checkbutton, None                   , None                , None                              , None],
-                        [self.vert_vis_checkbutton, None                 , self.grid_vis_checkbutton, self.grid_reset_btn          , None],
-                        [self.vert_circ_radiobutton, self.vert_ind_radiobutton, self.grid_lines_checkbutton, self.grid_rotation_cb , None],
-                        [self.vert_pixel_radiobutton, self.vert_none_radiobutton, self.grid_text_checkbutton,self.grid_thickness_cb, None],
-                        [self.rotate_label      ,None                    , self.anchor_label    ,   None                           , None],
-                        [self.rotate_radiobutton,None                    , self.anchor_radiobutton, None                           , None],
-                        [self.rotate_x_spinbox  ,None                    , self.anchor_x_spinbox , None                            , None],
-                        [self.rotate_y_spinbox  ,None                    , self.anchor_y_spinbox , None                            , None],
-                        [self.rotate_z_spinbox  ,None                    , self.anchor_z_spinbox , None                            , None],
+                        [self.world_xyz_label   , None                   , self.screen_xy_label, None                              , None, None],
+                        [self.ortho_radiobutton , None                   , self.true_persp_radiobutton, None                       , None, None],
+                        [self.vertex_label      , None                   , self.edge_label     , None                              , None, self.face_label],
+                        [self.vertex_listbox    , self.vertex_scrollbar_y, self.edge_mn_frame  , None                              , None, self.face_mn_frame],
+                        [self.vertex_scrollbar_x, None                   , None                , None                              , None, None],
+                        [self.vertex_select_button,None                  , None                , None                              , None, None],
+                        [self.vertex_delete_button,None                  , self.edge_next      , None                              , None, None],
+                        [self.vertex_clear_button, None                  , self.edge_prev      , None                              , None, None],
+                        
+                        
+                        [self.vert_vis_checkbutton, None                 , self.grid_vis_checkbutton, self.grid_reset_btn          , None, None],
+                        [self.vert_circ_radiobutton, self.vert_ind_radiobutton, self.grid_lines_checkbutton, self.grid_rotation_cb , None, None],
+                        [self.vert_pixel_radiobutton, self.vert_none_radiobutton, self.grid_text_checkbutton,self.grid_thickness_cb, None, None],
+
+                        [self.rotate_label      ,None                    , self.anchor_label    ,   None                           , None, None],
+                        [self.rotate_radiobutton,None                    , self.anchor_radiobutton, None                           , None, None],
+                        [self.rotate_x_spinbox  ,None                    , self.anchor_x_spinbox , None                            , None, None],
+                        [self.rotate_y_spinbox  ,None                    , self.anchor_y_spinbox , None                            , None, None],
+                        [self.rotate_z_spinbox  ,None                    , self.anchor_z_spinbox , None                            , None, None]
                     ]
         for ind_y in range(len(arrangement)):
             for ind_x in range(len(arrangement[ind_y])):
@@ -1306,6 +1347,8 @@ class TransformPolyhedron3d(ttk.Frame):
                         #if isinstance(arrangement[ind_y][ind_x], tk.Label):
                         arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "NW")
 
+        
+        
         
         self.switch_matrix_states()
         self.grid_vis_states()
@@ -1322,6 +1365,9 @@ class TransformPolyhedron3d(ttk.Frame):
         
     def show_widget(self, widget):
         widget.grid()
+        
+    def delete_widget(self, widget):
+        widget.destroy()
         
     def transform_widget_states(self):
         transformation_type = self.transform_selection_svar.get()
@@ -1399,10 +1445,15 @@ class TransformPolyhedron3d(ttk.Frame):
         #print()
         #print(self.canvas_height, self.canvas_width)
         
-        
-        
         self.update_viewport()
-        print(self.edges)
+
+        print("Vertices\n", self.vertices)
+        print("Edges\n", self.edges)
+        print("Edge Options\n", self.edge_options)
+        print("Edge Checks\n", self.edge_checklist)
+        print("Faces\n", self.faces)
+        #print("Vertices\n", self.faces_data)
+        
              
     def vert_vis_states(self):
         
@@ -1467,6 +1518,101 @@ class TransformPolyhedron3d(ttk.Frame):
         
         self.update_viewport()
         
+
+
+    def update_faces_data(self):
+       
+        for key in self.faces_data:
+            face_vert_ind = list(map(int, key.split('-')))
+            z_avg = 0
+            for i in range(len(self.faces_data[key][0])):
+                x_ind = face_vert_ind[i] * 3
+                y_ind = x_ind + 1
+                z_ind = y_ind + 1
+
+                cur_face_vert = self.faces_data[key][0][i]
+                cur_face_vert[0] = self.vertices[x_ind]
+                cur_face_vert[1] = self.vertices[y_ind]
+                cur_face_vert[2] = self.vertices[z_ind]
+
+                z_avg = z_avg + self.vertices[z_ind]
+
+            z_avg = z_avg/len(face_vert_ind)
+            self.faces_data[key][2] = z_avg
+
+    def update_edge_checkbuttons(self):
+        if len(self.vertices) >= 3:
+            print("update edges")
+            #updating the edge checkbuttons
+            if len(self.vertices) == 0:
+                self.edge_label.config(text="Vertex:? - Edges")
+            
+        
+            #self.edge_options = {} 
+            #below keeps track for the dynamic checkboxes generated
+            #will be the edges and whether they're connected tp other edges, 
+            # a dictionary of dictionarys and bools 
+            
+            self.edge_keys_ls = self.edges.keys()
+            self.edge_canvas.delete("all")
+            self.edge_canvas.create_window((0, 0), window=self.edge_scrl_frame, anchor="nw")
+            self.edge_options.clear()
+            self.edge_keys_ls = self.edges.keys()
+            
+            for key in self.edges:
+                #rewriting edges
+                self.edge_options[key] = {}
+                for ele in self.edge_keys_ls:
+                    if key != ele:
+                        if ele in self.edges[key]:
+                            self.edge_options[key][ele] = True
+                        else:
+                            self.edge_options[key][ele] = False
+
+            self.edge_ind += 1
+            if len(self.edge_keys_ls) - self.edge_ind == 0:
+                self.edge_ind = 0
+
+            self.edge_label.config(text="Vertex:" + f"{self.edge_ind} - Edges")
+
+            #dynamically creating checkboxes for edges
+            if len(self.edge_checklist) > 0:
+                for ele in self.edge_checklist:
+                    var = ele[0]
+                    chk = ele[1]
+                    if isinstance(chk, tk.Checkbutton):
+                        var.set(False)
+                        self.delete_widget(chk)
+                    
+            self.edge_checklist.clear()
+            
+            
+            i = 0
+            
+            for key in self.edge_options[self.edge_ind]:
+                if key != self.edge_ind:
+                    txt = "Vertex:" + str(key)
+                    var = tk.BooleanVar()
+                    chk = tk.Checkbutton(self.edge_scrl_frame, 
+                                        text=txt, 
+                                        variable=var,
+                                        command=self.connect_vertices,
+                                        onvalue=True,
+                                        offvalue=False
+                                        
+                                        )
+                    
+                    var.set(self.edge_options[self.edge_ind][key])
+                    
+                    parent = self.edge_ind
+                    child = key
+                    
+                    self.edge_checklist.append([var, chk, parent, child])
+                    chk.grid(row=i, column=1)
+                    
+                    i = i + 1
+            self.create_faces_from_edges()
+              
     def update_viewport(self):
         
         #Grid Display
@@ -1480,12 +1626,162 @@ class TransformPolyhedron3d(ttk.Frame):
         self.draw_projected_points()
         self.draw_edge_lines()
                
-    def clear_edge_check(self, *args):
-        self.edge_checkvar.set(self.edge_checkbutton.cget('offvalue'))
-        if self.edge_checkbutton.cget("state") == "normal":
-            v_lb_sc = self.vertex_listbox.curselection()
-            v_ind = v_lb_sc[0]
-            self.edge_checkbutton.config(text="Vertex:" + str((v_ind + 1) % self.vertex_listbox.size()))
+    # FACE MANAGEMENT
+
+    def dfs(self, graph, start, end):
+        fringe = [(start, [])]
+        while fringe:
+            state, path = fringe.pop()
+            if path and state == end:
+                yield path
+                continue
+            for next_state in graph[state]:
+                if next_state in path:
+                    continue
+                fringe.append((next_state, path+[next_state]))
+            
+    def get_cycles(self, graph):
+        #https://stackoverflow.com/questions/40833612/find-all-cycles-in-a-graph-implementation
+        #https://yuminlee2.medium.com/detect-cycle-in-a-graph-4461b6000845
+        #without the conditional it would count 0-1 as a cycle
+        #with it it limits cycles to triangles and above 
+        cycles = [[node]+path  for node in graph for path in self.dfs(graph, node, node) if len([node]+path) > 3]
+        #print("unclean cycles")
+        #print(cycles, len(cycles))
+        #print("Cycle clean")
+        c_cycles = []
+        for cycle in cycles.copy():
+            #first and last ele are the same
+            last = cycle.pop()
+            cycle = sorted(cycle)
+            if cycle not in c_cycles:
+                c_cycles.append(cycle)
+            
+        print(c_cycles)
+        #print(graph)
+        return c_cycles
+
+    def create_faces_from_edges(self):
+        edge_connect_count = sum([len(self.edges[key]) for key in self.edges])
+        #print(edge_connect_count)
+        if edge_connect_count >= 6:
+            self.faces.clear()
+            self.faces_data.clear()
+            #self.faces_polygons.clear()
+            #faces is an list containing list of vertices included in a face
+            self.faces = self.get_cycles(self.edges)
+            #
+            #map applies a function to the entirety of an iterable and lambda is an anonymous function
+            #print(face_colors_keys)
+            #f_copy = face_colors_keys.copy()
+            for face in self.faces:
+                key = "-".join(list(map(str, face)))
+                self.faces_data[key] = [[]]
+                z_avg = 0
+                for vertex in face:
+                    x_ind = vertex * 3
+                    y_ind = x_ind + 1
+                    z_ind = y_ind + 1
+                    x, y, z  = self.vertices[x_ind], self.vertices[y_ind] , self.vertices[z_ind] 
+                    z_avg = z_avg + z
+                    self.faces_data[key][0].append([x, y, z])
+
+                z_avg= z_avg/len(face)
+                #data in face data is arranged in a list containing
+                # faces vertex coords lists [0] 
+                # color [1] 
+                # z_average of the face [2] 
+
+                self.faces_data[key].append("#FFFFFF")
+                self.faces_data[key].append(z_avg)
+                
+
+                                
+            #print(self.faces_data.keys())
+       
+            
+            #dynamically creating checkboxes for faces
+            if len(self.face_checklist) > 0:
+                for ele in self.face_checklist:
+                    var = ele[0]
+                    chk = ele[1]
+                    if isinstance(chk, tk.Checkbutton):
+                        var.set(False)
+                        self.delete_widget(chk)
+                    
+            self.face_checklist.clear()
+            
+            
+            i = 0
+            
+            for key in self.faces_data:
+                #if key != self.edge_ind:
+                txt = "Face:" + key
+                var = tk.BooleanVar()
+                is_checked = False
+                chk = tk.Checkbutton(self.face_scrl_frame, 
+                                    text=txt, 
+                                    variable=var,
+                                    #face color choosers
+                                    command=self.face_color_chooser,
+                                    onvalue=True,
+                                    offvalue=False
+                                    
+                                    )
+                
+                
+                var.set(False)
+                
+                self.face_checklist.append([var, chk, key, is_checked])
+                chk.grid(row=i, column=1, sticky="W")
+
+                i = i + 1
+
+    def face_color_chooser(self):
+        changed_cb = None
+        changed_key = None
+        changed_bool = None
+        for data in self.face_checklist:
+            #print(data)
+        
+            
+            var = data[0]
+            chk = data[1]
+            key = data[2]
+            is_chkd = data[3]
+
+            #self.faces_data[key][2]
+            booln = var.get()
+            
+            if booln and not is_chkd:
+                changed_cb = chk
+                changed_key = key
+                changed_bool = booln
+                data[3] = booln
+                print("neh")
+            elif not booln and is_chkd:
+                data[3] =  False
+                changed_bool = data[3]
+                #data[1].config(selectcolor="#FFFFFF")
+                print('ye')
+                changed_key = key
+                changed_cb = chk
+                #self.faces_data[key][1] = "#FFFFFF"
+    
+        if isinstance(changed_cb, tk.Checkbutton) and changed_bool == True and changed_key != None:  
+            color_code = colorchooser.askcolor(title ="Choose color")[1]
+            self.faces_data[changed_key][1] = color_code
+            #print(self.faces_data)
+            changed_cb.config(selectcolor=color_code)
+            
+        elif isinstance(changed_cb, tk.Checkbutton) and changed_bool == False: 
+            print("hmph")
+            changed_cb.config(selectcolor="#FFFFFF")
+            self.faces_data[changed_key][1] = "#FFFFFF"
+        #print(checkboxes)    
+
+        self.draw_faces()
+    
            
     #COORDINATE SPACE TRANSFORMATIONS
     
@@ -1637,9 +1933,12 @@ class TransformPolyhedron3d(ttk.Frame):
         if len(self.vertices) > 0:
             
             self.apply_vertex_rotation(rotation, current_anchor, anchor_current)
+            
+            self.update_faces_data()
+            self.draw_faces()
             self.draw_projected_points()
             self.draw_edge_lines()
-            self.print_vertices()
+            #self.print_vertices()
             
         return current_angle
               
@@ -1907,6 +2206,37 @@ class TransformPolyhedron3d(ttk.Frame):
                                                 fill="blue",
                                                 tags=("edgelines"))
           
+    def draw_faces(self):
+        face_polygons = {}
+        self.canvas.delete("facepolys")
+        h = 0
+        for key in self.faces_data:
+            z_avg = round(self.faces_data[key][2] * 100, 3)
+            face_polygons[z_avg] = []
+            for i in range(len(self.faces_data[key][0])):
+                cur_face_vert = self.faces_data[key][0][i]
+                x, y, z = cur_face_vert[0], cur_face_vert[1], cur_face_vert[2] 
+                x, y = self.world_to_screen(x, y, z)
+                face_polygons[z_avg].append(x)
+                face_polygons[z_avg].append(y)
+
+            color = self.faces_data[key][1]
+            face_polygons[z_avg].append(color)
+
+        #sorting by z value
+        face_polygons = {ind:face_polygons[ind] for ind in sorted(face_polygons)}
+
+        for key in face_polygons:
+            if face_polygons[key][-1] != "#FFFFFF":
+                self.canvas.create_polygon(
+                                            face_polygons[key][:-1], 
+                                            fill = face_polygons[key][-1], 
+                                            tags=("facepolys")
+                                            )
+        #print(face_polygons.keys(),"\n")
+        #print(self.face_checklist,"\n")
+        #print(self.faces,"\n")
+
     def draw_anchor(self):
         ax = float(self.anchor_x_spinbox.get())
         ay = float(self.anchor_y_spinbox.get())
@@ -1948,7 +2278,8 @@ class TransformPolyhedron3d(ttk.Frame):
         if len(self.vertices) > 0:
             
             x, y = self.world_to_screen(wx, wy, wz)
-            self.edges.update({total_verts:[]})
+            
+            #Vertex Styles
             if  self.vert_style_svar.get() == "Circle":
                 oval_size = (1 - (wz - 1)/(self.far - self.near)) * self.z_max
                 self.canvas.create_oval(
@@ -1983,12 +2314,17 @@ class TransformPolyhedron3d(ttk.Frame):
             elif self.vert_style_svar.get() == "None":
                 pass
             
+            self.edges[total_verts] = []
+            self.update_edge_checkbuttons()
+            
+            
             #print("New Vertex x:{}:y:{}:z:{}".format(rwx, rwy, rwz))
             #print(self.vertices)
     
     #VERTEX BUTTON METHODS
     
     def remove_vertex(self):
+        
         v_lb_sc = self.vertex_listbox.curselection()
         if len(self.vertices) > 0 and len(v_lb_sc) > 0:
             #print(self.edges)
@@ -2009,184 +2345,263 @@ class TransformPolyhedron3d(ttk.Frame):
             self.vertices.pop(x_ind)
             self.vertex_listbox.delete(v_ind)
             
-            if self.edges.get(v_ind):
-                #getting rid of the deleted vertex in the dictionary
-                self.edges.pop(v_ind)
-                dict_new = {}
-
+            #updating the edges list
+            #self.edges is an adjcency list
+           
+            #print("remove vert")
+            #getting rid of the deleted vertex in the dictionary
+            self.edges.pop(v_ind)
+            #self.edge_options.pop(v_ind)
+            dict_new = {}
+            if self.edge_ind > v_ind:
+                self.edge_ind = 0
+        
+            for key in self.edges:
+                #getting rid of the deleted vertex in the vertex's array
+                if v_ind in self.edges[key]:
+                    self.edges[key].remove(v_ind)
+                    #self.edge_options[key].pop(v_ind)
+                #reorganizing the dictionary with updated indexes to reflect deletion
+                for i in range(len(self.edges[key])):
+                    if self.edges[key][i] > v_ind:
+                        self.edges[key][i] = self.edges[key][i] - 1
+                #for child in self.edge_options[key]:
+                #    if child > v_ind:
+                #        child = child - 1
+                    
+                #filling the replacement dictionary
             
-                for key in self.edges:
-                    #getting rid of the deleted vertex in the vertex's array
-                    if v_ind in self.edges[key]:
-                        self.edges[key].remove(v_ind)
-                    #reorganizing the dictionary with updated indexes to reflect deletion
-                    for i in range(len(self.edges[key])):
-                        if self.edges[key][i] > v_ind:
-                            self.edges[key][i] = self.edges[key][i] - 1
-                    #filling the replacement dictionary
-             
-                    if key > v_ind:
-                        #print('ye')
-                        new_key = key - 1
-                        dict_new.update({new_key : self.edges[key]})
-                    else:
-                        #print('ne')
-                        dict_new.update({key : self.edges[key]})
-                        
-                        
-                self.edges = dict_new    
-                        
- 
+                if key > v_ind:
+                    #print('ye')
+                    new_key = key - 1
+                    dict_new[new_key] = self.edges[key]
+                else:
+                    #print('ne')
+                    dict_new[key] = self.edges[key]
+                    
+                
+                    
+                    
+            self.edges = dict_new    
+                
+            self.update_edge_checkbuttons()
             #print(self.edges)
+            #print(self.edge_options)
+            
             
                             
                             
             self.draw_projected_points()
             self.draw_edge_lines()
             #print(self.vertices)
-                
+            
+                  
     def clear_vertices(self):
         self.canvas.delete("verts")    
-        self.canvas.delete("edgelines")
         self.vertex_listbox.delete(0, tk.END)
-        self.edges.clear()
         self.vertices.clear()
-    
-    def add_edge(self):
-        v_lb_sc = self.vertex_listbox.curselection()
         
+        self.canvas.delete("edgelines")
+        self.edges.clear()
+        self.edge_ind = 0
+        self.edge_canvas.delete("all")
+        self.edge_canvas.create_window((0, 0), window=self.edge_scrl_frame, anchor="nw")
+        self.edge_options.clear()
+        if len(self.edge_checklist) > 0:
+            for ele in self.edge_checklist:
+                var = ele[0]
+                chk = ele[1]
+                if isinstance(chk, tk.Checkbutton):
+                    var.set(False)
+                    self.delete_widget(chk)
+                
+        self.edge_checklist.clear()
+
+        self.canvas.delete("facepolys")
+        self.faces.clear()
+        self.faces_data.clear()
+        
+        self.face_canvas.delete("all")
+        self.face_canvas.create_window((0, 0), window=self.face_scrl_frame, anchor="nw")
+        if len(self.face_checklist) > 0:
+                for ele in self.face_checklist:
+                    var = ele[0]
+                    chk = ele[1]
+                    if isinstance(chk, tk.Checkbutton):
+                        var.set(False)
+                        self.delete_widget(chk)
+                    
+        self.face_checklist.clear()
+
+
+        #self.update_edge_checkbuttons()
+        
+    def select_vertex(self):
+        v_lb_sc = self.vertex_listbox.curselection()
         if len(self.vertices) > 0 and len(v_lb_sc) > 0:
-            e_lb_sc = self.edge_listbox.curselection()
-            #self.edge_listbox.delete(0, tk.END)
-            for vind in v_lb_sc:
-                #sel_verts = self.vertex_listbox.get(vind)
-                for eind in e_lb_sc:
-                    sel_edge = self.edge_listbox.get(eind)
-                    if sel_edge == "BLANK":
-                        #
-                        #lvx, lvy, lvz = sel_verts[1], sel_verts[3], sel_verts[5]
-                        self.edge_listbox.delete(eind)
-                        self.edge_listbox.insert(eind, "Vertex-{}-".format(vind))
-                        if not self.edges.get(vind):
-                            self.edges.update({vind:[]})
-                    else:
-                        #print("yep")
-                        
-                        
-                        #print("pey")
-                        #print(cur_edge_text)
-                        
-                        
-                        sel_edges_ls = sel_edge.split('-')
-                        
-                        if len(sel_edges_ls) < 4:
-                            print("hmm")
-                            nu_edge = sel_edge + "Vertex-{}".format(vind)
-                            self.edge_listbox.delete(eind)
-                            self.edge_listbox.insert(eind, nu_edge)
-                            
-                            
-                            #sel_edge = self.edge_listbox.get(eind)
-                            #sel_edges_ls = sel_edge.split('-')
-                            #print(sel_edges_ls)
-                        elif len(sel_edges_ls) == 4:
-                            print("yep")
-                            nu_edge = sel_edges_ls[2] + '-' + sel_edges_ls[3] + '-' + "Vertex-{}".format(vind)
-                            self.edge_listbox.delete(eind)
-                            self.edge_listbox.insert(eind, nu_edge)
-                            
-                            #sel_edge = self.edge_listbox.get(eind)
-                            #sel_edges_ls = sel_edge.split('-')
-                            
-                            #print(sel_edges_ls)    
-                        '''
-                        else:
-                            nu_edge = "Vertex-{}-".format(vind)
-                            self.edge_listbox.delete(eind)
-                            self.edge_listbox.insert(eind, nu_edge)
-                        '''
-                            
-                        '''
-                        sel_edges_ls = sel_edge.split('-')
-                        if len(sel_edges_ls) > 6:
-                            lex, ley, lez = sel_verts[1], sel_verts[3], sel_verts[5]
-                            
-                            self.edge_listbox.insert(0, sel_verts)
-                        '''
-            self.draw_edge_lines()
+            self.edge_ind = self.edge_ind - 1
+            self.next_vertex()
+            self.update_edge_checkbuttons()
+    
     
     #EDGE BUTTONS METHODS     
+    
      
     def connect_vertices(self):
-        if len(self.vertices) > 0:
-            edge_check = self.edge_checkvar.get()
-            v_lb_sc = self.vertex_listbox.curselection()
-            v_ind = v_lb_sc[0]
-            vert_text = self.edge_checkbutton.cget("text")
-            vert_text_ls = vert_text.split(":")
-            vert_num = int(vert_text_ls[1]) 
-            if edge_check == self.edge_checkbutton.cget('onvalue'):
-                if self.edges.get(v_ind):
-                    if vert_num not in self.edges[v_ind]:
-                        self.edges[v_ind].append(vert_num)
-                        self.edges[vert_num].append(v_ind)
-                else:
-                    self.edges.update({v_ind : [vert_num]})
-                    self.edges.update({vert_num : [v_ind]})
+        if len(self.vertices) > 3:
+            #print("yep")
+            if len(self.edge_checklist) > 0:
+                for ele in self.edge_checklist:
+                    var = ele[0]
+                    chk = ele[1]
+                    parent = ele[2]
+                    child = ele[3]
                     
-            else:
-                if self.edges.get(v_ind):
-                    if vert_num in self.edges[v_ind]:
-                        self.edges[v_ind].remove(vert_num)
-                        self.edges[vert_num].remove(v_ind)
+                    booln = var.get()
+                    
+                    if isinstance(chk, tk.Checkbutton):
+                        self.edge_options[parent][child] = booln
+                        self.edge_options[child][parent] = booln
+                        #print(parent, child)
+
             
+            for parent in self.edge_options:
+                for child in self.edge_options[parent]:
+                    if self.edge_options[parent][child] == True:
+                        
+                        #if self.edges.get(child):
+                        
+                        if child not in self.edges[parent]:
+                            self.edges[parent].append(child)
+                        if parent not in self.edges[child]:
+                            self.edges[child].append(parent)
+                     
+                    else:
+                        #if self.edges.get(parent):
+                        if child in self.edges[parent]:
+                            self.edges[parent].remove(child)
+                            #self.edges[child].remove(parent)
+                        if parent in self.edges[child]:
+                            self.edges[child].remove(parent)
             #print(self.edges)
-            self.draw_edge_lines()
+            #print(self.edge_options)   
+                    
+            self.create_faces_from_edges()            
+            self.draw_edge_lines()    
+  
     
     def next_vertex(self):
-        v_lb_sc = self.vertex_listbox.curselection()
-        if len(self.vertices) > 0 and len(v_lb_sc) > 0:
-            v_ind = v_lb_sc[0]
-            vert_text = self.edge_checkbutton.cget("text")
-            vert_text_ls = vert_text.split(":")
-            vert_num = int(vert_text_ls[1]) 
+        #self.edge_label = ttk.Label(self, text="Vertex:? - Edges")
+        if len(self.vertices) > 3:
+            '''
+            self.edge_keys_ls = None #self.edges.keys()
+            self.edge_cur_key = None #will be self.edge_keys_ls[self.edge_ind]
+            self.edge_options = None #will be the edges and whether they're connected tp other edges, a dictionary of dictionarys and bools 
             
-            cur_vert = vert_num + 1
-            if cur_vert == v_ind:
-                cur_vert = cur_vert + 1
-                
-            cur_vert = cur_vert % self.vertex_listbox.size()
-            self.edge_checkbutton.config(text="Vertex:" + str(cur_vert))
+            '''
             
-            if self.edges.get(v_ind):
-                if cur_vert in self.edges[v_ind]:
-                    self.edge_checkvar.set(self.edge_checkbutton.cget('onvalue'))
-                else:
-                    self.edge_checkvar.set(self.edge_checkbutton.cget('offvalue'))
+            self.edge_ind += 1
+            if len(self.edge_keys_ls) - self.edge_ind == 0:
+                self.edge_ind = 0
+            self.edge_label.config(text="Vertex:" + f"{self.edge_ind} - Edges")
+
+            #dynamically creating checkboxes for edges
+            if len(self.edge_checklist) > 0:
+                for ele in self.edge_checklist:
+                    var = ele[0]
+                    chk = ele[1]
+                    if isinstance(chk, tk.Checkbutton):
+                        var.set(False)
+                        self.delete_widget(chk)
+                    
+            self.edge_checklist.clear()
             
+            
+            i = 0
+            
+            for key in self.edge_options[self.edge_ind]:
+                if key != self.edge_ind:
+                    txt = "Vertex:" + str(key)
+                    var = tk.BooleanVar()
+                    chk = tk.Checkbutton(self.edge_scrl_frame, 
+                                        text=txt, 
+                                        variable=var,
+                                        command=self.connect_vertices,
+                                        onvalue=True,
+                                        offvalue=False
+                                        
+                                        )
+                    
+                    var.set(self.edge_options[self.edge_ind][key])
+                    
+                    parent = self.edge_ind
+                    child = key
+                    
+                    self.edge_checklist.append([var, chk, parent, child])
+                    chk.grid(row=i, column=1)
+                    
+                    i = i + 1
+            
+
     def prev_vertex(self):
-        v_lb_sc = self.vertex_listbox.curselection()
-        if len(self.vertices) > 0 and len(v_lb_sc) > 0:
-            v_ind = v_lb_sc[0]
-            vert_text = self.edge_checkbutton.cget("text")
-            vert_text_ls = vert_text.split(":")
-            vert_num = int(vert_text_ls[1]) 
+        #self.edge_label = ttk.Label(self, text="Vertex:? - Edges")
+        if len(self.vertices) > 3:
             
-            cur_vert = vert_num - 1
-            if cur_vert == v_ind:
-                cur_vert = cur_vert - 1
-                
-            if cur_vert < 0:
-                cur_vert = self.vertex_listbox.size() + cur_vert
+            self.edge_ind -= 1
+            if self.edge_ind < 0:
+                self.edge_ind = (len(self.edge_keys_ls) - 1) 
+            self.edge_label.config(text="Vertex:" + f"{self.edge_ind} - Edges")
             
-            cur_vert = cur_vert % self.vertex_listbox.size()
-            self.edge_checkbutton.config(text="Vertex:" + str(cur_vert))
-            if self.edges.get(v_ind):
-                if cur_vert in self.edges[v_ind]:
-                    self.edge_checkvar.set(self.edge_checkbutton.cget('onvalue'))
-                else:
-                    self.edge_checkvar.set(self.edge_checkbutton.cget('offvalue'))
-                
+            '''
+            #Test
+            options = ["Option " + str(i) for i in range(1,50)]
+            i = 0
+            for option in options:
+                var = tk.BooleanVar()
+                chk = tk.Checkbutton(self.edge_scrl_frame, text=option, variable=var, command=None).grid(row=i, column=1)#pack()
+                i += 1
+            '''
+            
+            #dynamically creating checkboxes for edges
+            if len(self.edge_checklist) > 0:
+                for ele in self.edge_checklist:
+                    var = ele[0]
+                    chk = ele[1]
+                    if isinstance(chk, tk.Checkbutton):
+                        var.set(False)
+                        self.delete_widget(chk)
+                    
+            self.edge_checklist.clear()
+            
+            
+            i = 0
+            
+            for key in self.edge_options[self.edge_ind]:
+                if key != self.edge_ind:
+                    txt = "Vertex:" + str(key)
+                    var = tk.BooleanVar()
+                    chk = tk.Checkbutton(self.edge_scrl_frame, 
+                                        text=txt, 
+                                        variable=var,
+                                        command=self.connect_vertices,
+                                        onvalue=True,
+                                        offvalue=False
+                                        
+                                        )
+                    
+                    var.set(self.edge_options[self.edge_ind][key])
+                    
+                    parent = self.edge_ind
+                    child = key
+                    
+                    self.edge_checklist.append([var, chk, parent, child])
+                    chk.grid(row=i, column=1)
+                    
+                    i = i + 1
+            
+
+        
+    
     def print_vertices(self):
         #old debugger
         if False:
@@ -2194,6 +2609,7 @@ class TransformPolyhedron3d(ttk.Frame):
             for i in range(0, len(self.vertices), 3):
                 print("Vertex {} X:{} Y:{} Z:{}".format(i/3, self.vertices[i], self.vertices[i + 1], self.vertices[i + 2]))
             print()
+
 
     def DDA(self, x0, y0, x1, y1):
         #Digital Differential Analyser

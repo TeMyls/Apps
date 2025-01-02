@@ -4,6 +4,7 @@ import tkinter as tk
 #import tkinter as tk
 from tkinter import ttk
 from MatrixMath import *
+from tkinter import colorchooser
 
 
 class App(tk.Tk): 

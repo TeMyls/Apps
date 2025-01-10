@@ -19,7 +19,7 @@ class App(tk.Tk):
         self.redo_button_2d.grid(row=0,column=1)
         
         
-        self.t2d_poly = TransformPolygon2D(self, 500, 400)
+        self.t2d_poly = TransformPolygon2D(self, 500, 500)
         self.t2d_poly.grid(row=1,column=2)
         
         self.bind("<Control-z>", self.t2d_poly.undo)
@@ -51,7 +51,7 @@ class App(tk.Tk):
         self.settings_menu = tk.Menu(self.menubar, tearoff =False)  
         self.mode_menu = tk.Menu(self.menubar, tearoff = False)
         self.mode_type = tk.IntVar()
-        self.mode_type.set(1)
+        self.mode_type.set(2)
         self.mode_menu.add_radiobutton(
             label = "2D",
             variable=self.mode_type,
@@ -66,14 +66,26 @@ class App(tk.Tk):
             command=self.set_frame_visibility
             
         )
+        # Adding Help Menu 
+        self.help_menu = tk.Menu(self.menubar, tearoff = False) 
+        self.help_m2D = tk.Menu(self.menubar, tearoff = False)
+        self.help_m2D.add_command(label = "Mouse Click: Left to place points, Right to clear")
+        self.help_m3D = tk.Menu(self.menubar, tearoff = False)
+        self.help_m3D.add_command(label = "Hold Left Click to position, Right to add a point, \nand Scroll to set depth")
+
+
         
 
         # Menu Placement
         self.menubar.add_cascade(label ='Mode', menu = self.settings_menu) 
         self.settings_menu.add_cascade(label="2D or 3D", menu=self.mode_menu)
+        self.menubar.add_cascade(label = "Help", menu=self.help_menu)
+        self.help_menu.add_cascade(label="2D", menu=self.help_m2D)
+        self.help_menu.add_cascade(label="3D", menu=self.help_m3D)
         
         # display Menu 
         self.config(menu = self.menubar) 
+        
         
         self.set_frame_visibility()
              
@@ -791,7 +803,6 @@ class TransformPolygon2D(ttk.Frame):
         self.canvas.delete("shapes")
         
         
-        
 class CanvasFrame3d(ttk.Frame):  
     def __init__(self, parent, c_width, c_height):
         super().__init__(parent)
@@ -799,8 +810,7 @@ class CanvasFrame3d(ttk.Frame):
         self.canvas_width = c_width #self.canvas.winfo_width()
         self.canvas_height = c_height #self.canvas.winfo_height()
         self.canvas.grid(row = 0, column = 0, sticky = "N")
-         
-                    
+
     def get_width(self):
         return self.canvas_width
     
@@ -809,11 +819,11 @@ class CanvasFrame3d(ttk.Frame):
     
     def get_canvas(self):
         return self.canvas
-      
-      
-        
+         
+
 class TransformPolyhedron3d(ttk.Frame):
     def __init__(self, parent, canvas_frame,  *args, **kwargs):
+
         
         #https://webglfundamentals.org/webgl/lessons/webgl-3d-orthographic.html
         #https://webglfundamentals.org/webgl/lessons/webgl-3d-perspective.html
@@ -833,18 +843,22 @@ class TransformPolyhedron3d(ttk.Frame):
         
         #3D DATA
         #A List of vertices
+        #Example
         #x1, y1, z1, x2, y2, z2, x3, etc 
         self.vertices = []
         #An Dictionary/Adjacency List of edges
         #The keys are the x indexes of vertices 
-        #The values are a list of vertex connections:
-        # {0: [], 6: [1, 2, 0, 3], 3: [0, 2], 1: [2, 0], 5: [0, 3, 4], 4: [1, 2]}
+        #The values are a list of vertex connections
+        #Example
+        #{0: [], 6: [1, 2, 0, 3], 3: [0, 2], 1: [2, 0], 5: [0, 3, 4], 4: [1, 2]}
         self.edges = {}
         # A List of lists of vertices forming faces from their egdes
         # uses in the same x indexes vertices as above
         #Formed from a Depth First Search Graph Cycle Detecton Algorithm on the edges
+        #or Triangles from the Vertex and it's edge
+        #Example
+        #[[0, 2, 3], [1, 4, 5], [0, 2, 7], [0, 3, 6], [1, 4, 8], [1, 5, 9], etc]
         self.faces = []
-        
         
         #depth cirle size
         self.z_size = 1
@@ -861,10 +875,7 @@ class TransformPolyhedron3d(ttk.Frame):
         self.left = -1
         self.right = 1
         self.bottom = -1
-        
-        
-        
-        
+
         
         #x y z
         self.camera_position = [0.0, 0.0, -self.far/2]
@@ -877,14 +888,7 @@ class TransformPolyhedron3d(ttk.Frame):
 
         #MATRICES
         
-        a = self.scale/self.camera_position[2]
-        self.weak_perspective_matrix = [
-                    [a, 0, 0, 0], #x
-                    [0, a, 0, 0], #y
-                    [0, 0, a, 0], #z 
-                    [0, 0, 0, 1] 
-        ]
-        
+
         a = 2/(self.right - self.left)
         b = 2/(self.top - self.bottom) 
         c = -2/(self.far - self.near)
@@ -971,9 +975,76 @@ class TransformPolyhedron3d(ttk.Frame):
                                                     command=self.update_viewport
                                                            )
         
+        self.vertex_color = "#0000FF"
+        self.vertext_color = "#0000FF"
+        self.vertex_color_button = tk.Button(self, text = "Vertex Color",                      
+                                                    #state="disabled",
+                                                    command=self.vertex_color_chooser,
+                                                    bg = self.vertex_color
+                                                    )
+        self.vertext_color_button = tk.Button(self, text = "Vertex Text Color",                      
+                                                    #state="disabled",
+                                                    command=self.vertext_color_chooser,
+                                                    bg = self.vertext_color
+                                                    )
         
+        self.vertex_vis_widgets = [
+                                    self.vert_circ_radiobutton, 
+                                    self.vert_pixel_radiobutton,
+                                    self.vert_ind_radiobutton, 
+                                    self.vert_none_radiobutton,
+                                    self.vertex_color_button,
+                                    self.vertext_color_button
+                                    ]
+
+        #Edge
+        
+        self.edge_vis_checkvar = tk.IntVar()
+        self.edge_vis_checkvar.set(0)
+        self.edge_vis_checkbutton = tk.Checkbutton(self, text = "Edge Visibility",
+                                                    variable=self.edge_vis_checkvar,
+                                                    onvalue = 1,
+                                                    offvalue= 0,
+                                                    command=self.edge_vis_states
+        )
+        
+        
+        self.edge_style_svar = tk.StringVar()
+        self.edge_style_svar.set("Solid")
+        self.edge_solid_radiobutton = ttk.Radiobutton(self, text="Solid", 
+                                                    variable=self.edge_style_svar,
+                                                    value = "Solid",
+                                                    command=self.update_viewport
+                                                           )
+        
+        self.edge_dotted_radiobutton = ttk.Radiobutton(self, text="Dotted", 
+                                                    variable=self.edge_style_svar,
+                                                    value = "Dotted",
+                                                    command=self.update_viewport
+                                                           )
+        self.edge_none_radiobutton = ttk.Radiobutton(self, text="None", 
+                                                    variable=self.edge_style_svar,
+                                                    value = "None",
+                                                    command=self.update_viewport
+                                                           )
         
 
+        self.edge_color = "#00FF00"
+        self.edge_color_button = tk.Button(self, text = "Edge Color",                      
+                                                    #state="disabled",
+                                                    command=self.edge_color_chooser,
+                                                    bg = self.edge_color
+                                                    )
+
+
+        self.edge_vis_widgets = [
+
+            self.edge_solid_radiobutton,
+            self.edge_dotted_radiobutton,
+            self.edge_none_radiobutton,
+            self.edge_color_button
+
+        ]
         
         #Grid
         
@@ -985,6 +1056,7 @@ class TransformPolyhedron3d(ttk.Frame):
                                                     onvalue = 1,
                                                     offvalue=0,
                                                     command=self.grid_vis_states)
+        
         
         self.grid_text_intvar= tk.IntVar()
         self.grid_text_intvar.set(0)
@@ -1027,8 +1099,17 @@ class TransformPolyhedron3d(ttk.Frame):
                                                     command=self.reset_grid_states
                                                     )
        
+        self.grid_vis_widgets = [
+
+            self.grid_text_checkbutton,
+            self.grid_lines_checkbutton,
+            self.grid_rotation_cb,
+            self.grid_thickness_cb,
+            self.grid_reset_btn
+
+        ]
         
-        #Transformations
+        #Transformations Visibility
         #self.transform_selection_label = ttk.Label(self, text = "Transform Type")
         self.transform_selection_svar = tk.StringVar()
         self.transform_selection_svar.set("Rotation")
@@ -1044,20 +1125,40 @@ class TransformPolyhedron3d(ttk.Frame):
                                                            value = "Rotation",
                                                            command=self.transform_widget_states)
         
+        self.shear_radiobutton = ttk.Radiobutton(self, text="Shear", 
+                                                           variable=self.transform_selection_svar,
+                                                           value = "Shear",
+                                                           command=self.transform_widget_states)
         
+        self.translate_radiobutton = ttk.Radiobutton(self, text="Translation", 
+                                                           variable=self.transform_selection_svar,
+                                                           value = "Translation",
+                                                           command=self.transform_widget_states)
+        
+        self.reflect_radiobutton = ttk.Radiobutton(self, text="Reflection", 
+                                                           variable=self.transform_selection_svar,
+                                                           value = "Reflection",
+                                                           command=self.transform_widget_states)
+        
+        self.scale_radiobutton = ttk.Radiobutton(self, text="Scaling", 
+                                                           variable=self.transform_selection_svar,
+                                                           value = "Scaling",
+                                                           command=self.transform_widget_states)
+        
+
         
             
         
         #TRANSFORM WIDGETS
         #ANCHOR/PIVOT
+        f = self.far #negative
+        t = self.near #positibe
         self.anchor_point = [0.0, 0.0, 0.0]
         self.anchor_label = ttk.Label(self, text = "Pivot Point XYZ")
         self.anchor_x_spinbox = ttk.Spinbox(
             self,
-            #variable=self.rotate_var,
-            from_ = -1,
-            to = 1,
-            #orient = "horizontal",
+            from_ = f,
+            to = t,
             increment=0.1,
             command = self.draw_anchor
 
@@ -1066,10 +1167,8 @@ class TransformPolyhedron3d(ttk.Frame):
         
         self.anchor_y_spinbox = ttk.Spinbox(
             self,
-            #variable=self.rotate_var,
-            from_ = -1,
-            to = 1,
-            #orient = "horizontal",
+            from_ = f,
+            to = t,
             increment=0.1,
             command = self.draw_anchor
 
@@ -1078,11 +1177,9 @@ class TransformPolyhedron3d(ttk.Frame):
         
         self.anchor_z_spinbox = ttk.Spinbox(
             self,
-            #variable=self.rotate_var,
-            from_ = self.near,
-            to = self.far,
-            #orient = "horizontal",
-            increment= 0.1,
+            from_ = f,
+            to = t,
+            increment=0.1,
             command = self.draw_anchor
 
         )
@@ -1091,18 +1188,17 @@ class TransformPolyhedron3d(ttk.Frame):
         self.anchor_widgets = [self.anchor_x_spinbox, self.anchor_y_spinbox, self.anchor_z_spinbox]
         
         #ROTATION
+        f = 0
+        t = 360
         self.angle = 180
         self.angle_x = 180
         self.angle_y = 180
         self.angle_z = 180
-        self.rotate_var = tk.IntVar()
         self.rotate_label = ttk.Label(self, text = "Rotation Angle XYZ")
         self.rotate_x_spinbox = ttk.Spinbox(
             self,
-            #variable=self.rotate_var,
-            from_ = 0,
-            to = 360,
-            #orient = "horizontal",
+            from_ = f,
+            to = t,
             command = self.apply_rotation_x
 
         )
@@ -1110,10 +1206,8 @@ class TransformPolyhedron3d(ttk.Frame):
 
         self.rotate_y_spinbox = ttk.Spinbox(
             self,
-            #variable=self.rotate_var,
-            from_ = 0,
-            to = 360,
-            #orient = "horizontal",
+            from_ = f,
+            to = t,
             command = self.apply_rotation_y
 
         )
@@ -1121,18 +1215,234 @@ class TransformPolyhedron3d(ttk.Frame):
         
         self.rotate_z_spinbox = ttk.Spinbox(
             self,
-            #variable=self.rotate_var,
-            from_ = 0,
-            to = 360,
-            #orient = "horizontal",
+            from_ = f,
+            to = t,
             command = self.apply_rotation_z
 
         )
         self.rotate_z_spinbox.set(self.angle)
+
+        self.rotate_reset_btn = tk.Button(self, text = "Return to Defaults",
+                                    command=self.rotate_reset,
+                                    )
         
-        self.rotate_widgets = [self.rotate_x_spinbox, self.rotate_y_spinbox, self.rotate_z_spinbox]
+        self.rotate_widgets = [self.rotate_x_spinbox, self.rotate_y_spinbox, self.rotate_z_spinbox, self.rotate_reset_btn]
         
+        #SHEARING
+        f = -3
+        t = 3
+
+        self.shear_xy = 0.0
+        self.shear_xz = 0.0
+        self.shear_yz = 0.0
+        self.shear_yx = 0.0
+        self.shear_zx = 0.0
+        self.shear_zy = 0.0
+
+        self.shear_label = ttk.Label(self, text = "Shear\nXY-XZ-YZ-YX-ZX-ZY")
+        self.shear_xy_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.1,
+            command = self.apply_shearing_xy
+        )
+        self.shear_xy_spinbox.set(self.shear_xy)
+
+        self.shear_xz_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.1,
+            width=10,
+            command = self.apply_shearing_xz
+        )
+        self.shear_xz_spinbox.set(self.shear_xz)
+
+        self.shear_yz_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.1,
+            command = self.apply_shearing_yz
+        )
+        self.shear_yz_spinbox.set(self.shear_yz)
+
+        self.shear_yx_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.1,
+            command = self.apply_shearing_yx
+        )
+        self.shear_yx_spinbox.set(self.shear_yx)
         
+        self.shear_zx_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.1,
+            command = self.apply_shearing_zx
+        )
+        self.shear_zx_spinbox.set(self.shear_zx)
+
+        self.shear_zy_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.1,
+            command = self.apply_shearing_zy
+        )
+        self.shear_zy_spinbox.set(self.shear_zy)
+
+        self.shear_reset_btn = tk.Button(self, text = "Return to Defaults",
+                                    command=self.shear_reset,
+                                    )
+        
+        self.shear_widgets = [self.shear_xy_spinbox, 
+                              self.shear_xz_spinbox, 
+                              self.shear_yx_spinbox, 
+                              self.shear_yz_spinbox,
+                              self.shear_zx_spinbox,
+                              self.shear_zy_spinbox,
+                              self.shear_reset_btn]
+        #TRANSLATE
+        f = self.far #negative
+        t = self.near #positibe
+
+
+        self.translate_x = 0.0
+        self.translate_y = 0.0
+        self.translate_z = 0.0
+        self.translate_label = ttk.Label(self, text = "Translation XYZ")
+        self.translate_x_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.1,
+            command = self.apply_translation_x
+
+        )
+        self.translate_x_spinbox.set(self.translate_x)
+
+        self.translate_y_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.1,
+            command = self.apply_translation_y
+
+        )
+        self.translate_y_spinbox.set(self.translate_y)
+        
+        self.translate_z_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.1,
+            command = self.apply_translation_z
+
+        )
+        self.translate_z_spinbox.set(self.translate_z)
+
+        self.translate_reset_btn = tk.Button(self, text = "Return to Defaults",
+                                    command=self.translate_reset,
+                                    )
+        
+        self.translate_widgets = [self.translate_x_spinbox, self.translate_y_spinbox, self.translate_z_spinbox, self.translate_reset_btn]
+        #REFLECTION
+
+        f = -1 #negative
+        t = 1 #positibe
+
+
+        self.reflect_x = 1.0
+        self.reflect_y = 1.0
+        self.reflect_z = 1.0
+        self.reflect_label = ttk.Label(self, text = "Reflection XYZ")
+        self.reflect_x_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.33,
+            command = self.apply_reflection_x
+
+        )
+        self.reflect_x_spinbox.set(self.reflect_x)
+
+        self.reflect_y_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.33,
+            command = self.apply_reflection_y
+
+        )
+        self.reflect_y_spinbox.set(self.reflect_y)
+        
+        self.reflect_z_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.33,
+            command = self.apply_reflection_z
+
+        )
+        self.reflect_z_spinbox.set(self.reflect_z)
+
+        self.reflect_reset_btn = tk.Button(self, text = "Return to Defaults",
+                                    command=self.reflect_reset,
+                                    )
+        
+        self.reflect_widgets = [self.reflect_x_spinbox, self.reflect_y_spinbox, self.reflect_z_spinbox, self.reflect_reset_btn]
+
+        #SCALING
+
+        f = 0.1 
+        t = 5.0
+
+
+        self.scale_x = 1.0
+        self.scale_y = 1.0
+        self.scale_z = 1.0
+        self.scale_label = ttk.Label(self, text = "Scaling XYZ")
+        self.scale_x_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.1,
+            command = self.apply_scaling_x
+
+        )
+        self.scale_x_spinbox.set(self.scale_x)
+
+        self.scale_y_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.1,
+            command = self.apply_scaling_y
+
+        )
+        self.scale_y_spinbox.set(self.scale_y)
+        
+        self.scale_z_spinbox = ttk.Spinbox(
+            self,
+            from_ = f,
+            to = t,
+            increment=0.1,
+            command = self.apply_scaling_z
+
+        )
+        self.scale_z_spinbox.set(self.scale_z)
+
+        self.scale_reset_btn = tk.Button(self, text = "Return to Defaults",
+                                    command=self.scale_reset,
+                                    )
+        
+        self.scale_widgets = [self.scale_x_spinbox, self.scale_y_spinbox, self.scale_z_spinbox, self.scale_reset_btn]
+
+        #
         #VERTEX
         self.vertex_label = ttk.Label(self, text="Vertices")
         self.vertex_scrollbar_y = ttk.Scrollbar(self, orient='vertical')
@@ -1148,18 +1458,11 @@ class TransformPolyhedron3d(ttk.Frame):
         self.vertex_scrollbar_x.config(command=self.vertex_listbox.xview)
         
         self.vertex_select_button = tk.Button(self, text="Select Vertex", command=self.select_vertex)
-        self.vertex_delete_button = tk.Button(self, text="Delete Vertex", command=self.remove_vertex)
-        self.vertex_clear_button = tk.Button(self, text="Clear Vertices", command=self.clear_vertices)
+        self.vertex_delete_button = tk.Button(self, text="Delete Selected", command=self.remove_vertex)
+        self.vertex_del_last_btn = tk.Button(self, text="Delete Last", command=self.delete_vertex)
+        self.vertex_clear_button = tk.Button(self, text="Clear", command=self.clear_vertices)
         
-        self.vertex_checkvar = tk.IntVar()
-        self.vertex_checkvar.set(0)
-        self.vertex_checkbutton = tk.Checkbutton(self, text = "Edge Connection",
-                                                    variable=self.vertex_checkvar,
-                                                    onvalue = 1,
-                                                    offvalue=0,
-                                                    command=None
-        )
-            #edge_check_states
+    
         
         #EDGES
         
@@ -1167,7 +1470,7 @@ class TransformPolyhedron3d(ttk.Frame):
         
         
         #https://blog.teclado.com/tkinter-scrollable-frames/
-        #the widget beliw the only widget that has to be gridded in arrangement
+        #the widget below the only widget that has to be gridded in arrangement
         self.edge_mn_frame = ttk.Frame(self)
         self.edge_canvas = tk.Canvas(self.edge_mn_frame, width=100, height=150) #about the width of a listbox with no specificied width and heoght
         self.edge_scrollbar_y = ttk.Scrollbar(self.edge_mn_frame, orient='vertical', command=self.edge_canvas.yview)
@@ -1175,7 +1478,6 @@ class TransformPolyhedron3d(ttk.Frame):
         
         self.edge_ind = 0
         self.edge_keys_ls = None #self.edges.keys()
-        self.edge_cur_key = None #will be self.edge_keys_ls[self.edge_ind]
         #below keeps track for the dynamic checkboxes generated
         #will be the edges and whether they're connected tp other edges,
         # a dictionary of dictionarys and bools 
@@ -1193,6 +1495,7 @@ class TransformPolyhedron3d(ttk.Frame):
         
         self.edge_canvas.create_window((0, 0), window=self.edge_scrl_frame, anchor="nw")
         self.edge_canvas.configure(yscrollcommand=self.edge_scrollbar_y.set)
+        #self.edge_scrollbar_y.config(command=self.self.edge_canvas.yview)
         
         self.edge_canvas.grid(row=0, column=0)#pack(side="left", fill="both", expand=True)
         self.edge_scrollbar_y.grid(row=0, column=1, sticky="NS")#pack(side="right", fill="y")
@@ -1265,7 +1568,7 @@ class TransformPolyhedron3d(ttk.Frame):
             i += 1
         '''
   
-        #self.edge_widgets = [self.edge_checkbutton, self.edge_next, self.edge_prev]
+        
         
         #SCREEN AND WORLD MOUSE COORDINATES
         self.screen_xy = [self.canvas_width/2, self.canvas_height/2]
@@ -1278,7 +1581,7 @@ class TransformPolyhedron3d(ttk.Frame):
         
         #PERSPECTIVE OPTIONS
         self.perspective_sel = tk.StringVar()
-        self.perspective_sel.set("Perspective-T")
+        self.perspective_sel.set("Orthographic")
         
         self.ortho_radiobutton = ttk.Radiobutton(self, text="Orthographic", 
                                                            variable=self.perspective_sel,
@@ -1300,42 +1603,67 @@ class TransformPolyhedron3d(ttk.Frame):
         
         #CANVAS METHODS
         #self.canvas.bind("<Double-Button-1>", self.remove_point)
+
+        #if mouse is pressed and released, for some reason button press fires more than once
+        self.pressed = False
+
+        #1 is left mouse button, 3 is right mouse button
+        #self.canvas.bind("<ButtonRelease-3>", self.reset_pressed)
         self.canvas.bind("<ButtonPress-3>", self.place_vertex)  
+        
+        #self.canvas.bind("<Double-Button-1>", self.place_vertex)
         self.canvas.bind("<B1-Motion>", self.z_pos) # <B1-Motion>
         self.canvas.bind("<MouseWheel>", self.set_depth)  
-        #self.vertex_listbox.bind("<<ListboxSelect>>", self.clear_edge_check)
+        
         
         #GRIDLINES
         self.grid_lines_x = []
         self.grid_lines_z = []
         self.reset_grid_states()
-        
+
+        #Debug
+        self.debug_button = tk.Button(self, text="Display Data", command=self.display_data)
+
+
         #Placement
         
         
         arrangement = [
-                        #[None                   , None                   , None                  , None                 ],
+                        #[None                   , None                   , None                  , None                 , None                  , None ],
                        
+                        #Data Panels
                         [self.world_xyz_label   , None                   , self.screen_xy_label, None                              , None, None],
                         [self.ortho_radiobutton , None                   , self.true_persp_radiobutton, None                       , None, None],
-                        [self.vertex_label      , None                   , self.edge_label     , None                              , None, self.face_label],
-                        [self.vertex_listbox    , self.vertex_scrollbar_y, self.edge_mn_frame  , None                              , None, self.face_mn_frame],
+                        [self.vertex_label      , None                   , self.edge_label     , None                              , self.face_label, None],
+                        [self.vertex_listbox    , self.vertex_scrollbar_y, self.edge_mn_frame  , None                              , self.face_mn_frame, None],
                         [self.vertex_scrollbar_x, None                   , None                , None                              , None, None],
-                        [self.vertex_select_button,None                  , None                , None                              , None, None],
-                        [self.vertex_delete_button,None                  , self.edge_next      , None                              , None, None],
-                        [self.vertex_clear_button, None                  , self.edge_prev      , None                              , None, None],
-                        
-                        
-                        [self.vert_vis_checkbutton, None                 , self.grid_vis_checkbutton, self.grid_reset_btn          , None, None],
-                        [self.vert_circ_radiobutton, self.vert_ind_radiobutton, self.grid_lines_checkbutton, self.grid_rotation_cb , None, None],
-                        [self.vert_pixel_radiobutton, self.vert_none_radiobutton, self.grid_text_checkbutton,self.grid_thickness_cb, None, None],
+                        [self.vertex_select_button,None                  , self.edge_next      , None                              , self.debug_button, None],
+                        [self.vertex_delete_button,None                  , self.edge_prev      , None                              , None, None],
+                        [self.vertex_del_last_btn, None                  , None                , None                              , None, None],
+                        [self.vertex_clear_button, None                  , None                , None                              , None, None],
 
-                        [self.rotate_label      ,None                    , self.anchor_label    ,   None                           , None, None],
-                        [self.rotate_radiobutton,None                    , self.anchor_radiobutton, None                           , None, None],
-                        [self.rotate_x_spinbox  ,None                    , self.anchor_x_spinbox , None                            , None, None],
-                        [self.rotate_y_spinbox  ,None                    , self.anchor_y_spinbox , None                            , None, None],
-                        [self.rotate_z_spinbox  ,None                    , self.anchor_z_spinbox , None                            , None, None]
+                        #Visibility Panels
+                        [self.vert_vis_checkbutton, None                 , self.edge_vis_checkbutton, None, self.grid_vis_checkbutton, None        ],
+                        [self.vert_circ_radiobutton, self.vert_ind_radiobutton, self.edge_dotted_radiobutton, self.edge_solid_radiobutton, self.grid_lines_checkbutton, self.grid_rotation_cb],
+                        [self.vert_pixel_radiobutton, self.vert_none_radiobutton, self.edge_none_radiobutton, self.edge_color_button, self.grid_text_checkbutton,self.grid_thickness_cb],
+                        [self.vertex_color_button , self.vertext_color_button, None, None, self.grid_reset_btn              , None                 ],
+
+                        #Transform Widgets
+                        [self.rotate_label      ,None                    , self.shear_label, None                      , self.anchor_label    ,None  ],
+                        [self.rotate_radiobutton,None                    , self.shear_radiobutton, None                , self.anchor_radiobutton,None],
+                        [self.rotate_x_spinbox  ,None                    , self.shear_xy_spinbox, self.shear_xz_spinbox, self.anchor_x_spinbox , None],
+                        [self.rotate_y_spinbox  ,None                    , self.shear_yx_spinbox, self.shear_yz_spinbox, self.anchor_y_spinbox , None],
+                        [self.rotate_z_spinbox  ,None                    , self.shear_zx_spinbox, self.shear_zy_spinbox, self.anchor_z_spinbox , None],
+                        [self.rotate_reset_btn  , None                   , self.shear_reset_btn , None                 , None                  , None ],
+                        [self.translate_label  , None                    , self.reflect_label , None                   , self.scale_label     , None ],
+                        [self.translate_radiobutton, None                , self.reflect_radiobutton , None             , self.scale_radiobutton, None],
+                        [self.translate_x_spinbox, None                  , self.reflect_x_spinbox  , None              , self.scale_x_spinbox , None ],
+                        [self.translate_y_spinbox , None                 , self.reflect_y_spinbox   , None             , self.scale_y_spinbox , None ],
+                        [self.translate_z_spinbox , None                 , self.reflect_z_spinbox  , None              , self.scale_z_spinbox , None ],
+                        [self.translate_reset_btn , None                 , self.reflect_reset_btn  , None              , self.scale_reset_btn , None ]
+
                     ]
+        
         for ind_y in range(len(arrangement)):
             for ind_x in range(len(arrangement[ind_y])):
 
@@ -1354,7 +1682,8 @@ class TransformPolyhedron3d(ttk.Frame):
         self.switch_matrix_states()
         self.grid_vis_states()
         self.vert_vis_states()
-        #self.edge_listbox.insert(tk.END, "BLANK")
+        self.edge_vis_states()
+
         self.transform_widget_states()
         self.draw_anchor()
         self.update_viewport()
@@ -1370,26 +1699,71 @@ class TransformPolyhedron3d(ttk.Frame):
     def delete_widget(self, widget):
         widget.destroy()
         
+    def display_widget_groups(self, show_widget_arr, hide_widget_arr_arr):
+        for widget in show_widget_arr:
+            self.show_widget(widget)
+        for arr in hide_widget_arr_arr:
+            for widget in arr:
+                self.hide_widget(widget)
+
     def transform_widget_states(self):
         transformation_type = self.transform_selection_svar.get()
+        all_widget_groups = [
+                            self.shear_widgets, 
+                            self.rotate_widgets,   
+                            self.anchor_widgets, 
+                            self.translate_widgets,
+                            self.reflect_widgets,
+                            self.scale_widgets
+                            ]
         #if transformation_type == "ALL":
             #for widget in self.winfo_children():
         if transformation_type == "Anchor":
-            for widget in self.rotate_widgets:
-                self.hide_widget(widget)
-            for widget in self.anchor_widgets:
-                self.show_widget(widget)
-                
-
+            ind = all_widget_groups.index(self.anchor_widgets)
+            widget_arr = all_widget_groups.pop(ind)
+            self.display_widget_groups(
+                widget_arr,
+                all_widget_groups,
+            )
         elif transformation_type == "Rotation":
-            for widget in self.rotate_widgets:
-                self.show_widget(widget)
-            for widget in self.anchor_widgets:
-                self.hide_widget(widget)
-              
+            ind = all_widget_groups.index(self.rotate_widgets)
+            widget_arr = all_widget_groups.pop(ind)
+            self.display_widget_groups(
+                widget_arr,
+                all_widget_groups,
+            )
+
+        elif transformation_type == "Shear":
+            ind = all_widget_groups.index(self.shear_widgets)
+            widget_arr = all_widget_groups.pop(ind)
+            self.display_widget_groups(
+                widget_arr,
+                all_widget_groups,
+            )
+        elif transformation_type == "Translation":
+            ind = all_widget_groups.index(self.translate_widgets)
+            widget_arr = all_widget_groups.pop(ind)
+            self.display_widget_groups(
+                widget_arr,
+                all_widget_groups,
+            )
+        elif transformation_type == "Reflection":
+            ind = all_widget_groups.index(self.reflect_widgets)
+            widget_arr = all_widget_groups.pop(ind)
+            self.display_widget_groups(
+                widget_arr,
+                all_widget_groups,
+            )
+
+        elif transformation_type == "Scaling":
+            ind = all_widget_groups.index(self.scale_widgets)
+            widget_arr = all_widget_groups.pop(ind)
+            self.display_widget_groups(
+                widget_arr,
+                all_widget_groups,
+            )
+   
     def reset_grid_states(self):
-        
-        
         #X AXIS SPANNING Z PLANE
         divides = 10
         #The total amount of space occupied by clip space on the x y and z plane 
@@ -1447,68 +1821,52 @@ class TransformPolyhedron3d(ttk.Frame):
         #print(self.canvas_height, self.canvas_width)
         
         self.update_viewport()
-
-        print("Vertices\n", self.vertices)
-        print("Edges\n", self.edges)
-        print("Edge Options\n", self.edge_options)
-        print("Edge Checks\n", self.edge_checklist)
-        print("Faces\n", self.faces)
-        #print("Vertices\n", self.faces_data)
-        
              
     def vert_vis_states(self):
         
         vert_vis_check = self.vert_vis_checkvar.get()
         if vert_vis_check == self.vert_vis_checkbutton.cget('onvalue'):
             
-            self.show_widget(self.vert_circ_radiobutton)
-            self.show_widget(self.vert_ind_radiobutton)
-            self.show_widget(self.vert_pixel_radiobutton)
-            self.show_widget(self.vert_none_radiobutton)
-        else:
+            for widget in self.vertex_vis_widgets:
+                self.show_widget(widget) 
 
-            self.hide_widget(self.vert_circ_radiobutton)
-            self.hide_widget(self.vert_ind_radiobutton)
-            self.hide_widget(self.vert_pixel_radiobutton)
-            self.hide_widget(self.vert_none_radiobutton)
-        
+            
+        else:
+            for widget in self.vertex_vis_widgets:
+                self.hide_widget(widget) 
+            
+    def edge_vis_states(self):
+        edge_vis_check = self.edge_vis_checkvar.get()
+        if edge_vis_check == self.edge_vis_checkbutton.cget('onvalue'):
+            
+            for widget in self.edge_vis_widgets:
+                self.show_widget(widget) 
+
+            
+        else:
+            for widget in self.edge_vis_widgets:
+                self.hide_widget(widget) 
+
     def grid_vis_states(self):
-        
         grid_vis_check = self.grid_vis_checkvar.get()
         if grid_vis_check == self.grid_vis_checkbutton.cget('onvalue'):
 
-            self.show_widget(self.grid_text_checkbutton)
-            self.show_widget(self.grid_lines_checkbutton)
-            self.show_widget(self.grid_reset_btn)
-            self.show_widget(self.grid_rotation_cb)
-            self.show_widget(self.grid_thickness_cb)
+            for widget in self.grid_vis_widgets:
+                self.show_widget(widget) 
+
         else:
 
-            self.hide_widget(self.grid_text_checkbutton)
-            self.hide_widget(self.grid_lines_checkbutton)
-            self.hide_widget(self.grid_reset_btn)
-            self.hide_widget(self.grid_rotation_cb)
-            self.hide_widget(self.grid_thickness_cb)
+            for widget in self.grid_vis_widgets:
+                self.hide_widget(widget) 
              
-    def edge_check_states(self):
-        #disables and enables the vertex choosing buttons
-        v_lb_sc = self.vertex_listbox.curselection()
-        vert_check = self.vertex_checkvar.get()
-        if len(self.vertices) > 0 and len(v_lb_sc) > 0 and vert_check == self.vertex_checkbutton.cget('onvalue'):
-            #sel_verts = v_lb_sc[0]
-            v_ind = v_lb_sc[0]
-            self.edge_checkbutton.config(text="Vertex:" + str((v_ind + 1) % self.vertex_listbox.size()))
-            #print(self.edge_checkbutton.cget("text"))
-            self.edge_checkbutton.config(state="normal")
-            self.edge_prev.config(state="normal")
-            self.edge_next.config(state="normal")
-        else:
-            self.edge_checkbutton.config(text="Vertex:?")
-            self.edge_checkvar.set(self.edge_checkbutton.cget('offvalue'))
-            self.edge_checkbutton.config(state="disabled")
-            self.edge_prev.config(state="disabled")
-            self.edge_next.config(state="disabled")
-    
+    def display_data(self):
+        print("Vertices\n", self.vertices)
+        print("Edges\n", self.edges)
+        print("Edge Options\n", self.edge_options)
+        print("Edge Checks\n", self.edge_checklist)
+        print("Faces\n", self.faces)
+        #print("Vertices\n", self.faces_data)
+
     def switch_matrix_states(self):
         #Perspective Display
         persp_val = self.perspective_sel.get()
@@ -1519,101 +1877,6 @@ class TransformPolyhedron3d(ttk.Frame):
         
         self.update_viewport()
         
-
-
-    def update_faces_data(self):
-       
-        for key in self.faces_data:
-            face_vert_ind = list(map(int, key.split('-')))
-            z_avg = 0
-            for i in range(len(self.faces_data[key][0])):
-                x_ind = face_vert_ind[i] * 3
-                y_ind = x_ind + 1
-                z_ind = y_ind + 1
-
-                cur_face_vert = self.faces_data[key][0][i]
-                cur_face_vert[0] = self.vertices[x_ind]
-                cur_face_vert[1] = self.vertices[y_ind]
-                cur_face_vert[2] = self.vertices[z_ind]
-
-                z_avg = z_avg + self.vertices[z_ind]
-
-            z_avg = z_avg/len(face_vert_ind)
-            self.faces_data[key][2] = z_avg
-
-    def update_edge_checkbuttons(self):
-        if len(self.vertices) >= 3:
-            print("update edges")
-            #updating the edge checkbuttons
-            if len(self.vertices) == 0:
-                self.edge_label.config(text="Vertex:? - Edges")
-            
-        
-            #self.edge_options = {} 
-            #below keeps track for the dynamic checkboxes generated
-            #will be the edges and whether they're connected tp other edges, 
-            # a dictionary of dictionarys and bools 
-            
-            self.edge_keys_ls = self.edges.keys()
-            self.edge_canvas.delete("all")
-            self.edge_canvas.create_window((0, 0), window=self.edge_scrl_frame, anchor="nw")
-            self.edge_options.clear()
-            self.edge_keys_ls = self.edges.keys()
-            
-            for key in self.edges:
-                #rewriting edges
-                self.edge_options[key] = {}
-                for ele in self.edge_keys_ls:
-                    if key != ele:
-                        if ele in self.edges[key]:
-                            self.edge_options[key][ele] = True
-                        else:
-                            self.edge_options[key][ele] = False
-
-            self.edge_ind += 1
-            if len(self.edge_keys_ls) - self.edge_ind == 0:
-                self.edge_ind = 0
-
-            self.edge_label.config(text="Vertex:" + f"{self.edge_ind} - Edges")
-
-            #dynamically creating checkboxes for edges
-            if len(self.edge_checklist) > 0:
-                for ele in self.edge_checklist:
-                    var = ele[0]
-                    chk = ele[1]
-                    if isinstance(chk, tk.Checkbutton):
-                        var.set(False)
-                        self.delete_widget(chk)
-                    
-            self.edge_checklist.clear()
-            
-            
-            i = 0
-            
-            for key in self.edge_options[self.edge_ind]:
-                if key != self.edge_ind:
-                    txt = "Vertex:" + str(key)
-                    var = tk.BooleanVar()
-                    chk = tk.Checkbutton(self.edge_scrl_frame, 
-                                        text=txt, 
-                                        variable=var,
-                                        command=self.connect_vertices,
-                                        onvalue=True,
-                                        offvalue=False
-                                        
-                                        )
-                    
-                    var.set(self.edge_options[self.edge_ind][key])
-                    
-                    parent = self.edge_ind
-                    child = key
-                    
-                    self.edge_checklist.append([var, chk, parent, child])
-                    chk.grid(row=i, column=1)
-                    
-                    i = i + 1
-            self.create_faces_from_edges()
-              
     def update_viewport(self):
         
         #Grid Display
@@ -1624,170 +1887,13 @@ class TransformPolyhedron3d(ttk.Frame):
             
 
         #Vertex Display
-        self.draw_projected_points()
+        self.draw_projected_vertices()
         self.draw_edge_lines()
-               
-    # FACE MANAGEMENT
-
-    def dfs(self, graph, start, end):
-        fringe = [(start, [])]
-        while fringe:
-            state, path = fringe.pop()
-            if path and state == end:
-                yield path
-                continue
-            for next_state in graph[state]:
-                if next_state in path:
-                    continue
-                fringe.append((next_state, path+[next_state]))
-            
-    def get_cycles(self, graph):
-        #https://stackoverflow.com/questions/40833612/find-all-cycles-in-a-graph-implementation
-        #https://yuminlee2.medium.com/detect-cycle-in-a-graph-4461b6000845
-        #without the conditional it would count 0-1 as a cycle
-        #with it it limits cycles to triangles and above 
-        cycles = [[node]+path  for node in graph for path in self.dfs(graph, node, node) if len([node]+path) > 3]
-        #print("unclean cycles")
-        #print(cycles, len(cycles))
-        #print("Cycle clean")
-        c_cycles = []
-        for cycle in cycles.copy():
-            #first and last ele are the same
-            last = cycle.pop()
-            cycle = sorted(cycle)
-            if cycle not in c_cycles:
-                c_cycles.append(cycle)
-            
-        print(c_cycles)
-        #print(graph)
-        return c_cycles
-
-    def create_faces_from_edges(self):
-        edge_connect_count = sum([len(self.edges[key]) for key in self.edges])
-        #print(edge_connect_count)
-        if edge_connect_count >= 6:
-            self.faces.clear()
-            self.faces_data.clear()
-            #self.faces_polygons.clear()
-            #faces is an list containing list of vertices included in a face
-            self.faces = self.get_cycles(self.edges)
-            #
-            #map applies a function to the entirety of an iterable and lambda is an anonymous function
-            #print(face_colors_keys)
-            #f_copy = face_colors_keys.copy()
-            for face in self.faces:
-                key = "-".join(list(map(str, face)))
-                self.faces_data[key] = [[]]
-                z_avg = 0
-                for vertex in face:
-                    x_ind = vertex * 3
-                    y_ind = x_ind + 1
-                    z_ind = y_ind + 1
-                    x, y, z  = self.vertices[x_ind], self.vertices[y_ind] , self.vertices[z_ind] 
-                    z_avg = z_avg + z
-                    self.faces_data[key][0].append([x, y, z])
-
-                z_avg= z_avg/len(face)
-                #data in face data is arranged in a list containing
-                # faces vertex coords lists [0] 
-                # color [1] 
-                # z_average of the face [2] 
-
-                self.faces_data[key].append("#FFFFFF")
-                self.faces_data[key].append(z_avg)
-                
-
-                                
-            #print(self.faces_data.keys())
-       
-            
-            #dynamically creating checkboxes for faces
-            if len(self.face_checklist) > 0:
-                for ele in self.face_checklist:
-                    var = ele[0]
-                    chk = ele[1]
-                    if isinstance(chk, tk.Checkbutton):
-                        var.set(False)
-                        self.delete_widget(chk)
-                    
-            self.face_checklist.clear()
-            
-            
-            i = 0
-            
-            for key in self.faces_data:
-                #if key != self.edge_ind:
-                txt = "Face:" + key
-                var = tk.BooleanVar()
-                is_checked = False
-                chk = tk.Checkbutton(self.face_scrl_frame, 
-                                    text=txt, 
-                                    variable=var,
-                                    #face color choosers
-                                    command=self.face_color_chooser,
-                                    onvalue=True,
-                                    offvalue=False
-                                    
-                                    )
-                
-                
-                var.set(False)
-                
-                self.face_checklist.append([var, chk, key, is_checked])
-                chk.grid(row=i, column=1, sticky="W")
-
-                i = i + 1
-
-    def face_color_chooser(self):
-        changed_cb = None
-        changed_key = None
-        changed_bool = None
-        for data in self.face_checklist:
-            #print(data)
-        
-            
-            var = data[0]
-            chk = data[1]
-            key = data[2]
-            is_chkd = data[3]
-
-            #self.faces_data[key][2]
-            booln = var.get()
-            
-            if booln and not is_chkd:
-                changed_cb = chk
-                changed_key = key
-                changed_bool = booln
-                data[3] = booln
-                print("neh")
-            elif not booln and is_chkd:
-                data[3] =  False
-                changed_bool = data[3]
-                #data[1].config(selectcolor="#FFFFFF")
-                print('ye')
-                changed_key = key
-                changed_cb = chk
-                #self.faces_data[key][1] = "#FFFFFF"
-    
-        if isinstance(changed_cb, tk.Checkbutton) and changed_bool == True and changed_key != None:  
-            color_code = colorchooser.askcolor(title ="Choose color")[1]
-            self.faces_data[changed_key][1] = color_code
-            #print(self.faces_data)
-            changed_cb.config(selectcolor=color_code)
-            
-        elif isinstance(changed_cb, tk.Checkbutton) and changed_bool == False: 
-            print("hmph")
-            changed_cb.config(selectcolor="#FFFFFF")
-            self.faces_data[changed_key][1] = "#FFFFFF"
-        #print(checkboxes)    
-
-        self.draw_faces()
-    
-           
+                   
     #COORDINATE SPACE TRANSFORMATIONS
     
     def world_to_screen(self, x, y, z):
-        #this is the function that projects 3d points from the world to the scren
+        #this is the function that projects 3d points from the world to the screen
         xyz_coords = set_matrix3D(x, y, z)
         projected_points = matrix_multiply(self.current_matrix, xyz_coords)
         gx, gy, gz = get_3D_vertices(projected_points)
@@ -1802,7 +1908,7 @@ class TransformPolyhedron3d(ttk.Frame):
         return  round((x/self.canvas_width)  * 2 - 1, 6),  round((y/self.canvas_height) * -2 + 1, 6), self.zed
     
     def z_pos(self, event):
-        
+        #
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
         
@@ -1857,7 +1963,7 @@ class TransformPolyhedron3d(ttk.Frame):
             else:
                 self.z_size = self.z_max
                 
-        self.zed = 1 + (self.z_size/(self.z_max - self.z_min)) * (self.far - self.near)  + 0.22
+        self.zed =  (self.z_size/(self.z_max - self.z_min)) * (self.far - self.near) + 1.22
         
         self.world_xyz[2] = self.zed
         
@@ -1892,11 +1998,65 @@ class TransformPolyhedron3d(ttk.Frame):
                         tags=("w-coords")
                         )
         
+    def reset_pressed(self, event):
+        if self.pressed == True:
+            self.pressed = False
+
     #TRANSFORMATION METHODS
         
     def degrees_to_radians(self, deg):
         return (deg * math.pi)/180   
     
+    def rotate_reset(self):
+        self.angle_x = 180
+        self.angle_y = 180
+        self.angle_z = 180
+        self.rotate_x_spinbox.set(self.angle_x)
+        self.rotate_y_spinbox.set(self.angle_y)
+        self.rotate_z_spinbox.set(self.angle_z)
+
+    def shear_reset(self):
+        self.shear_xy = 0.0
+        self.shear_xz = 0.0
+        self.shear_yx = 0.0
+        self.shear_yz = 0.0
+        self.shear_zx = 0.0
+        self.shear_zy = 0.0
+        self.shear_xy_spinbox.set(0)
+        self.shear_xz_spinbox.set(0)
+        self.shear_yx_spinbox.set(0)
+        self.shear_yz_spinbox.set(0)
+        self.shear_zx_spinbox.set(0)
+        self.shear_zy_spinbox.set(0)
+
+    def translate_reset(self):
+        self.translate_x = 0.0
+        self.translate_y = 0.0
+        self.translate_z = 0.0
+        self.translate_x_spinbox.set(self.translate_x)
+        self.translate_y_spinbox.set(self.translate_y)
+        self.translate_z_spinbox.set(self.translate_z)
+
+    def reflect_reset(self):
+        self.reflect_x = 1.0
+        self.reflect_y = 1.0
+        self.reflect_z = 1.0
+        self.reflect_x_spinbox.set(self.reflect_x)
+        self.reflect_y_spinbox.set(self.reflect_y)
+        self.reflect_z_spinbox.set(self.reflect_z)
+
+    def scale_reset(self):
+        self.scale_x = 1.0
+        self.scale_y = 1.0
+        self.scale_z = 1.0
+        self.scale_x_spinbox.set(self.scale_x)
+        self.scale_y_spinbox.set(self.scale_y)
+        self.scale_z_spinbox.set(self.scale_z)
+
+    
+
+
+
     def apply_rotation_x(self, *args):
         self.angle_x = self.apply_rotation(self.angle_x, self.rotate_x_spinbox, x_rotation_matrix3D)
                  
@@ -1905,61 +2065,14 @@ class TransformPolyhedron3d(ttk.Frame):
         
     def apply_rotation_z(self, *args):
         self.angle_z = self.apply_rotation(self.angle_z, self.rotate_z_spinbox, z_rotation_matrix3D)   
-            
+
     def apply_rotation(self, axis_angle, axis_spinbox, axis_matrix_3D):
-        cx = self.anchor_point[0]
-        cy = self.anchor_point[1]
-        cz = self.anchor_point[2]
-        
         prev_angle = axis_angle
         current_angle = int(axis_spinbox.get())
-        
-        current_anchor = translation_matrix3D(-cx, -cy, -cz)
-        anchor_current = translation_matrix3D(cx, cy, cz)
-        
         rotation = axis_matrix_3D(self.degrees_to_radians(prev_angle - current_angle))
-        #if self.grid_lines_boolvar.get():
-            
-            
-        self.apply_grid_rotation(self.grid_lines_z, rotation, current_anchor, anchor_current)
-        self.apply_grid_rotation(self.grid_lines_x, rotation, current_anchor, anchor_current)
-        
-        self.canvas.delete("gridlinelabels")
-        self.canvas.delete("gridlines")
-        self.draw_grid_lines(self.grid_lines_z, -1)
-        self.draw_grid_lines(self.grid_lines_x)
-    
-        self.draw_anchor()
-            
-        if len(self.vertices) > 0:
-            
-            self.apply_vertex_rotation(rotation, current_anchor, anchor_current)
-            
-            self.update_faces_data()
-            self.draw_faces()
-            self.draw_projected_points()
-            self.draw_edge_lines()
-            #self.print_vertices()
-            
+        self.apply_transformation(rotation, True)
         return current_angle
-              
-    def apply_vertex_rotation(self, rotation_matrix, anchor_matrix, matrix_anchor):
-        for i in range(0, len(self.vertices), 3):
-    
-            xyz_coords = set_matrix3D(self.vertices[i], self.vertices[i + 1], self.vertices[i + 2])
-            xyz_coords = matrix_multiply(anchor_matrix, xyz_coords)
-            xyz_coords = matrix_multiply(rotation_matrix, xyz_coords)
-            xyz_coords = matrix_multiply(matrix_anchor, xyz_coords)
-            
-            x, y, z = get_3D_vertices(xyz_coords)
-            if i < len(self.vertices) and i + 1 < len(self.vertices):
-                self.vertices[i] = x
-                self.vertices[i + 1] = y
-                self.vertices[i + 2] = z
 
-        self.draw_projected_points()
-        #self.print_vertices()
-                  
     def apply_grid_rotation(self, line_grid, rotation, current_anchor, anchor_current, *args):
         #if self.grid_lines_boolvar.get():
         if self.grid_rotation_boolvar.get():
@@ -2022,6 +2135,177 @@ class TransformPolyhedron3d(ttk.Frame):
             start_ind.clear()
             end_ind.clear()
                
+    def apply_shearing_xy(self, *args):
+        self.shear_xy = self.apply_shearing(self.shear_xy, self.shear_xy_spinbox, 1)
+        
+    def apply_shearing_xz(self, *args):
+        self.shear_xz = self.apply_shearing(self.shear_xz, self.shear_xz_spinbox, 2)
+
+    def apply_shearing_yz(self, *args):
+        self.shear_yz = self.apply_shearing(self.shear_yz, self.shear_yz_spinbox, 3)
+
+    def apply_shearing_yx(self, *args):
+        self.shear_yx = self.apply_shearing(self.shear_yx, self.shear_yx_spinbox, 4)
+
+    def apply_shearing_zx(self, *args):
+        self.shear_zx = self.apply_shearing(self.shear_zx, self.shear_zx_spinbox, 5)
+
+    def apply_shearing_zy(self, *args):
+        self.shear_zy = self.apply_shearing(self.shear_zy, self.shear_zy_spinbox, 6)
+
+    def apply_shearing(self, axis_shear, axis_spinbox, arg_ind):
+        
+        prev_shear = axis_shear
+        current_shear = float(axis_spinbox.get())
+        inc = current_shear - prev_shear
+        shear_dict = {
+
+                        1: shear_matrix3D(inc, 0, 0, 0, 0, 0),
+                        2: shear_matrix3D(0, inc, 0, 0, 0, 0),
+                        3: shear_matrix3D(0, 0, inc, 0, 0, 0),
+                        4: shear_matrix3D(0, 0, 0, inc, 0, 0),
+                        5: shear_matrix3D(0, 0, 0, 0, inc, 0),
+                        6: shear_matrix3D(0, 0, 0, 0, 0, inc)
+                        
+                        }
+        
+        shear = shear_dict[arg_ind]
+        self.apply_transformation(shear)
+        return current_shear
+    
+    def apply_translation_x(self, *args):
+        self.translate_x = self.apply_translation(self.translate_x, self.translate_x_spinbox, 1)
+
+    def apply_translation_y(self, *args):
+        self.translate_y = self.apply_translation(self.translate_y, self.translate_y_spinbox, 2)
+
+    def apply_translation_z(self, *args):
+        self.translate_z = self.apply_translation(self.translate_z, self.translate_z_spinbox, 3)
+
+    def apply_translation(self, axis_translation, axis_spinbox, arg_ind):
+        
+        prev_translation = axis_translation
+        current_translation = float(axis_spinbox.get())
+        inc = current_translation - prev_translation 
+
+        translation_dict = {
+
+                        1: translation_matrix3D(inc, 0, 0),
+                        2: translation_matrix3D(0, inc, 0),
+                        3: translation_matrix3D(0, 0, inc)
+
+                        }   
+
+        translation = translation_dict[arg_ind]
+        
+        self.apply_transformation(translation, False)
+        return current_translation
+    
+    def apply_reflection_x(self, *args):
+        self.reflect_x = self.apply_reflection(self.reflect_x, self.reflect_x_spinbox, 1)
+
+    def apply_reflection_y(self, *args):
+        self.reflect_y = self.apply_reflection(self.reflect_y, self.reflect_y_spinbox, 2)
+
+    def apply_reflection_z(self, *args):
+        self.reflect_z = self.apply_reflection(self.reflect_z, self.reflect_z_spinbox, 3)
+
+    def apply_reflection(self, axis_reflection, axis_spinbox, arg_ind):
+        
+        prev_reflection = (axis_reflection / 1) * 1
+        current_reflection = (float(axis_spinbox.get()) / 1) * 1
+
+        #print("PR {} CR {}".format(prev_reflection, current_reflection))
+
+        inc = (current_reflection - prev_reflection)/(prev_reflection) + 1 
+
+        #print("PR {} CR {} inc{}\n".format(prev_reflection, current_reflection, inc))
+        reflection_dict = {
+
+                        1: reflection_matrix3D(inc, 1, 1),
+                        2: reflection_matrix3D(1, inc, 1),
+                        3: reflection_matrix3D(1, 1, inc)
+
+                        }   
+
+        reflection = reflection_dict[arg_ind]
+        
+        self.apply_transformation(reflection, False)
+        return current_reflection
+        
+    def apply_scaling_x(self, *args):
+        self.scale_x = self.apply_scaling(self.scale_x, self.scale_x_spinbox, 1)
+
+    def apply_scaling_y(self, *args):
+        self.scale_y = self.apply_scaling(self.scale_y, self.scale_y_spinbox, 2)
+
+    def apply_scaling_z(self, *args):
+        self.scale_z = self.apply_scaling(self.scale_z, self.scale_z_spinbox, 3)
+
+    def apply_scaling(self, axis_scaling, axis_spinbox, arg_ind):
+
+        prev_scaling = (axis_scaling / 1) * 1
+        current_scaling = (float(axis_spinbox.get()) / 1) * 1
+
+        inc = (current_scaling - prev_scaling)/prev_scaling + 1
+        scaling_dict = {
+
+                        1: scale_matrix3D(inc, 1, 1),
+                        2: scale_matrix3D(1, inc, 1),
+                        3: scale_matrix3D(1, 1, inc)
+
+                        }   
+
+        scaling = scaling_dict[arg_ind]
+        
+        self.apply_transformation(scaling, False)
+        return current_scaling
+
+    def apply_transformation(self, transform_matrix_3D, is_rotating = False):
+        cx = self.anchor_point[0]
+        cy = self.anchor_point[1]
+        cz = self.anchor_point[2]
+    
+        current_anchor = translation_matrix3D(-cx, -cy, -cz)
+        anchor_current = translation_matrix3D(cx, cy, cz)
+        if is_rotating:
+            self.apply_grid_rotation(self.grid_lines_z, transform_matrix_3D, current_anchor, anchor_current)
+            self.apply_grid_rotation(self.grid_lines_x, transform_matrix_3D, current_anchor, anchor_current)
+            
+            self.canvas.delete("gridlinelabels")
+            self.canvas.delete("gridlines")
+            self.draw_grid_lines(self.grid_lines_z, -1)
+            self.draw_grid_lines(self.grid_lines_x)
+    
+        self.draw_anchor()
+
+        if len(self.vertices) > 0:
+            
+            self.apply_vertex_transformation(transform_matrix_3D, current_anchor, anchor_current)
+            
+            self.update_faces_data()
+            self.draw_faces()
+            self.draw_projected_vertices()
+            self.draw_edge_lines()
+            #self.print_vertices()
+
+    def apply_vertex_transformation(self, transform_matrix, anchor_matrix, matrix_anchor):
+        for i in range(0, len(self.vertices), 3):
+    
+            xyz_coords = set_matrix3D(self.vertices[i], self.vertices[i + 1], self.vertices[i + 2])
+            xyz_coords = matrix_multiply(anchor_matrix, xyz_coords)
+            xyz_coords = matrix_multiply(transform_matrix, xyz_coords)
+            xyz_coords = matrix_multiply(matrix_anchor, xyz_coords)
+            
+            x, y, z = get_3D_vertices(xyz_coords)
+            if i < len(self.vertices) and i + 1 < len(self.vertices):
+                self.vertices[i] = x
+                self.vertices[i + 1] = y
+                self.vertices[i + 2] = z
+
+        self.draw_projected_vertices()
+        #self.print_vertices()
+
     #CANVAS DRAWING METHODS     
 
     def draw_grid_lines(self, grid_lines, one_sign = 1):
@@ -2128,9 +2412,8 @@ class TransformPolyhedron3d(ttk.Frame):
                                         font = ("Arial", round((1 - (ez - 1)/(self.far - self.near)) * font_mult) + min_font_size),
                                         tags=("gridlinelabels"))
                                        
-    def draw_projected_points(self):
+    def draw_projected_vertices(self):
         if len(self.vertices) > 0:
-            
             
             self.canvas.delete("verts")
             
@@ -2157,7 +2440,7 @@ class TransformPolyhedron3d(ttk.Frame):
                                     y - oval_size, 
                                     x + oval_size, 
                                     y + oval_size, 
-                                    fill = "blue",
+                                    fill = self.vertex_color,
                                     tags=("verts")
                                     )
                 elif self.vert_style_svar.get() == "Pixel":
@@ -2167,7 +2450,7 @@ class TransformPolyhedron3d(ttk.Frame):
                                     y - oval_size, 
                                     x + oval_size, 
                                     y + oval_size, 
-                                    fill = "blue",
+                                    fill = self.vertex_color,
                                     tags=("verts")
                                     )
                 elif self.vert_style_svar.get() == "Index":
@@ -2176,8 +2459,8 @@ class TransformPolyhedron3d(ttk.Frame):
                     font_mult = 8
                     self.canvas.create_text(x, 
                                             y,
-                                            text="V-{}".format(vert_ind),
-                                            fill = "blue",
+                                            text="V{}".format(vert_ind),
+                                            fill = self.vertext_color,
                                             font = ("Arial", round((1 - (z - 1)/(self.far - self.near)) * font_mult) + min_font_size),
                                             tags=("verts")
                                             )
@@ -2203,9 +2486,17 @@ class TransformPolyhedron3d(ttk.Frame):
                         sx1, sy1 = self.world_to_screen(vx1, vy1, vz1)
                         sx2, sy2 = self.world_to_screen(vx2, vy2, vz2)
                         
-                        self.canvas.create_line(sx1, sy1, sx2, sy2,
-                                                fill="blue",
-                                                tags=("edgelines"))
+                        if self.edge_style_svar.get() == "Solid":
+                            self.canvas.create_line(sx1, sy1, sx2, sy2,
+                                                    fill=self.edge_color,
+                                                    tags=("edgelines"))
+                        elif self.edge_style_svar.get() == "Dotted":
+                            self.canvas.create_line(sx1, sy1, sx2, sy2,
+                                                    dash = (4, 1),
+                                                    fill=self.edge_color,
+                                                    tags=("edgelines"))
+                        elif self.edge_style_svar.get() == "None":
+                            pass
           
     def draw_faces(self):
         face_polygons = {}
@@ -2234,6 +2525,7 @@ class TransformPolyhedron3d(ttk.Frame):
                                             fill = face_polygons[key][-1], 
                                             tags=("facepolys")
                                             )
+            
         #print(face_polygons.keys(),"\n")
         #print(self.face_checklist,"\n")
         #print(self.faces,"\n")
@@ -2260,143 +2552,141 @@ class TransformPolyhedron3d(ttk.Frame):
                         )      
                    
     def place_vertex(self, event):
-        #x = self.canvas.canvasx(event.x)
-        #y = self.canvas.canvasy(event.y)
-        
-        wx, wy, wz = self.world_xyz[0], self.world_xyz[1], self.world_xyz[2]
-        
-        self.vertices.append(wx)
-        self.vertices.append(wy)
-        self.vertices.append(wz)
-         
-        deci = 2
-        rwx, rwy, rwz = round(wx, deci), round(wy, deci), round(wz, deci)
-        
-        total_verts = (len(self.vertices)//3) - 1
-        #0 front,tk.END back
-        self.vertex_listbox.insert(tk.END, "V{}-x:{}:y:{}:z:{}".format(total_verts, rwx, rwy, rwz))
-        
-        if len(self.vertices) > 0:
+        #if self.pressed == False:
+            #x = self.canvas.canvasx(event.x)
+            #y = self.canvas.canvasy(event.y)
             
-            x, y = self.world_to_screen(wx, wy, wz)
+            wx, wy, wz = self.world_xyz[0], self.world_xyz[1], self.world_xyz[2]
             
-            #Vertex Styles
-            if  self.vert_style_svar.get() == "Circle":
-                oval_size = (1 - (wz - 1)/(self.far - self.near)) * self.z_max
-                self.canvas.create_oval(
-                                x - oval_size, 
-                                y - oval_size, 
-                                x + oval_size, 
-                                y + oval_size, 
-                                fill = "blue",
-                                tags=("verts")
-                                )
-            elif self.vert_style_svar.get() == "Pixel":
-                oval_size = 0.5
-                self.canvas.create_oval(
-                                x - oval_size, 
-                                y - oval_size, 
-                                x + oval_size, 
-                                y + oval_size, 
-                                fill = "blue",
-                                tags=("verts")
-                                )
-            elif self.vert_style_svar.get() == "Index":
-                deci = 2
-                min_font_size = 5
-                font_mult = 8
-                self.canvas.create_text(x, 
-                                        y,
-                                        text="V-{}".format((len(self.vertices) - 3)//3),
-                                        fill = "blue",
-                                        font = ("Arial", round((1 - (wz - 1)/(self.far - self.near)) * font_mult) + min_font_size),
-                                        tags=("verts")
-                                        )
-            elif self.vert_style_svar.get() == "None":
-                pass
+            self.vertices.append(wx)
+            self.vertices.append(wy)
+            self.vertices.append(wz)
             
-            self.edges[total_verts] = []
-            self.update_edge_checkbuttons()
+            deci = 2
+            rwx, rwy, rwz = round(wx, deci), round(wy, deci), round(wz, deci)
             
+            total_verts = (len(self.vertices)//3) - 1
             
-            #print("New Vertex x:{}:y:{}:z:{}".format(rwx, rwy, rwz))
-            #print(self.vertices)
+            self.vertex_listbox.insert(tk.END, "V{}-x:{}:y:{}:z:{}".format(total_verts, rwx, rwy, rwz))
+            if len(self.vertices) > 0:
+                
+                x, y = self.world_to_screen(wx, wy, wz)
+                
+                #Vertex Styles
+                if  self.vert_style_svar.get() == "Circle":
+                    oval_size = (1 - (wz - 1)/(self.far - self.near)) * self.z_max
+                    self.canvas.create_oval(
+                                    x - oval_size, 
+                                    y - oval_size, 
+                                    x + oval_size, 
+                                    y + oval_size, 
+                                    fill = self.vertex_color,
+                                    tags=("verts")
+                                    )
+                elif self.vert_style_svar.get() == "Pixel":
+                    oval_size = 0.5
+                    self.canvas.create_oval(
+                                    x - oval_size, 
+                                    y - oval_size, 
+                                    x + oval_size, 
+                                    y + oval_size, 
+                                    fill = self.vertex_color,
+                                    tags=("verts")
+                                    )
+                elif self.vert_style_svar.get() == "Index":
+                    deci = 2
+                    min_font_size = 5
+                    font_mult = 8
+                    self.canvas.create_text(x, 
+                                            y,
+                                            text="V{}".format((len(self.vertices) - 3)//3),
+                                            fill = self.vertext_color,
+                                            font = ("Arial", round((1 - (wz - 1)/(self.far - self.near)) * font_mult) + min_font_size),
+                                            tags=("verts")
+                                            )
+                    
+                elif self.vert_style_svar.get() == "None":
+                    pass
+                
+                self.edges[total_verts] = []
+                self.update_edge_checkbuttons()
+                
+                
+                #print("New Vertex x:{}:y:{}:z:{}".format(rwx, rwy, rwz))
+                #print(self.vertices)
+        #self.pressed = True
     
     #VERTEX BUTTON METHODS
-    
-    def remove_vertex(self):
+
+    def destroy_vertex(self, v_ind):
+
+        x_ind = v_ind * 3 
+        y_ind = x_ind + 1
+        z_ind = y_ind + 1
         
+        self.vertices.pop(z_ind)
+        self.vertices.pop(y_ind)
+        self.vertices.pop(x_ind)
+        self.vertex_listbox.delete(v_ind)
+        
+        #updating the edges list
+        #self.edges is an adjcency list
+        
+        #print("remove vert")
+        #getting rid of the deleted vertex in the dictionary
+        self.edges.pop(v_ind)
+        #self.edge_options.pop(v_ind)
+        dict_new = {}
+        if self.edge_ind >= v_ind:
+            self.edge_ind = 0
+    
+        for key in self.edges:
+            #getting rid of the deleted vertex in the vertex's array
+            if v_ind in self.edges[key]:
+                self.edges[key].remove(v_ind)
+                #self.edge_options[key].pop(v_ind)
+            #reorganizing the dictionary with updated indexes to reflect deletion
+            for i in range(len(self.edges[key])):
+                if self.edges[key][i] > v_ind:
+                    self.edges[key][i] = self.edges[key][i] - 1
+            #for child in self.edge_options[key]:
+            #    if child > v_ind:
+            #        child = child - 1
+                
+            #filling the replacement dictionary
+        
+            if key > v_ind:
+                #print('ye')
+                new_key = key - 1
+                dict_new[new_key] = self.edges[key]
+            else:
+                #print('ne')
+                dict_new[key] = self.edges[key]
+                
+            
+                
+                
+        self.edges = dict_new    
+            
+        self.update_edge_checkbuttons()
+                        
+        self.draw_projected_vertices()
+        self.draw_edge_lines()
+        #print(self.vertices)
+    
+    def delete_vertex(self):
+        #deletes the last vertex in the vertex listbox
+        v_ind = self.vertex_listbox.size() - 1
+        if len(self.vertices) > 0 and v_ind > 0:
+            self.destroy_vertex(v_ind)
+
+    def remove_vertex(self):
+        #deleted any vertex in the vertex listbox
         v_lb_sc = self.vertex_listbox.curselection()
         if len(self.vertices) > 0 and len(v_lb_sc) > 0:
-            #print(self.edges)
             v_ind = v_lb_sc[0]
-            #sel_verts_ls = self.vertex_listbox.get(v_ind).split(':')
-            #lvx, lvy, lvz = sel_verts_ls[1], sel_verts_ls[3], sel_verts_ls[5]
-            #print("{} {} {}".format(lvx, lvy, lvz))
-            
-            #If use the one with the listbox size if vertices are inserted from the front, use the second if back
-            # self.vertex_listbox.size() * 3 - (v_ind + 1) * 3, ind * 3 
-            x_ind = v_ind * 3 
-            #print(x_ind)
-            y_ind = x_ind + 1
-            z_ind = y_ind + 1
-            
-            self.vertices.pop(z_ind)
-            self.vertices.pop(y_ind)
-            self.vertices.pop(x_ind)
-            self.vertex_listbox.delete(v_ind)
-            
-            #updating the edges list
-            #self.edges is an adjcency list
-           
-            #print("remove vert")
-            #getting rid of the deleted vertex in the dictionary
-            self.edges.pop(v_ind)
-            #self.edge_options.pop(v_ind)
-            dict_new = {}
-            if self.edge_ind >= v_ind:
-                self.edge_ind = 0
-        
-            for key in self.edges:
-                #getting rid of the deleted vertex in the vertex's array
-                if v_ind in self.edges[key]:
-                    self.edges[key].remove(v_ind)
-                    #self.edge_options[key].pop(v_ind)
-                #reorganizing the dictionary with updated indexes to reflect deletion
-                for i in range(len(self.edges[key])):
-                    if self.edges[key][i] > v_ind:
-                        self.edges[key][i] = self.edges[key][i] - 1
-                #for child in self.edge_options[key]:
-                #    if child > v_ind:
-                #        child = child - 1
-                    
-                #filling the replacement dictionary
-            
-                if key > v_ind:
-                    #print('ye')
-                    new_key = key - 1
-                    dict_new[new_key] = self.edges[key]
-                else:
-                    #print('ne')
-                    dict_new[key] = self.edges[key]
-                    
-                
-                    
-                    
-            self.edges = dict_new    
-                
-            self.update_edge_checkbuttons()
-            #print(self.edges)
-            #print(self.edge_options)
-            
-            
-                            
-                            
-            self.draw_projected_points()
-            self.draw_edge_lines()
-            #print(self.vertices)
-            
-                  
+            self.destroy_vertex(v_ind)
+                          
     def clear_vertices(self):
         self.canvas.delete("verts")    
         self.vertex_listbox.delete(0, tk.END)
@@ -2438,16 +2728,101 @@ class TransformPolyhedron3d(ttk.Frame):
         #self.update_edge_checkbuttons()
         
     def select_vertex(self):
+        #selects a specific vertex for edge connecting
         v_lb_sc = self.vertex_listbox.curselection()
         if len(self.vertices) > 0 and len(v_lb_sc) > 0:
-            self.edge_ind = self.edge_ind - 1
-            self.next_vertex()
+            self.edge_ind = v_lb_sc[0]
+            #self.next_vertex()
             self.update_edge_checkbuttons()
     
-    
-    #EDGE BUTTONS METHODS     
-    
-     
+    def vertex_color_chooser(self):
+        color_code = colorchooser.askcolor(title ="Choose color")[1]
+        self.vertex_color = color_code
+        #print(self.faces_data)
+        self.vertex_color_button.config(bg=color_code)
+        self.update_viewport()
+
+    def vertext_color_chooser(self):
+        color_code = colorchooser.askcolor(title ="Choose color")[1]
+        self.vertext_color = color_code
+        #print(self.faces_data)
+        self.vertext_color_button.config(bg=color_code)
+        self.update_viewport()
+
+
+    #EDGE BUTTONS METHODS 
+
+    def create_edge_checkbuttons(self):
+        #dynamically creating checkboxes for edges
+        if len(self.edge_checklist) > 0:
+            for ele in self.edge_checklist:
+                var = ele[0]
+                chk = ele[1]
+                if isinstance(chk, tk.Checkbutton):
+                    var.set(False)
+                    self.delete_widget(chk)
+                
+        self.edge_checklist.clear()
+        
+        i = 0
+        
+        for key in self.edge_options[self.edge_ind]:
+            if key != self.edge_ind:
+                txt = "Vertex:" + str(key)
+                var = tk.BooleanVar()
+                chk = tk.Checkbutton(self.edge_scrl_frame, 
+                                    text=txt, 
+                                    variable=var,
+                                    command=self.connect_vertices,
+                                    onvalue=True,
+                                    offvalue=False
+                                    
+                                    )
+                
+                var.set(self.edge_options[self.edge_ind][key])
+                
+                parent = self.edge_ind
+                child = key
+                
+                self.edge_checklist.append([var, chk, parent, child])
+                chk.grid(row=i, column=1)
+                
+                i = i + 1
+
+    def update_edge_checkbuttons(self):
+        if len(self.vertices) >= 3:
+            #print("update edges")
+            #updating the edge checkbuttons
+            if len(self.vertices) == 0:
+                self.edge_label.config(text="Vertex:? - Edges")
+            
+            #self.edge_options = {} 
+            #below keeps track for the dynamic checkboxes generated
+            #will be the edges and whether they're connected tp other edges, 
+            # a dictionary of dictionarys and bools 
+            
+            self.edge_keys_ls = self.edges.keys()
+            self.edge_canvas.delete("all")
+            self.edge_canvas.create_window((0, 0), window=self.edge_scrl_frame, anchor="nw")
+            self.edge_options.clear()
+            self.edge_keys_ls = self.edges.keys()
+            
+            for key in self.edges:
+                #rewriting edges
+                self.edge_options[key] = {}
+                for ele in self.edge_keys_ls:
+                    if key != ele:
+                        if ele in self.edges[key]:
+                            self.edge_options[key][ele] = True
+                        else:
+                            self.edge_options[key][ele] = False
+
+
+            self.edge_label.config(text="Vertex:" + f"{self.edge_ind} - Edges")
+
+            self.create_edge_checkbuttons()      
+            self.create_faces_from_edges()
+
     def connect_vertices(self):
         if len(self.vertices) > 3:
             #print("yep")
@@ -2490,60 +2865,21 @@ class TransformPolyhedron3d(ttk.Frame):
             self.create_faces_from_edges()            
             self.draw_edge_lines()    
   
-    
     def next_vertex(self):
         #self.edge_label = ttk.Label(self, text="Vertex:? - Edges")
         if len(self.vertices) > 3:
             '''
             self.edge_keys_ls = None #self.edges.keys()
-            self.edge_cur_key = None #will be self.edge_keys_ls[self.edge_ind]
             self.edge_options = None #will be the edges and whether they're connected tp other edges, a dictionary of dictionarys and bools 
             
             '''
-            
             self.edge_ind += 1
             if len(self.edge_keys_ls) - self.edge_ind == 0:
                 self.edge_ind = 0
             self.edge_label.config(text="Vertex:" + f"{self.edge_ind} - Edges")
 
-            #dynamically creating checkboxes for edges
-            if len(self.edge_checklist) > 0:
-                for ele in self.edge_checklist:
-                    var = ele[0]
-                    chk = ele[1]
-                    if isinstance(chk, tk.Checkbutton):
-                        var.set(False)
-                        self.delete_widget(chk)
-                    
-            self.edge_checklist.clear()
+            self.create_edge_checkbuttons()
             
-            
-            i = 0
-            
-            for key in self.edge_options[self.edge_ind]:
-                if key != self.edge_ind:
-                    txt = "Vertex:" + str(key)
-                    var = tk.BooleanVar()
-                    chk = tk.Checkbutton(self.edge_scrl_frame, 
-                                        text=txt, 
-                                        variable=var,
-                                        command=self.connect_vertices,
-                                        onvalue=True,
-                                        offvalue=False
-                                        
-                                        )
-                    
-                    var.set(self.edge_options[self.edge_ind][key])
-                    
-                    parent = self.edge_ind
-                    child = key
-                    
-                    self.edge_checklist.append([var, chk, parent, child])
-                    chk.grid(row=i, column=1)
-                    
-                    i = i + 1
-            
-
     def prev_vertex(self):
         #self.edge_label = ttk.Label(self, text="Vertex:? - Edges")
         if len(self.vertices) > 3:
@@ -2562,47 +2898,205 @@ class TransformPolyhedron3d(ttk.Frame):
                 chk = tk.Checkbutton(self.edge_scrl_frame, text=option, variable=var, command=None).grid(row=i, column=1)#pack()
                 i += 1
             '''
+            self.create_edge_checkbuttons()
             
-            #dynamically creating checkboxes for edges
-            if len(self.edge_checklist) > 0:
-                for ele in self.edge_checklist:
+    def edge_color_chooser(self):
+        color_code = colorchooser.askcolor(title ="Choose color")[1]
+        self.edge_color = color_code
+        #print(self.faces_data)
+        self.edge_color_button.config(bg=color_code)
+        self.update_viewport()
+
+    #FACE MANAGEMENT
+
+    def update_faces_data(self):
+        for key in self.faces_data:
+            face_vert_ind = list(map(int, key.split('-')))
+            z_avg = 0
+            for i in range(len(self.faces_data[key][0])):
+                x_ind = face_vert_ind[i] * 3
+                y_ind = x_ind + 1
+                z_ind = y_ind + 1
+
+                cur_face_vert = self.faces_data[key][0][i]
+                cur_face_vert[0] = self.vertices[x_ind]
+                cur_face_vert[1] = self.vertices[y_ind]
+                cur_face_vert[2] = self.vertices[z_ind]
+
+                z_avg = z_avg + self.vertices[z_ind]
+
+            z_avg = z_avg/len(face_vert_ind)
+            self.faces_data[key][2] = z_avg
+
+    def dfs(self, graph, start, end):
+        fringe = [(start, [])]
+        while fringe:
+            state, path = fringe.pop()
+            if path and state == end:
+                yield path
+                continue
+            for next_state in graph[state]:
+                if next_state in path:
+                    continue
+                fringe.append((next_state, path+[next_state]))
+            
+    def get_cycles(self, graph):
+        #https://stackoverflow.com/questions/40833612/find-all-cycles-in-a-graph-implementation
+        #https://yuminlee2.medium.com/detect-cycle-in-a-graph-4461b6000845
+        #without the conditional it would count 0-1 as a cycle
+        #with it it limits cycles to triangles and above 
+        cycles = [[node]+path  for node in graph for path in self.dfs(graph, node, node) if len([node]+path) > 3]
+        #print("unclean cycles")
+        #print(cycles, len(cycles))
+        #print("Cycle clean")
+        c_cycles = []
+        for cycle in cycles.copy():
+            #first and last ele are the same
+            last = cycle.pop()
+            cycle = sorted(cycle)
+            if cycle not in c_cycles:
+                c_cycles.append(cycle)
+            
+        #print(c_cycles)
+        #print(graph)
+        return c_cycles
+
+    def adj_list_tris(self, graph):
+        triangles = []
+        for key in graph:
+            if len(graph[key]) > 1:
+                #tris = []
+                for i in range(len(graph[key]) - 1):
+                    
+                    #a = sorted([key, graph[key][i], graph[key][ i + 1]])
+                    a = [key, graph[key][i], graph[key][ i + 1]]
+                    #if a not in triangles:
+                    triangles.append(a)
+        return triangles
+
+    def create_faces_from_edges(self):
+        edge_connect_count = sum([len(self.edges[key]) for key in self.edges])
+        #print(edge_connect_count)
+        if edge_connect_count >= 6:
+            self.faces.clear()
+            self.faces_data.clear()
+            #self.faces_polygons.clear()
+            #faces is a list of triangles from the edge adjcency list 
+            self.faces = self.adj_list_tris(self.edges) #self.get_cycles(self.edges)
+            #
+            
+            #print(face_colors_keys)
+            #f_copy = face_colors_keys.copy()
+            for face in self.faces:
+                key = "-".join(list(map(str, face)))
+                self.faces_data[key] = [[]]
+                z_avg = 0
+                for vertex in face:
+                    x_ind = vertex * 3
+                    y_ind = x_ind + 1
+                    z_ind = y_ind + 1
+                    x, y, z  = self.vertices[x_ind], self.vertices[y_ind] , self.vertices[z_ind] 
+                    z_avg = z_avg + z
+                    self.faces_data[key][0].append([x, y, z])
+
+                z_avg= z_avg/len(face)
+                #data in face data is arranged in a list containing
+                # faces vertex coords lists [0] 
+                # color [1] 
+                # z_average of the face [2] 
+
+                self.faces_data[key].append("#FFFFFF")
+                self.faces_data[key].append(z_avg)
+                
+
+                                
+            #print(self.faces_data.keys())
+       
+            
+            #dynamically creating checkboxes for faces
+            if len(self.face_checklist) > 0:
+                for ele in self.face_checklist:
                     var = ele[0]
                     chk = ele[1]
                     if isinstance(chk, tk.Checkbutton):
                         var.set(False)
                         self.delete_widget(chk)
                     
-            self.edge_checklist.clear()
+            self.face_checklist.clear()
             
             
             i = 0
             
-            for key in self.edge_options[self.edge_ind]:
-                if key != self.edge_ind:
-                    txt = "Vertex:" + str(key)
-                    var = tk.BooleanVar()
-                    chk = tk.Checkbutton(self.edge_scrl_frame, 
-                                        text=txt, 
-                                        variable=var,
-                                        command=self.connect_vertices,
-                                        onvalue=True,
-                                        offvalue=False
-                                        
-                                        )
-                    
-                    var.set(self.edge_options[self.edge_ind][key])
-                    
-                    parent = self.edge_ind
-                    child = key
-                    
-                    self.edge_checklist.append([var, chk, parent, child])
-                    chk.grid(row=i, column=1)
-                    
-                    i = i + 1
-            
+            for key in self.faces_data:
+                #if key != self.edge_ind:
+                txt = "Face:" + key
+                var = tk.BooleanVar()
+                is_checked = False
+                chk = tk.Checkbutton(self.face_scrl_frame, 
+                                    text=txt, 
+                                    variable=var,
+                                    #face color choosers
+                                    command=self.face_color_chooser,
+                                    onvalue=True,
+                                    offvalue=False
+                                    
+                                    )
+                
+                
+                var.set(False)
+                
+                self.face_checklist.append([var, chk, key, is_checked])
+                chk.grid(row=i, column=1, sticky="W")
 
+                i = i + 1
+
+    def face_color_chooser(self):
+        changed_cb = None
+        changed_key = None
+        changed_bool = None
+        for data in self.face_checklist:
+            #print(data)
         
+            
+            var = data[0]
+            chk = data[1]
+            key = data[2]
+            is_chkd = data[3]
+
+            #self.faces_data[key][2]
+            booln = var.get()
+            
+            if booln and not is_chkd:
+                changed_cb = chk
+                changed_key = key
+                changed_bool = booln
+                data[3] = booln
+                #print("neh")
+            elif not booln and is_chkd:
+                data[3] =  False
+                changed_bool = data[3]
+                
+                #print('ye')
+                changed_key = key
+                changed_cb = chk
+               
     
+        if isinstance(changed_cb, tk.Checkbutton) and changed_bool == True and changed_key != None:  
+            color_code = colorchooser.askcolor(title ="Choose color")[1]
+            self.faces_data[changed_key][1] = color_code
+            #print(self.faces_data)
+            changed_cb.config(selectcolor=color_code)
+            
+        elif isinstance(changed_cb, tk.Checkbutton) and changed_bool == False: 
+            #print("hmph")
+            changed_cb.config(selectcolor="#FFFFFF")
+            self.faces_data[changed_key][1] = "#FFFFFF"
+        #print(checkboxes)    
+
+        self.draw_faces()  
+        self.update_viewport()     
+
+
     def print_vertices(self):
         #old debugger
         if False:
@@ -2611,32 +3105,16 @@ class TransformPolyhedron3d(ttk.Frame):
                 print("Vertex {} X:{} Y:{} Z:{}".format(i/3, self.vertices[i], self.vertices[i + 1], self.vertices[i + 2]))
             print()
 
+    def hex_to_rbg(self, hex_color):
+        hex_color = hex_color.lstrip('#')
+        arr = []
+        for i in (0, 2, 4):
+            arr.append(int(hex_color[i:i+2], 16))
+        #alpha value
+        arr.append(255)
+        return arr
 
-    def DDA(self, x0, y0, x1, y1):
-        #Digital Differential Analyser
-        dx = x1 - x0
-        dy = y1 - y0
-        
-        steps = max(abs(dx),abs(dy))
-            
-        x_inc = dx/steps
-        y_inc = dy/steps
-        
-        x = x0
-        y = y0
-        
-        coordinates = []
-        
-        for i in range(int(steps)):
-            x += x_inc
-            y += y_inc
-            floored_coords = [math.floor(x), math.floor(y)]
-            if floored_coords not in coordinates:
-                coordinates.append(floored_coords)
-                
-        return coordinates
-
-
+    
 
     
 if __name__ == "__main__":

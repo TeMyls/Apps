@@ -31,6 +31,10 @@ class App(tk.Tk):
         
         self.widgets_2d = [self.undo_button_2d, self.redo_button_2d, self.t2d_poly]
         
+        #any keybinding
+        #tkinterexamples.com key bindings
+        self.bind('z', lambda _ : self.t3d_poly.DDA_raycast_3D())
+
         #2D Widgets 
         
         self.cf3d = CanvasFrame3d(self, 500, 500)
@@ -71,7 +75,7 @@ class App(tk.Tk):
         self.help_m2D = tk.Menu(self.menubar, tearoff = False)
         self.help_m2D.add_command(label = "Mouse Click: Left to place points, Right to clear")
         self.help_m3D = tk.Menu(self.menubar, tearoff = False)
-        self.help_m3D.add_command(label = "Hold Left Click to position, Right to add a point, \nand Scroll to set depth")
+        self.help_m3D.add_command(label = "Hold Left Click to position, Right to add a point, \nand Scroll to set depth, Z to color faces")
 
 
         
@@ -1160,6 +1164,7 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.1,
+            state="readonly",
             command = self.draw_anchor
 
         )
@@ -1170,6 +1175,7 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.1,
+            state="readonly",
             command = self.draw_anchor
 
         )
@@ -1180,6 +1186,7 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.1,
+            state="readonly",
             command = self.draw_anchor
 
         )
@@ -1199,6 +1206,7 @@ class TransformPolyhedron3d(ttk.Frame):
             self,
             from_ = f,
             to = t,
+            state="readonly",
             command = self.apply_rotation_x
 
         )
@@ -1208,7 +1216,9 @@ class TransformPolyhedron3d(ttk.Frame):
             self,
             from_ = f,
             to = t,
+            state="readonly",
             command = self.apply_rotation_y
+
 
         )
         self.rotate_y_spinbox.set(self.angle)
@@ -1217,7 +1227,9 @@ class TransformPolyhedron3d(ttk.Frame):
             self,
             from_ = f,
             to = t,
-            command = self.apply_rotation_z
+            state="readonly",
+            command = self.apply_rotation_z,
+          
 
         )
         self.rotate_z_spinbox.set(self.angle)
@@ -1245,6 +1257,8 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.1,
+            width=10,
+            state="readonly",
             command = self.apply_shearing_xy
         )
         self.shear_xy_spinbox.set(self.shear_xy)
@@ -1255,6 +1269,7 @@ class TransformPolyhedron3d(ttk.Frame):
             to = t,
             increment=0.1,
             width=10,
+            state="readonly",
             command = self.apply_shearing_xz
         )
         self.shear_xz_spinbox.set(self.shear_xz)
@@ -1264,6 +1279,8 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.1,
+            width=10,
+            state="readonly",
             command = self.apply_shearing_yz
         )
         self.shear_yz_spinbox.set(self.shear_yz)
@@ -1273,6 +1290,8 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.1,
+            width=10,
+            state="readonly",
             command = self.apply_shearing_yx
         )
         self.shear_yx_spinbox.set(self.shear_yx)
@@ -1282,6 +1301,8 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.1,
+            width=10,
+            state="readonly",
             command = self.apply_shearing_zx
         )
         self.shear_zx_spinbox.set(self.shear_zx)
@@ -1291,6 +1312,8 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.1,
+            width=10,
+            state="readonly",
             command = self.apply_shearing_zy
         )
         self.shear_zy_spinbox.set(self.shear_zy)
@@ -1320,6 +1343,7 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.1,
+            state="readonly",
             command = self.apply_translation_x
 
         )
@@ -1330,6 +1354,7 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.1,
+            state="readonly",
             command = self.apply_translation_y
 
         )
@@ -1340,6 +1365,7 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.1,
+            state="readonly",
             command = self.apply_translation_z
 
         )
@@ -1365,6 +1391,7 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.33,
+            state="readonly",
             command = self.apply_reflection_x
 
         )
@@ -1375,6 +1402,7 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.33,
+            state="readonly",
             command = self.apply_reflection_y
 
         )
@@ -1385,6 +1413,7 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.33,
+            state="readonly",
             command = self.apply_reflection_z
 
         )
@@ -1411,6 +1440,7 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.1,
+            state="readonly",
             command = self.apply_scaling_x
 
         )
@@ -1421,6 +1451,7 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.1,
+            state="readonly",
             command = self.apply_scaling_y
 
         )
@@ -1431,6 +1462,7 @@ class TransformPolyhedron3d(ttk.Frame):
             from_ = f,
             to = t,
             increment=0.1,
+            state="readonly",
             command = self.apply_scaling_z
 
         )
@@ -1963,7 +1995,7 @@ class TransformPolyhedron3d(ttk.Frame):
             else:
                 self.z_size = self.z_max
                 
-        self.zed =  (self.z_size/(self.z_max - self.z_min)) * (self.far - self.near) + 1.22
+        self.zed = 1 + (self.z_size/(self.z_max - self.z_min)) * (self.far - self.near)  + 0.22
         
         self.world_xyz[2] = self.zed
         
@@ -2968,10 +3000,10 @@ class TransformPolyhedron3d(ttk.Frame):
                 #tris = []
                 for i in range(len(graph[key]) - 1):
                     
-                    #a = sorted([key, graph[key][i], graph[key][ i + 1]])
-                    a = [key, graph[key][i], graph[key][ i + 1]]
-                    #if a not in triangles:
-                    triangles.append(a)
+                    a = sorted([key, graph[key][i], graph[key][ i + 1]])
+                    #a = [key, graph[key][i], graph[key][ i + 1]]
+                    if a not in triangles:
+                        triangles.append(a)
         return triangles
 
     def create_faces_from_edges(self):
@@ -3093,9 +3125,92 @@ class TransformPolyhedron3d(ttk.Frame):
             self.faces_data[changed_key][1] = "#FFFFFF"
         #print(checkboxes)    
 
-        self.draw_faces()  
-        self.update_viewport()     
+        self.draw_faces()       
 
+    def N_gon_collision(self, coord_arr):
+        #https://www.jeffreythompson.org/collision-detection/poly-point.php
+        collision = False
+        #px, py = self.world_to_screen(px, py, self.world_xyz[2])
+        #px, py = self.screen_xy[0], self.screen_xy[1]
+        px, py = self.world_xyz[0], self.world_xyz[1]
+        for v_ind in range(len(coord_arr)):
+            
+            nxt = 0 if v_ind + 1 > len(coord_arr) - 1 else v_ind + 1
+
+            cur_coords = coord_arr[v_ind]
+            
+            cx = cur_coords[0]
+            cy = cur_coords[1]
+            cz = cur_coords[2]
+            #cx, cy = self.world_to_screen(cx, cy, cz)
+
+            nxt_coords = coord_arr[nxt]
+            nx = nxt_coords[0]
+            ny = nxt_coords[1]
+            nz = nxt_coords[2]
+            #nx, ny = self.world_to_screen(nx, ny, nz)
+
+            #print(cur_coords)
+            bool_1 = cy >= py and ny < py
+            bool_2 = cy < py and ny >= py
+            bool_3 = px < ((nx - cx) * (py - cy) / (ny - cy)) + cx
+
+            if  ((cy >= py and ny < py) or (cy < py and ny >= py)) and  px < ((nx - cx) * (py - cy) / (ny - cy)) + cx:
+                collision = not collision
+
+        return collision
+
+    def DDA_raycast_3D(self):#, x0, y0, z0, x1, y1, z1, precision):
+        
+        dz = self.far - self.near
+        precision = 100
+        
+        z_inc = dz/100
+        print(z_inc)
+
+        z = self.near
+        #print(x, y, z)
+        print("Near:{}\n".format(self.near), "Far:{}".format(self.far))
+        print("X:{} Y:{}".format(self.screen_xy[0], self.screen_xy[1]))
+        prev_z = z
+        print(self.world_xyz)
+        print(self.screen_xy)
+        while z > self.far:
+            #print(z)
+            #this is getting more negative as the far plane is negative -1 and the near plane is 1
+            z += z_inc
+            collided = False
+
+            for key in self.faces_data:
+                
+                z_avg = self.faces_data[key][2] 
+                face_vertices = self.faces_data[key][0]
+                collided = self.N_gon_collision(face_vertices)
+                #print(z_avg)
+                if collided:
+                    print(key, self.faces_data[key], self.world_xyz[0], self.world_xyz[1], " collision")
+                    color_code = colorchooser.askcolor(title ="Choose color")[1]
+                    self.faces_data[key][1] = color_code
+                    for data in self.face_checklist:
+                        #print(data) 
+                        var = data[0]
+                        chk = data[1]
+                        k = data[2]
+                        is_chkd = data[3]
+                        if k == key:
+                            data[3] = True
+                            data[1].config(selectcolor=color_code)
+                            data[0].set(True)
+                            self.draw_faces()
+                            return
+
+                    return
+
+
+
+            prev_z = z
+        
+        print("no collision")
 
     def print_vertices(self):
         #old debugger

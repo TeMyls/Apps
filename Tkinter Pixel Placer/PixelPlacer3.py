@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox , colorchooser, PhotoImage, Toplevel
 import os
 from PIL import Image, ImageTk
-from MatrixMath import *
+from Matrix_Math import *
 import numpy as np
 import math
 

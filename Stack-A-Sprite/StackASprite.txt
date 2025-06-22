@@ -1,0 +1,1 @@
+3 to 5:differences went from having all vertices represented and using them in individual pixels to making them on dmenad when pixels are created.

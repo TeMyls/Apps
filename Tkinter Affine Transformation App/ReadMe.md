@@ -6,6 +6,6 @@ Another demostration can be found using the game Engine/Framework Love2D [here](
 The math in question deals with the transformatuon matrices below.</br>
 
 2D Transformation Matrices</br>
-![](https://github.com/TeMyls/Apps/blob/main/Tkinter%20Affine%20Transformation%20App/Affine%20Transformations%20(1).png)</br>
+[](https://github.com/TeMyls/Apps/blob/main/Tkinter%20Affine%20Transformation%20App/Affine%20Transformations%20(1).png)</br>
 3D Transformation Matrices</br>
-![](https://github.com/TeMyls/Apps/blob/main/Tkinter%20Affine%20Transformation%20App/Affine%20Transformations%20(2).png)</br>
+[](https://github.com/TeMyls/Apps/blob/main/Tkinter%20Affine%20Transformation%20App/Affine%20Transformations%20(2).png)</br>

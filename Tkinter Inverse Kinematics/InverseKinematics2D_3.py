@@ -751,7 +751,7 @@ class Kinematics(ttk.Frame):
                         
         self.render_vertices()  
         self.render_edges()
-        self.render_brush(x, y, 1.5, "green", "connected")
+        self.render_brush(x, y, 0.7, "green", "connected")
 
 
 
@@ -1145,4 +1145,5 @@ if __name__ == "__main__":
     
     #app.resizable()
     app.mainloop()
+
         

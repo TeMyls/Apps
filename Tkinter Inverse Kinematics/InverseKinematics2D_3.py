@@ -722,7 +722,7 @@ class Kinematics(ttk.Frame):
             for i in range(len(self.vertices)):
                 if i != self.selected_vtx:
                     ox, oy = self.vertices[i].get_coords()
-                    if circle_circle(x, y, self.radius * 1.5, ox, oy, self.radius):
+                    if circle_circle(x, y, self.radius * 0.7, ox, oy, self.radius):
                         idx = i
                         
                         break

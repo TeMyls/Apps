@@ -10,4 +10,6 @@ https://techvidvan.com/tutorials/python-image-viewer/</br>
 https://www.geeksforgeeks.org/convert-opencv-image-to-pil-image-in-python/</br>
 https://stackoverflow.com/questions/41656176/tkinter-canvas-zoom-move-pan/48137257#48137257</br>
 https://note.nkmk.me/en/python-opencv-pillow-image-size/</br>
+https://stackoverflow.com/questions/29789554/tkinter-draw-rectangle-using-a-mouse</br>
+https://stackoverflow.com/questions/32289175/list-of-all-tkinter-events</br>
 

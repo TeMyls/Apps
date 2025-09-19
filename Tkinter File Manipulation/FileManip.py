@@ -100,7 +100,7 @@ class Application(tk.Tk):
         
         #Second Frame
         #The Canvas Flipper Frame
-        self.frame_mavigator = MediaFrameNav(self, 
+        self.frame_navigator = MediaFrameNav(self, 
                                             500, 
                                             500,
                                             param_arbs = self.parameter_arbiter,
@@ -108,14 +108,19 @@ class Application(tk.Tk):
                                             )
         
         
-        self.general_info.grid(row=0, column=0, sticky="N")
-        self.frame_mavigator.grid(row=0, column=1, sticky="EW")
-        self.parameter_arbiter.grid(row=0, column=2, sticky="N")
-        self.bar_progress.grid(row=1, column=1)
+        #self.general_info.grid(row=0, column=0, sticky="N")
+        #self.frame_navigator.grid(row=0, column=1, sticky="EW")
+        #self.parameter_arbiter.grid(row=0, column=2, sticky="N")
+        #self.bar_progress.grid(row=1, column=1)
+
+        
+        self.general_info.pack(side="left", anchor="w", fill='both')
+        self.frame_navigator.pack(side="left", expand=True, fill='both', anchor="e")
+        self.parameter_arbiter.pack(side="left", anchor="n", fill='both')
+        self.bar_progress.pack(side="left",  fill='y', anchor="w")
         
         
-        
-        
+        self.bind("<Configure>", lambda _ :self.frame_navigator.on_window_resize())
         
        
         self.current_directory = getcwd()
@@ -158,8 +163,8 @@ class Application(tk.Tk):
             if self.selected_file:
                 #temp = file_path_list[0].split('/')
                 #self.last_folder = "/".join(temp[:len(temp) - 1]) + "/"
-                self.frame_mavigator.set_frame(self.selected_file)
-                self.frame_mavigator.set_path_listbox(self.selected_file)
+                self.frame_navigator.set_frame(self.selected_file)
+                self.frame_navigator.set_path_listbox(self.selected_file)
                 
                 self.current_directory = "\\".join(self.selected_file.split('/')[:-1]) + "\\"
                 
@@ -279,6 +284,7 @@ class GenInfoFrame(ttk.Frame):
         self.bitrate_label = ttk.Label(self, text="Bitrate:")
         
         #self.title_label.grid(row=0, column=0, sticky="N")
+        '''
         self.file_name_label.grid(row=0, column=0, sticky="N")
         self.file_name_listbox.grid(row=1, column=0, sticky="NEW")
         self.file_name_scrollbar_x.grid(row=2, column=0, sticky = "EW")
@@ -290,6 +296,18 @@ class GenInfoFrame(ttk.Frame):
         self.width_label.grid(row=8, column=0, sticky="N")
         self.height_label.grid(row=9, column=0, sticky="N")
         self.bitrate_label.grid(row=10, column=0)
+        '''
+        self.file_name_label.pack(side="top",  fill="x", anchor="n")
+        self.file_name_listbox.pack(side="top",  fill="x", anchor="n")
+        self.file_name_scrollbar_x.pack(side="top",  fill="x", anchor="n")
+        self.fps_label.pack(side="top",  fill="x", anchor="n")
+        self.duration_label.pack(side="top",  fill="x", anchor="n")
+        self.frame_count_label.pack(side="top",  fill="x", anchor="n")
+        self.current_frame_label.pack(side="top",  fill="x", anchor="n")
+        self.current_second_label.pack(side="top",  fill="x", anchor="n")
+        self.width_label.pack(side="top",  fill="x", anchor="n")
+        self.height_label.pack(side="top",  fill="x", anchor="n")
+        self.bitrate_label.pack(side="top",  fill="x", anchor="n")
         
         
         
@@ -344,14 +362,18 @@ class BarProgress(ttk.Frame):
 
             
         self.complete_progress_label = ttk.Label(self, text = "Progress ")
-        self.complete_progress_bar = ttk.Progressbar(self, orient= "horizontal",  mode="determinate",length=400)
+        self.complete_progress_bar = ttk.Progressbar(self, orient= "vertical",  mode="determinate",length=400)
         self.complete_progress_status_label = ttk.Label(self, text = "Idle")
             
         self.logger = self.MyBarLogger(self.complete_progress_bar, self.complete_progress_status_label, self)
         
-        self.complete_progress_label.grid(row=10, column=0, sticky="EW")
-        self.complete_progress_bar.grid(row=10, column=1, sticky="EW")
-        self.complete_progress_status_label.grid(row=10, column=9, sticky="EW")
+        #self.complete_progress_label.grid(row=10, column=0, sticky="EW")
+        #self.complete_progress_bar.grid(row=10, column=1, sticky="EW")
+        #self.complete_progress_status_label.grid(row=10, column=9, sticky="EW")
+
+        self.complete_progress_label.pack(side="top")
+        self.complete_progress_bar.pack(side="top", expand=True, fill="y")
+        self.complete_progress_status_label.pack(side="top")
             
     class MyBarLogger(ProgressBarLogger):
         #https://stackoverflow.com/questions/69423410/moviepy-getting-progress-bar-values
@@ -415,8 +437,10 @@ class ParameterSelection(ttk.Frame):
         self.ext_checkbutton.config(command=self.set_widget_states)
         self.bitrate_checkbutton.config(command=self.set_widget_states)
         
+
         #Conversion
         #Placement
+        
         self.convert_to_label.grid(row = 0, column = 0, sticky="WE")
         self.convert_to_checkbutton.grid(row = 1, column=0, sticky="N")
         self.convert_to_combobox.grid(row = 2, column= 0, sticky="N")
@@ -1898,9 +1922,26 @@ class MediaFrameNav(ttk.Frame):
         #self.columnconfigure(1, weight=3)
         #self.rowconfigure(0, weight=1)
 
-        self.bck_btn = ttk.Button(self, text='Back',command=self.Back)
+        #first frame
+        #[self.bck_btn           , self.path_label   , self.nxt_btn                ],
+        self.first_frame = tk.Frame(self)
+        #second frame
+        #[None                   , self.path_listbox , self.interval_spinbox_label ],
+        self.second_frame = tk.Frame(self)
+        #third frame
+        #[None                   , self.path_scrollbar_x, self.interval_spinbox    ],
+        self.third_frame = tk.Frame(self)
+        #fourth frame
+        #[None                   , self.canvas       , None                        ],
+        self.fourth_frame = tk.Frame(self)
+        #fifth frame
+        #[self.slider_frame_label, self.frame_slider , None                        ],
+        self.fifth_frame = tk.Frame(self)
         
-        self.nxt_btn = ttk.Button(self, text='Next',command=self.Next)
+
+        self.bck_btn = ttk.Button(self.first_frame, text='Back',command=self.Back)
+        
+        self.nxt_btn = ttk.Button(self.first_frame, text='Next',command=self.Next)
         
         self.slide_frame_var = tk.IntVar()
         
@@ -1911,10 +1952,12 @@ class MediaFrameNav(ttk.Frame):
             to = 100,
             orient = "horizontal",
             length=canvas_width,
-            command = self.slide_frame
+            command = lambda _ :self.slide_frame(_)
             
             
         )
+        # first frame
+        
         
         #canvas crop
         #self.pil_image = None   # Image data to be displayed
@@ -1948,8 +1991,8 @@ class MediaFrameNav(ttk.Frame):
         
         self.image_ratio = 0
         
-        self.interval_spinbox_label = ttk.Label(self, text = "Frame Step")
-        self.interval_spinbox= ttk.Spinbox(self, 
+        self.interval_spinbox_label = ttk.Label(self.second_frame, text = "Frame Step")
+        self.interval_spinbox= ttk.Spinbox(self.third_frame, 
                                         from_ = 1, 
                                         to = 10,
                                         width = 10
@@ -1980,15 +2023,15 @@ class MediaFrameNav(ttk.Frame):
         self.current_ext = ""
         
         
-        self.path_label =  tk.Label(self, text = "FilePath: ")
+        self.path_label =  tk.Label(self.first_frame, text = "FilePath: ")
         
-        self.path_listbox = tk.Listbox(self, 
+        self.path_listbox = tk.Listbox(self.second_frame, 
 
                                        height=1,
                                        width=82
                                        )
         
-        self.path_scrollbar_x = tk.Scrollbar(self, orient = 'horizontal', command=self.path_listbox.xview)
+        self.path_scrollbar_x = tk.Scrollbar(self.third_frame, orient = 'horizontal', command=self.path_listbox.xview)
         self.path_listbox.config(xscrollcommand=self.path_scrollbar_x.set)
         
         
@@ -2000,7 +2043,7 @@ class MediaFrameNav(ttk.Frame):
         
         
         # Canvas
-        self.canvas = tk.Canvas(self, background="black", width = canvas_width,height = canvas_height)
+        self.canvas = tk.Canvas(self.fourth_frame, background="black", width = canvas_width,height = canvas_height)
         #self.canvas = tk.Canvas(self, background="black")
         
  
@@ -2036,7 +2079,7 @@ class MediaFrameNav(ttk.Frame):
         
         
         
-        
+        '''
         arrangement = [
             
             [self.bck_btn           , self.path_label   , self.nxt_btn                ],
@@ -2053,6 +2096,8 @@ class MediaFrameNav(ttk.Frame):
             
             
         ]
+        '''
+        '''
         for ind_y in range(len(arrangement)):
             for ind_x in range(len(arrangement[ind_y])):
                 #self.grid_columnconfigure(ind_x, minsize=20)
@@ -2062,6 +2107,49 @@ class MediaFrameNav(ttk.Frame):
                 else:
                  
                     arrangement[ind_y][ind_x].grid(row = ind_y, column = ind_x, sticky = "EW")
+        '''
+
+        
+        #first frame
+        
+        self.nxt_btn.pack(side="right")
+        self.path_label.pack(side="right", fill="x", anchor="e", expand=True)
+        self.bck_btn.pack(side="right")
+        
+
+        self.first_frame.pack(side="top",  fill="x")
+
+        #second frame
+        self.interval_spinbox_label.pack(side="right", anchor="w")
+        self.path_listbox.pack(side="right",  fill="x", anchor="e", expand=True)
+        
+
+        self.second_frame.pack(side="top",  fill="x")
+        
+        #third frame
+        self.interval_spinbox.pack(side="right", anchor="w")
+        self.path_scrollbar_x.pack(side="right", fill="x", expand=True)
+       
+        
+        self.third_frame.pack(side="top",  fill="x")
+        
+        
+
+        #fourth frame
+        self.canvas.pack(side="bottom", fill="both", anchor= "center", expand=True)
+
+        self.fourth_frame.pack(side="top", fill="both", anchor= "center",expand=True)
+
+        #fifth frame
+        self.slider_frame_label.pack(side="left")
+        self.frame_slider.pack(side="left", fill="x", expand=True)
+
+        self.fifth_frame.pack(side="top",  fill="x")
+
+
+
+        
+
         
     def set_path_listbox(self, filepath):
         if self.path_listbox.size() > 0:
@@ -2140,7 +2228,9 @@ class MediaFrameNav(ttk.Frame):
             ret, img = self.media.read()
             #conversion from CV2 Image Data a into a Pillow Image        
             self.current_img = Image.fromarray(cvtColor(img, COLOR_BGR2RGB))
-            
+
+            #making sure the image gets resize anytime the frame changes size
+            self.canvas.bind("<Configure>", lambda:self.zoom_fit(self.current_img.width, self.current_img.height))
             
             #self.img_label = ttk.Label(self, image = self.current_img)
             #self.img_label.pack()
@@ -2350,10 +2440,10 @@ class MediaFrameNav(ttk.Frame):
             self.canvas.delete("image")
             
             self.current_frame = self.frame_slider.get()
-            #self.interval_spinbox.set(self.cru)
-
+            
             if self.current_frame > self.frame_count - 1:
                 self.current_frame = self.current_frame%self.frame_count
+            #self.interval_spinbox.set(self.cru)
             
             self.media.set(CAP_PROP_POS_FRAMES, self.current_frame)
             
@@ -2386,7 +2476,11 @@ class MediaFrameNav(ttk.Frame):
         elif self.current_ext in self.static_filetypes:
             pass
             
-            
+    def on_window_resize(self, *args):
+        
+        #making sure the image gets resize anytime the window changes size
+        if self.current_img:
+            self.zoom_fit(self.current_img.width, self.current_img.height)
         
 
     
@@ -2758,7 +2852,10 @@ class MediaFrameNav(ttk.Frame):
 
 
 if __name__ == "__main__":
+    #https://stackoverflow.com/questions/63418203/is-there-any-way-to-track-the-geometry-of-tkinter-without-using-while-true
     app = Application()
+    app.configure()
+    
     #app.geometry("800x600")
     app.resizable()
     app.mainloop()

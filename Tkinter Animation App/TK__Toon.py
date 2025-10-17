@@ -395,14 +395,14 @@ class Animator(ttk.Frame):
                                  text="Lasso", 
                                  image=self.lasso_sel_img
                                  ) 
-        CreateToolTip(self.lasso_sel_bn, "Lasso Selection\n\tLMB: Selects\n\tRMB: To Move\n\tDelete: Delete Selection")
+        CreateToolTip(self.lasso_sel_bn, "Lasso Selection\n\tLMB: Selects\n\tSHIFT + LMB: Move\n\tDelete: Delete Selection")
         
         self.rect_sel_img = tk.PhotoImage(file="icons\\select_32dp_000000_FILL0_wght400_GRAD0_opsz40.png").subsample(4,4)
         self.rect_sel_bn = tk.Button(self.btn_frame, 
                                  text="Select", 
                                  image=self.rect_sel_img
                                  ) 
-        CreateToolTip(self.rect_sel_bn, "Rectangle Selection\n\tLMB: Selects\n\tRMB: To Move\n\tDelete: Delete Selection")
+        CreateToolTip(self.rect_sel_bn, "Rectangle Selection\n\tLMB: Selects\n\tSHIFT + LMB: Move\n\tDelete: Delete Selection")
         
         self.line_img = tk.PhotoImage(file="icons\\border_color_32dp_000000_FILL0_wght400_GRAD0_opsz40.png").subsample(4,4)
         self.line_bn = tk.Button(self.btn_frame, 
@@ -571,9 +571,11 @@ class Animator(ttk.Frame):
         self.canvas.bind("<B1-Motion>", self.on_canvas_lmb_press) 
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_lmb_release)
 
+        '''
         self.canvas.bind("<ButtonPress-3>", self.on_canvas_rmb_click) 
         self.canvas.bind("<B3-Motion>", self.on_canvas_rmb_press) 
         self.canvas.bind("<ButtonRelease-3>", self.on_canvas_rmb_release)
+        '''
 
         self.canvas.bind("<MouseWheel>", self.on_mousewheel_scroll)
         self.canvas.bind("<Configure>", self.on_canvas_resize)
@@ -631,7 +633,7 @@ class Animator(ttk.Frame):
         #Turns playing false to true and true to false
         #self.play_preview()
 
-
+        self.down_shift = False
 
         self.current_directory = os.getcwd()
         #self.selected_file = ""
@@ -987,6 +989,17 @@ class Animator(ttk.Frame):
         #self.update_animation_timeline()
 
 
+    # Moving modes
+
+    
+    def shift_press(self, event):
+        print("Shift press")
+        self.down_shift = True
+
+
+    def shift_release( self, event):
+        print("Shift release")
+        self.down_shift = False
     
     #Shortcuts 
 
@@ -1353,30 +1366,35 @@ class Animator(ttk.Frame):
         
         if self.mode == "Rotate":
             return
+        
+        if self.down_shift:
+            if self.mode == "Select" or self.mode == "Lasso" or self.mode == "Wand":
+                self.current_key_frame.select_move_click(x, y, self.canvas, self.color, self.borders)
+        else:
 
-        if self.mode == "Draw":
-            #print(self.current_key_frame.pixel_scale)
-            self.current_key_frame.brush_click(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()), True)
-        elif self.mode == "Erase":
-            #print("press")
-            #print(self.current_key_frame.pixel_scale)
-            self.current_key_frame.brush_click(x, y, self.canvas, self.canvas_color, self.borders, float(self.brush_sb.get()), False)
-        elif self.mode == "Stroke":
-            self.current_key_frame.start_stroke(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()))
-        elif self.mode == "Move":
-            #self.canvas.delete("all")
-            self.current_key_frame.move_click(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Picker":
-            self.color = self.current_key_frame.pick_color(x, y, self.canvas, self.borders)
-            self.palette_canvas.config(bg=self.color)
-        elif self.mode == "Rectangle" or self.mode == "Circle" or self.mode == "Select":
-            self.current_key_frame.shape_click(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Lasso":
-            self.current_key_frame.lasso_click(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Bucket":
-            self.current_key_frame.bucket_fill(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Wand":
-            self.current_key_frame.wand_click(x, y, self.canvas, self.color, self.borders)
+            if self.mode == "Draw":
+                #print(self.current_key_frame.pixel_scale)
+                self.current_key_frame.brush_click(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()), True)
+            elif self.mode == "Erase":
+                #print("press")
+                #print(self.current_key_frame.pixel_scale)
+                self.current_key_frame.brush_click(x, y, self.canvas, self.canvas_color, self.borders, float(self.brush_sb.get()), False)
+            elif self.mode == "Stroke":
+                self.current_key_frame.start_stroke(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()))
+            elif self.mode == "Move":
+                #self.canvas.delete("all")
+                self.current_key_frame.move_click(x, y, self.canvas, self.color, self.borders)
+            elif self.mode == "Picker":
+                self.color = self.current_key_frame.pick_color(x, y, self.canvas, self.borders)
+                self.palette_canvas.config(bg=self.color)
+            elif self.mode == "Rectangle" or self.mode == "Circle" or self.mode == "Select":
+                self.current_key_frame.shape_click(x, y, self.canvas, self.color, self.borders)
+            elif self.mode == "Lasso":
+                self.current_key_frame.lasso_click(x, y, self.canvas, self.color, self.borders)
+            elif self.mode == "Bucket":
+                self.current_key_frame.bucket_fill(x, y, self.canvas, self.color, self.borders)
+            elif self.mode == "Wand":
+                self.current_key_frame.wand_click(x, y, self.canvas, self.color, self.borders)
 
     def on_canvas_lmb_press(self, event):
         x = self.canvas.canvasx(event.x)
@@ -1395,49 +1413,55 @@ class Animator(ttk.Frame):
         if self.mode == "Rotate":
             return
 
-        if self.mode == "Draw":
-            #print(self.current_key_frame.pixel_scale)
-            self.current_key_frame.brush_press(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()), True)
-        elif self.mode == "Erase":
-            #print("press")
-            #print(self.current_key_frame.pixel_scale)
-            self.current_key_frame.brush_press(x, y, self.canvas, self.canvas_color, self.borders, float(self.brush_sb.get()), False)
-        elif self.mode == "Stroke":
-            self.current_key_frame.start_stroke(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()))
-        elif self.mode == "Move":
-            #this was to test the difference between this file and PixAnimate3.py's speed
-            #start = time.time()
-            self.current_key_frame.move_press(x, y, self.canvas, self.color, self.borders)
-            #print(f"Transform Time {time.time() - start}")
-        elif self.mode == "Picker":
-            self.color = self.current_key_frame.pick_color(x, y, self.canvas, self.borders)
-            self.palette_canvas.config(bg=self.color)
-        elif self.mode == "Rectangle":
-            self.current_key_frame.rectangle_press(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()))
-        elif self.mode == "Circle":
-            self.current_key_frame.circle_press(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()))
-        elif self.mode == "Lasso":
-            #print("L")
-            self.current_key_frame.lasso_press(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Select":
-            self.current_key_frame.select_press(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Bucket" or self.mode == "Wand":
-            pass
-        elif self.mode == "Shift":
-            # the borders array
-            # [
-                # self.top_left.get_X(),     self.top_left.get_Y(),
-                # self.top_right.get_X(),    self.top_right.get_Y(),
-                # self.bottom_right.get_X(), self.bottom_right.get_Y(),
-                # self.bottom_left.get_X(),  self.bottom_left.get_Y()  
-            # ]
-            self.borders = self.current_key_frame.translate_borders(x, y, self.canvas, self.color, self.borders)
-            self.top_left.set_coords(self.borders[0], self.borders[1])
-            self.top_right.set_coords(self.borders[2], self.borders[3])
-            self.bottom_right.set_coords(self.borders[4], self.borders[5])
-            self.bottom_left.set_coords(self.borders[6], self.borders[7])
-            self.canvas.delete("all")
-            self.render_canvas()
+        if self.down_shift:
+            if self.mode == "Select" or self.mode == "Lasso" or self.mode == "Wand":
+                #self.current_key_frame.scale_image(self.canvas, self.borders)
+                self.current_key_frame.move_press(x, y, self.canvas, "", self.borders)
+        else:
+
+            if self.mode == "Draw":
+                #print(self.current_key_frame.pixel_scale)
+                self.current_key_frame.brush_press(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()), True)
+            elif self.mode == "Erase":
+                #print("press")
+                #print(self.current_key_frame.pixel_scale)
+                self.current_key_frame.brush_press(x, y, self.canvas, self.canvas_color, self.borders, float(self.brush_sb.get()), False)
+            elif self.mode == "Stroke":
+                self.current_key_frame.start_stroke(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()))
+            elif self.mode == "Move":
+                #this was to test the difference between this file and PixAnimate3.py's speed
+                #start = time.time()
+                self.current_key_frame.move_press(x, y, self.canvas, self.color, self.borders)
+                #print(f"Transform Time {time.time() - start}")
+            elif self.mode == "Picker":
+                self.color = self.current_key_frame.pick_color(x, y, self.canvas, self.borders)
+                self.palette_canvas.config(bg=self.color)
+            elif self.mode == "Rectangle":
+                self.current_key_frame.rectangle_press(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()))
+            elif self.mode == "Circle":
+                self.current_key_frame.circle_press(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()))
+            elif self.mode == "Lasso":
+                #print("L")
+                self.current_key_frame.lasso_press(x, y, self.canvas, self.color, self.borders)
+            elif self.mode == "Select":
+                self.current_key_frame.select_press(x, y, self.canvas, self.color, self.borders)
+            elif self.mode == "Bucket" or self.mode == "Wand":
+                pass
+            elif self.mode == "Shift":
+                # the borders array
+                # [
+                    # self.top_left.get_X(),     self.top_left.get_Y(),
+                    # self.top_right.get_X(),    self.top_right.get_Y(),
+                    # self.bottom_right.get_X(), self.bottom_right.get_Y(),
+                    # self.bottom_left.get_X(),  self.bottom_left.get_Y()  
+                # ]
+                self.borders = self.current_key_frame.translate_borders(x, y, self.canvas, self.color, self.borders)
+                self.top_left.set_coords(self.borders[0], self.borders[1])
+                self.top_right.set_coords(self.borders[2], self.borders[3])
+                self.bottom_right.set_coords(self.borders[4], self.borders[5])
+                self.bottom_left.set_coords(self.borders[6], self.borders[7])
+                self.canvas.delete("all")
+                self.render_canvas()
         
         self.render_borders()
 
@@ -1457,29 +1481,35 @@ class Animator(ttk.Frame):
         if self.mode == "Rotate":
             return
 
-        if self.mode == "Draw" or self.mode == "Erase" or self.mode == "Shift" or self.mode == "Bucket" or self.mode == "Wand":
-            self.current_key_frame.last_pixel.clear()
-        elif self.mode == "Stroke":
-            self.current_key_frame.end_stroke(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()))
-        elif self.mode == "Move":
-            self.current_key_frame.move_release(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Rectangle" or self.mode == "Circle":
-            self.current_key_frame.shape_release(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Lasso":
-            #print("L")
-            self.current_key_frame.lasso_release(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Select":
-            self.current_key_frame.select_release(x, y, self.canvas, self.color, self.borders)
+        if self.down_shift:
+            if self.mode == "Select" or self.mode == "Lasso" or self.mode == "Wand":
+                self.current_key_frame.select_move_release(x, y, self.canvas, self.color, self.borders)
+        else:
 
-  
-        #self.current_key_frame.render_image(self.canvas, self.borders)
+            if self.mode == "Draw" or self.mode == "Erase" or self.mode == "Shift" or self.mode == "Bucket" or self.mode == "Wand":
+                self.current_key_frame.last_pixel.clear()
+            elif self.mode == "Stroke":
+                self.current_key_frame.end_stroke(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()))
+            elif self.mode == "Move":
+                self.current_key_frame.move_release(x, y, self.canvas, self.color, self.borders)
+            elif self.mode == "Rectangle" or self.mode == "Circle":
+                self.current_key_frame.shape_release(x, y, self.canvas, self.color, self.borders)
+            elif self.mode == "Lasso":
+                #print("L")
+                self.current_key_frame.lasso_release(x, y, self.canvas, self.color, self.borders)
+            elif self.mode == "Select":
+                self.current_key_frame.select_release(x, y, self.canvas, self.color, self.borders)
 
-        if self.mode !="Lasso" and self.mode != "Select":
-            #this is so temp pixels and temp colors don't get cleared before being used
-            self.render_canvas()
-            self.update_key_frame(self.frame_idx)
+    
+            #self.current_key_frame.render_image(self.canvas, self.borders)
+
+            if self.mode !="Lasso" and self.mode != "Select":
+                #this is so temp pixels and temp colors don't get cleared before being used
+                self.render_canvas()
+                self.update_key_frame(self.frame_idx)
         self.render_borders()
-        
+    
+    '''
     def on_canvas_rmb_click(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
@@ -1548,7 +1578,8 @@ class Animator(ttk.Frame):
         #both lasso and select
         #self.current_key_frame.render_grid(self.canvas)
         self.render_borders()
-      
+    '''
+
     def fps_to_ms(self, fps):
         return 1000/fps
 
@@ -2240,6 +2271,7 @@ class Animator(ttk.Frame):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
+        #https://stackoverflow.com/questions/71221471/python-bind-a-shift-key-press-to-a-command
         #frame.bind('<Left>', leftKey)
         #frame.bind('<Right>', rightKey)
         "<Left>"
@@ -2259,6 +2291,11 @@ class App(tk.Tk):
         self.bind("<Control-v>", IKs.paste_pixels)
         self.bind("<Control-x>", IKs.cut_pixels)
         self.bind("<Control-d>", IKs.delete_key_frame)
+
+        self.bind("<KeyPress-Shift_L>", IKs.shift_press)
+        self.bind("<KeyPress-Shift_R>", IKs.shift_press)
+        self.bind("<KeyRelease-Shift_L>", IKs.shift_release)
+        self.bind("<KeyRelease-Shift_R>", IKs.shift_release)
         
         self.bind("<Control-s>", lambda a:print("Quick Save not implemented"))
         self.bind("<Control-z>", lambda a:print("Undo not implemented"))

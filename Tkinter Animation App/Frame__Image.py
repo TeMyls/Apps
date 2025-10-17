@@ -615,6 +615,9 @@ class ImageFrame():
         #crop
         #(left, upper, right, lower)
         blank_image = Image.new("RGBA", (new_width, new_height), self.blank)
+        self.pixel_canvas_width, self.pixel_canvas_height = new_width, new_height
+        #self.temp_image = Image.new("RGBA", (new_width, new_height), self.blank)
+
         blank_used = False
         cropped = False
         vector = anchor_xy[anchor]
@@ -660,14 +663,17 @@ class ImageFrame():
         
         if blank_used:
             print("true 2")
+            
             if cropped:
                 self.pixel_image.crop(box=crop_box)
             blank_image.paste(self.pixel_image, (vector[0], vector[1]))
             
             self.pixel_image = blank_image
+            
 
         if cropped and not blank_used:
             self.pixel_image = self.pixel_image.crop(box=crop_box)
+            
 
         
             
@@ -1177,6 +1183,7 @@ class ImageFrame():
             self.temp_colors = [self.pixel_grid[pxl[1]][pxl[0]] for pxl in self.temp_pixels]
             '''
             self.temp_colors.clear()
+            #print("move click temp pixel clear")
             self.temp_pixels.clear()
             
             #canvas.delete("all")
@@ -1216,53 +1223,55 @@ class ImageFrame():
                 del_coord = self.coord_to_str(self.last_pixel[0], self.last_pixel[1])
                 self.draw_pixel(canvas, del_coord, "", "", "zip", borders) 
             '''
+            #print(len(self.temp_pixels))
+
             if self.last_pixel != [x_pixel, y_pixel] and len(self.last_pixel) > 0:
                 if in_bounds(x_pixel, y_pixel, self.pixel_canvas_width, self.pixel_canvas_height):
                     if x_pixel >= 0 and y_pixel >= 0 and x_pixel < self.pixel_canvas_width and y_pixel < self.pixel_canvas_height:
                         
-                        if self.last_pixel:
-                            #strange error temp pixels forgotten
-                            #print(len(self.temp_pixels))
-                            
-                            # https://misc.legendu.net/blog/python-pillow-image-shift/
-                            # shifts image, will wrap around if it isn't chopped
-                            dx, dy = x_pixel - self.last_pixel[0], y_pixel - self.last_pixel[1] 
-                            self.temp_image = ImageChops.offset(self.temp_image, dx, dy)
-                            
                         
-                            #pixel grid coordinates
+                        #strange error temp pixels forgotten
+                        #print(len(self.temp_pixels))
                         
+                        # https://misc.legendu.net/blog/python-pillow-image-shift/
+                        # shifts image, will wrap around if it isn't chopped
+                        dx, dy = x_pixel - self.last_pixel[0], y_pixel - self.last_pixel[1] 
+                        self.temp_image = ImageChops.offset(self.temp_image, dx, dy)
+                        
+                    
+                        #pixel grid coordinates
+                    
+                        
+                        
+                        for i in range(len(self.temp_pixels)):
+                            pixel = self.temp_pixels[i]
+                            new_px = pixel[0] + dx
+                            new_py = pixel[1] + dy
                             
-                            
-                            for i in range(len(self.temp_pixels)):
-                                pixel = self.temp_pixels[i]
-                                new_px = pixel[0] + dx
-                                new_py = pixel[1] + dy
+                            old_px = pixel[0]
+                            old_py = pixel[1]
+
+                            pixel[0] = new_px
+                            pixel[1] = new_py
+
+                            color = self.temp_colors[i]
+
+                            if not in_bounds(old_px, old_py, self.pixel_canvas_width, self.pixel_canvas_height): 
+                                continue
+
+                            # This is to cancel out the wrap around effect of ImageChops offset wrap-around
+                            if not in_bounds(new_px, new_py, self.pixel_canvas_width, self.pixel_canvas_height): 
                                 
-                                old_px = pixel[0]
-                                old_py = pixel[1]
-
-                                pixel[0] = new_px
-                                pixel[1] = new_py
-
-                                color = self.temp_colors[i]
-
-                                if not in_bounds(old_px, old_py, self.pixel_canvas_width, self.pixel_canvas_height): 
-                                    continue
-
-                                # This is to cancel out the wrap around effect of ImageChops offset wrap-around
-                                if not in_bounds(new_px, new_py, self.pixel_canvas_width, self.pixel_canvas_height): 
-                                    
-                                
-                                    self.temp_image.putpixel((new_px % self.pixel_canvas_width, new_py % self.pixel_canvas_height), self.blank)
-                                else:
-                                    self.temp_image.putpixel((new_px % self.pixel_canvas_width, new_py % self.pixel_canvas_height), color)
                             
-                            
+                                self.temp_image.putpixel((new_px % self.pixel_canvas_width, new_py % self.pixel_canvas_height), self.blank)
+                            else:
+                                self.temp_image.putpixel((new_px % self.pixel_canvas_width, new_py % self.pixel_canvas_height), color)
+                        
+                        
 
-                            
-                            self.render_image(canvas, borders)
-                            self.render_temp_image(canvas, borders)
+                        
+                        self.render_image(canvas, borders)
+                        self.render_temp_image(canvas, borders)
                             #canvas.update_idletasks()
                             
             #canvas.delete("zip")
@@ -1295,6 +1304,7 @@ class ImageFrame():
                 #self.draw_pixel(canvas, current_coord, current_color, current_color, current_coord, borders) 
 
         self.temp_image = Image.new("RGBA", (self.pixel_canvas_width, self.pixel_canvas_height), self.blank)
+        #print("move release temp pixel clear")
         self.temp_pixels.clear()
         self.temp_colors.clear()
         self.last_pixel.clear()
@@ -1376,6 +1386,7 @@ class ImageFrame():
         
         self.pixel_image.alpha_composite(self.temp_image, (0, 0))
 
+        #print("shape release temp pixel clear")
         self.temp_pixels.clear()
         self.temp_colors.clear()
         self.temp_image = Image.new("RGBA", (self.pixel_canvas_width, self.pixel_canvas_height), self.blank)
@@ -1418,19 +1429,21 @@ class ImageFrame():
             bottom_left = self.canvas_to_pixel(canvas, rx, ry + rh, borders)
             bottom_right = self.canvas_to_pixel(canvas, rx + rw, ry + rh, borders)
 
-            if not in_bounds(top_left[0], top_left[1], len(self.pixel_grid[0]), len(self.pixel_grid)):
+            #print(f"TL: {top_left} TR: {top_right} BL: {bottom_left} BR: {bottom_right}")
+
+            if not in_bounds(top_left[0], top_left[1], self.pixel_canvas_width, self.pixel_canvas_height):
                 return
             
-            if not in_bounds(top_right[0], top_right[1], len(self.pixel_grid[0]), len(self.pixel_grid)):
+            if not in_bounds(top_right[0], top_right[1], self.pixel_canvas_width, self.pixel_canvas_height):
                 return
             
-            if not in_bounds(bottom_left[0], bottom_left[1], len(self.pixel_grid[0]), len(self.pixel_grid)):
+            if not in_bounds(bottom_left[0], bottom_left[1], self.pixel_canvas_width, self.pixel_canvas_height):
                 return
             
-            if not in_bounds(bottom_right[0], bottom_right[1], len(self.pixel_grid[0]), len(self.pixel_grid)):
+            if not in_bounds(bottom_right[0], bottom_right[1], self.pixel_canvas_width, self.pixel_canvas_height):
                 return
             
-        
+            #print("making rectangle")
             x1 = top_left[0]
             y1 = top_left[1]
             x2 = bottom_right[0]
@@ -1490,21 +1503,23 @@ class ImageFrame():
             bottom_left = self.canvas_to_pixel(canvas, rx, ry + rh, borders)
             bottom_right = self.canvas_to_pixel(canvas, rx + rw, ry + rh, borders)
 
-            if not in_bounds(top_left[0], top_left[1], len(self.pixel_grid[0]), len(self.pixel_grid)):
+            #print(f"TL: {top_left} TR: {top_right} BL: {bottom_left} BR: {bottom_right}")
+
+            if not in_bounds(top_left[0], top_left[1], self.pixel_canvas_width, self.pixel_canvas_height):
                 return
             
-            if not in_bounds(top_right[0], top_right[1], len(self.pixel_grid[0]), len(self.pixel_grid)):
+            if not in_bounds(top_right[0], top_right[1], self.pixel_canvas_width, self.pixel_canvas_height):
                 return
             
-            if not in_bounds(bottom_left[0], bottom_left[1], len(self.pixel_grid[0]), len(self.pixel_grid)):
+            if not in_bounds(bottom_left[0], bottom_left[1], self.pixel_canvas_width, self.pixel_canvas_height):
                 return
             
-            if not in_bounds(bottom_right[0], bottom_right[1], len(self.pixel_grid[0]), len(self.pixel_grid)):
+            if not in_bounds(bottom_right[0], bottom_right[1], self.pixel_canvas_width, self.pixel_canvas_height):
                 return
             
             
 
-
+            #print("making circle")
             x1 = top_left[0] 
             y1 = top_left[1] 
             x2 = bottom_right[0] 
@@ -1607,6 +1622,7 @@ class ImageFrame():
             )
 
             if self.temp_pixels:
+                #print("select press temp pixel clear")
                 self.temp_pixels.clear()
 
             if self.temp_colors:
@@ -1783,6 +1799,7 @@ class ImageFrame():
 
         #drawing an undecided line between two points
         self.last_pixel.clear()
+        #print("lasso click temp pixel clear")
         self.temp_pixels.clear()
         self.temp_colors.clear()
         self.lasso_polygon.clear()
@@ -2062,7 +2079,7 @@ class ImageFrame():
 
         self.pixel_image.alpha_composite(self.temp_image, (0, 0))
  
-
+        #print("select move release temp pixel clear")
         self.temp_pixels.clear()
         self.temp_colors.clear()
         self.temp_image = Image.new("RGBA", (self.pixel_canvas_width, self.pixel_canvas_height), self.blank)
@@ -2079,6 +2096,7 @@ class ImageFrame():
             return
             
         self.temp_colors.clear()
+        #print("wand click temp pixel clear")
         self.temp_pixels.clear()
         
         border_x = borders[0]

@@ -1,10 +1,10 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox , colorchooser, PhotoImage, Toplevel
 import os
-from PIL import Image, ImageTk, ImageSequence, ImageOps
+from PIL import Image, ImageTk, ImageSequence
 from MatrixMath import *
 from collisions import *
-from FrameImage import *
+from FrameKey import *
 from Tool_tip import *
 import numpy as np
 from numpy import radians as to_radians
@@ -103,7 +103,17 @@ class Animator(ttk.Frame):
         self.canvas.config(xscrollcommand=self.canvas_s_barh.set)
         self.canvas.config(scrollregion=(0,0,c_width,c_height))
 
-
+        self.angle = 180
+        '''
+        self.rotation_lbl = tk.Label(text="Rotation")
+        self.rotation_iv = tk.IntVar(value=0)
+        self.rotation_scl = tk.Scale(self.main_frame, variable=self.rotation_iv, to=360, from_=0, orient="vertical")
+        self.rotation_widgets = [self.rotation_lbl, self.rotation_scl]
+        '''
+        #self.scaling_dv = tk.DoubleVar()
+        #self.scaling_scl = tk.Scale(self.main_frame)
+        
+        
 
         self.color = "#000000"
         
@@ -130,11 +140,7 @@ class Animator(ttk.Frame):
         self.onion_prev_sb.set(1)
         self.onion_next_sb.set(1)
         self.onion_cb = ttk.Checkbutton(self.options_frame, text="Onion Skin", variable=self.onion_iv, command=self.render_canvas)
-        self.onion_image = None
 
-        self.brush_lbl = ttk.Label(self.options_frame, text="Brush Size")
-        self.brush_sb = ttk.Spinbox(self.options_frame, from_ = 1, to = 10, increment=0.5, width=10, command=self.render_canvas)
-        self.brush_sb.set(1)
 
         self.debug_btn = ttk.Button(self.options_frame, text="Debug", command=self.debug)
         self.clear_btn = ttk.Button(self.options_frame, text="Clear Frame", command=self.clear_frame)
@@ -143,14 +149,12 @@ class Animator(ttk.Frame):
         self.gif_btn = ttk.Button(self.options_frame, text="Save Gif", command=self.save_gif)
         self.color_btn = ttk.Button(self.options_frame, text="Color", command=self.choose_color)
         self.canvas_color_btn = ttk.Button(self.options_frame, text="Canvas Color", command=self.change_canvas_color)
-        self.resize_btn = ttk.Button(self.options_frame, text="Resize", command=self.on_pixel_image_resize)
+        self.resize_btn = ttk.Button(self.options_frame, text="Resize", command=self.on_pixel_grid_resize)
         self.open_btn = ttk.Button(self.options_frame, text="Import", command=self.open_file)
 
         self.bg_color_iv = tk.BooleanVar(value=False)
         self.bg_color_cb = ttk.Checkbutton(self.options_frame, text="Save Color", variable=self.bg_color_iv, command=self.render_canvas)
         self.bg_color_btn = tk.Button(self.options_frame, text="BG Color", command=self.change_bg_color, bg=self.bg_color, fg=self.current_key_frame.invert_color(self.bg_color))
-
-        self.scale_lbl = ttk.Label(self.options_frame, text="Scale:0")
 
         #self.nav_frame = ttk.Frame(self)
         self.cpy_btn =  ttk.Button(self.options_frame, 
@@ -187,8 +191,8 @@ class Animator(ttk.Frame):
 
         
         options_arrangement = [
-            [self.brush_lbl, self.brush_sb],
-            [self.color_btn, self.canvas_color_btn],
+
+            [self.color_btn, self.canvas_color_btn],#self.debug_btn
             [self.clear_btn, self.wipeout_btn],
             [self.prev_btn,  self.next_btn],
             [self.delete_btn, self.add_btn],
@@ -196,7 +200,7 @@ class Animator(ttk.Frame):
             [self.save_btn, self.gif_btn ],
             [self.resize_btn, self.open_btn],
             [self.bg_color_cb, self.bg_color_btn],
-            [self.onion_cb, self.scale_lbl],
+            [self.onion_cb, None],
             [self.onion_prev_lbl, self.onion_prev_sb],
             [self.onion_next_lbl, self.onion_next_sb],
             
@@ -245,8 +249,8 @@ class Animator(ttk.Frame):
         
         self.timeline_canvas.create_window((0, 0), window=self.timeline_scroll_frame, anchor="nw")
         self.timeline_canvas.configure(yscrollcommand=self.timeline_sb_y.set)
-
         #self.edge_scrollbar_y.config(command=self.self.edge_canvas.yview)
+        
         #self.timeline_canvas.pack(fill="y", expand=True) #.grid(row=0, column=0)
         #self.timeline_sb_y.pack(fill="y", expand=True)  #.grid(row=0, column=1, sticky="NS")
         
@@ -392,14 +396,14 @@ class Animator(ttk.Frame):
                                  text="Lasso", 
                                  image=self.lasso_sel_img
                                  ) 
-        CreateToolTip(self.lasso_sel_bn, "Lasso Selection\n\tLMB: Selects\n\tRMB: To Move\n\tDelete: Delete Selection")
+        CreateToolTip(self.lasso_sel_bn, "Lasso Selection")
         
         self.rect_sel_img = tk.PhotoImage(file="icons\\select_32dp_000000_FILL0_wght400_GRAD0_opsz40.png").subsample(4,4)
         self.rect_sel_bn = tk.Button(self.btn_frame, 
                                  text="Select", 
                                  image=self.rect_sel_img
                                  ) 
-        CreateToolTip(self.rect_sel_bn, "Rectangle Selection\n\tLMB: Selects\n\tRMB: To Move\n\tDelete: Delete Selection")
+        CreateToolTip(self.rect_sel_bn, "Rectangle Selection")
         
         self.line_img = tk.PhotoImage(file="icons\\border_color_32dp_000000_FILL0_wght400_GRAD0_opsz40.png").subsample(4,4)
         self.line_bn = tk.Button(self.btn_frame, 
@@ -445,7 +449,7 @@ class Animator(ttk.Frame):
                                  text="Wand", 
                                  image=self.wand_img,
                                  ) 
-        CreateToolTip(self.wand_bn, "Color Selection\n\tLMB: Selects\n\tRMB: To Move\n\tDelete: Delete Selection")
+        CreateToolTip(self.wand_bn, "Color Selection")
 
         #self.palette_img = tk.PhotoImage(file="icons\\blank.png")
         self.palette_canvas = tk.Canvas(self.btn_frame,  
@@ -458,7 +462,6 @@ class Animator(ttk.Frame):
                                  relief="sunken"
                                  
                                  ) 
-        #CreateToolTip(self.palette_canvas, "Current Color")
         #CreateToolTip(self.palette_canvas, "Selected Color")
         
         self.pen_bn.config(command=lambda:self.select_mode(self.pen_bn))
@@ -551,7 +554,9 @@ class Animator(ttk.Frame):
         
         
         
-        
+        self.pivot_matrix = np.eye(3, dtype=np.float64)
+        self.matrix_pivot = np.eye(3, dtype=np.float64)
+
         
         self.select_mode(self.pen_bn)
 
@@ -569,7 +574,25 @@ class Animator(ttk.Frame):
         self.undo_stack = []
         self.redo_queue = []
         
+        
+        '''
+         variable=self.rotation_angle,
+            from_ = 0,
+            to = 360,
+            orient = "horizontal",
+            length=
+            command = lambda:self.resize_pixels()
+        '''
 
+        
+        
+        
+        
+        
+        #self.canvas.config()
+        
+
+        
         
         #thr following attributes are for the four borders, anything else is temporary
         self.top_left = Vertex(
@@ -601,25 +624,18 @@ class Animator(ttk.Frame):
         
         self.max_pixel_scale, self.pixel_scale,  self.min_pixel_scale = self.set_scaling(self.canvas)
         self.pixel_scale_og = self.pixel_scale
-
-        #scaling the initial image
-        self.pivot_matrix = np.eye(3, dtype=np.float64)
-        self.matrix_pivot = np.eye(3, dtype=np.float64)
-
-        #rendering the canvas
-        self.current_key_frame.render_image(self.canvas, self.borders)
-
         #adding the first frame to the timeline
         #self.update_animation_timeline()
         self.update_key_frame(self.frame_idx)
         self.render_borders()
-        
         print("Scales Max, Current, Min: ", self.max_pixel_scale, self.pixel_scale,  self.min_pixel_scale)
     
         #Turns playing false to true and true to false
-        #self.play_preview()
+        self.play_preview()
 
-
+        #scaling slider
+        #self.scaling_dv.set(self.pixel_scale)
+        #self.scaling_scl.config(from_=self.min_pixel_scale, to=self.max_pixel_scale, variable=self.scaling_dv,orient="horizontal", command=self.resize_pixels)
 
         self.current_directory = os.getcwd()
         #self.selected_file = ""
@@ -633,14 +649,11 @@ class Animator(ttk.Frame):
         true_pixel_width = border_width/self.pixel_canvas_width
         true_pixel_height = border_height/self.pixel_canvas_height
         scale = true_pixel_width
-        self.scale_lbl.config(text=f"Scale: {true_pixel_width:.2f}")
         min_scale = 1
         max_scale = 100 #min(self.canvas_width, self.canvas_height)
         self.max_pixel_scale, self.pixel_scale, self.min_pixel_scale = max_scale, scale, min_scale
         return max_scale, scale, min_scale
 
-    
-        
     #border focused methods
 
     def set_borders(self,canvas_width, canvas_height, pixel_width, pixel_height):
@@ -736,7 +749,10 @@ class Animator(ttk.Frame):
         self.top_right.transform(translation_matrix, transform_matrix, matrix_translation)
         self.bottom_left.transform(translation_matrix, transform_matrix, matrix_translation)
         self.bottom_right.transform(translation_matrix, transform_matrix, matrix_translation)
-
+        self.top_left.been_transformed = False
+        self.top_right.been_transformed = False
+        self.bottom_left.been_transformed = False
+        self.bottom_right.been_transformed = False
        
     #button focused methods
 
@@ -749,8 +765,19 @@ class Animator(ttk.Frame):
             else:
                 widget.config(bg="yellow")
                 self.mode = widget.cget("text")
+                '''
+                if self.mode == "Anchor":
+                    print("yep")
+                    for wdgt in self.rotation_widgets:
+                        show_pack_widget(wdgt)
+                    
+                else:
+                    for wdgt in self.rotation_widgets:
+                        hide_pack_widget(wdgt)
+                '''
+                    
 
-        
+
 
     def select_direction(self, clicked_widget, widget_array):
         
@@ -761,8 +788,9 @@ class Animator(ttk.Frame):
                 widget.config(bg="yellow")
                 self.direction = widget.cget("text").strip().upper()
 
+    
+
     def on_canvas_resize(self, event):
-   
         # Updates every canvas resize due to the window dimensions changing
         # Update canvas dimensions or redraw elements based on event.width and event.height
 
@@ -788,10 +816,31 @@ class Animator(ttk.Frame):
         if frame_center and canvas_center:
             self.canvas.delete("all")
             transform_matrix = np.eye(3)
+            
+            for key_frame in self.key_frame_collection:
+                key_frame.canvas_width = event.width
+                key_frame.canvas_height = event.height
+                
+                
+                    
+                    
+                self.pivot_matrix[0, 2] = fx
+                self.pivot_matrix[1, 2] = fx
+
+                self.matrix_pivot[0, 2] = -fx
+                self.matrix_pivot[1, 2] = -fx
+                transform_matrix  = np.array(translation_matrix2D(cx - fx, cy - fy))
+                key_frame.transform_vertices(self.matrix_pivot, transform_matrix,  self.pivot_matrix)
             self.transform_borders(self.matrix_pivot, transform_matrix,  self.pivot_matrix)
             self.borders = self.get_borders()
-            self.render_canvas()
 
+            
+            self.render_onion_skin()
+            
+            self.current_key_frame.render_grid(self.canvas, self.borders)
+            self.render_borders()
+        # Example: Recalculate positions of elements on the canvas
+        # canvas.coords(my_rectangle, 0, 0, event.width, event.height)
 
     def wn_open(self, window):
         #https://stackoverflow.com/questions/76940339/is-there-a-way-to-check-if-a-window-is-open-in-tkinter
@@ -799,7 +848,6 @@ class Animator(ttk.Frame):
         return window is not None and window.winfo_exists()
 
     def resize_all_frames(self, width: str, height: str, pivot):
-
         #resizes the pixel grid for every frame
         #is negative
         if width.startswith("-"):
@@ -812,8 +860,7 @@ class Animator(ttk.Frame):
         if self.pixel_canvas_width == int(width) and self.pixel_canvas_height == int(height):
             return
         
-        if int(width) == 0 or int(height) == 0:
-            return
+        
 
         if not width.isnumeric():
             return
@@ -824,18 +871,19 @@ class Animator(ttk.Frame):
             return
          
         #canvas_width, canvas_height = self.canvas.winfo_width(), self.canvas.winfo_height()
-        
+        self.pixel_canvas_width, self.pixel_canvas_height = int(width), int(height)
+        self.borders = self.set_borders(self.canvas_width, self.canvas_height, self.pixel_canvas_width, self.pixel_canvas_height)
+        self.set_scaling(self.canvas)
 
-        #self.render_borders()
+        self.render_borders()
         for i in range(len(self.key_frame_collection)):
             key_frame = self.key_frame_collection[i]
-            key_frame.alter_image_dimensions(pivot, int(width), int(height), self.canvas, self.borders)
             key_frame.pixel_canvas_width = int(width)
             key_frame.pixel_canvas_height = int(height)
-            #key_frame.scale_image()
-            key_frame.scale_image(self.canvas, self.borders)
-            self.update_key_frame(i)
             
+            key_frame.alter_array_dimensions(key_frame.pixel_grid, int(width), int(height), None, pivot, self.canvas, self.borders)
+            self.update_key_frame(i)
+
             #key_frame.update_borders(pivot)
         
         
@@ -843,17 +891,20 @@ class Animator(ttk.Frame):
         self.sub_wn.destroy()
         
         
+        #reason render canvas is commented is because doing so removes the negative colors of
+        #both lasso and select
+        #self.current_key_frame.render_grid(self.canvas)
+        self.max_pixel_scale, self.pixel_scale,  self.min_pixel_scale = self.set_scaling(self.canvas)
         
-        self.pixel_canvas_width, self.pixel_canvas_height = int(width), int(height)
-        self.set_scaling(self.canvas)
-        self.borders = self.set_borders(self.canvas_width, self.canvas_height, self.pixel_canvas_width, self.pixel_canvas_height)
-        
+        self.borders = self.get_borders()
         self.highlight_current_frame()
-        self.render_canvas()
-
+        #self.update_animation_timeline()
+        #self.update_key_frame(self.frame_idx)
+        self.pixel_canvas_width = int(width)
+        self.pixel_canvas_height = int(height)
+        self.render_borders()
         
-    def on_pixel_image_resize(self):
-
+    def on_pixel_grid_resize(self):
         #resizes pixel grid in every frame: connected to the resize button
         if self.wn_open(self.sub_wn):
             return
@@ -984,10 +1035,9 @@ class Animator(ttk.Frame):
             color = self.colors_to_paste[i]
             if in_bounds(pixel[0], pixel[1], self.pixel_canvas_width, self.pixel_canvas_height):
                 current_coord = self.current_key_frame.coord_to_str(pixel[0], pixel[1])
-                self.current_key_frame.pixel_image.putpixel((pixel[0], pixel[1]), color)
-                #self.current_key_frame.pixel_grid[pixel[1]][pixel[0]] = color
-                #self.current_key_frame.draw_pixel(self.canvas, current_coord, color, color, current_coord, self.borders)
-                #self.canvas.delete(current_coord)
+                self.current_key_frame.pixel_grid[pixel[1]][pixel[0]] = color
+                self.current_key_frame.draw_pixel(self.canvas, current_coord, color, color, current_coord, self.borders)
+                self.canvas.delete(current_coord)
 
 
         self.render_canvas()
@@ -1008,9 +1058,10 @@ class Animator(ttk.Frame):
         #self.render_onion_skin()
         #self.current_key_frame.render_grid(self.canvas, self.borders)
         #self.render_borders()
-        #self.render_canvas()
+        self.render_canvas()
 
         self.update_key_frame(self.frame_idx)
+
 
     def cut_pixels(self, *args):
         temp_pixels = self.current_key_frame.get_temp_pixels()
@@ -1019,11 +1070,10 @@ class Animator(ttk.Frame):
         for pixel in temp_pixels:
             if in_bounds(pixel[0], pixel[1], self.pixel_canvas_width, self.pixel_canvas_height):
                 current_coord = self.current_key_frame.coord_to_str(pixel[0], pixel[1])
-                #self.current_key_frame.pixel_grid[pixel[1]][pixel[0]] = None
-                self.current_key_frame.pixel_image.putpixel((pixel[0], pixel[1]), self.current_key_frame.blank)
-                #if self.current_key_frame.pixel_coords.get(current_coord):
-                #    del self.current_key_frame.pixel_coords[current_coord]
-                #self.canvas.delete(current_coord)
+                self.current_key_frame.pixel_grid[pixel[1]][pixel[0]] = None
+                if self.current_key_frame.pixel_coords.get(current_coord):
+                    del self.current_key_frame.pixel_coords[current_coord]
+                self.canvas.delete(current_coord)
         
         self.pixels_to_paste = [pixel for pixel in temp_pixels]
         self.colors_to_paste = [color for color in temp_colors]
@@ -1045,11 +1095,10 @@ class Animator(ttk.Frame):
         for pixel in temp_pixels:
             if in_bounds(pixel[0], pixel[1], self.pixel_canvas_width, self.pixel_canvas_height):
                 current_coord = self.current_key_frame.coord_to_str(pixel[0], pixel[1])
-                #self.current_key_frame.pixel_grid[pixel[1]][pixel[0]] = None
-                self.current_key_frame.pixel_image.putpixel((pixel[0], pixel[1]), self.current_key_frame.blank)
-                #if self.current_key_frame.pixel_coords.get(current_coord):
-                #    del self.current_key_frame.pixel_coords[current_coord]
-                #self.canvas.delete(current_coord)
+                self.current_key_frame.pixel_grid[pixel[1]][pixel[0]] = None
+                if self.current_key_frame.pixel_coords.get(current_coord):
+                    del self.current_key_frame.pixel_coords[current_coord]
+                self.canvas.delete(current_coord)
 
         self.current_key_frame.temp_colors.clear()
         self.current_key_frame.temp_pixels.clear()
@@ -1064,15 +1113,76 @@ class Animator(ttk.Frame):
         
     #Canvas Interaction
 
-    def on_mousewheel_scroll(self, event):
-
+    def resize_pixels(self, *args):
+        #connected to the resize slider
+        
+        transform_matrix = np.eye(3, dtype=np.float64)
        
+        
+        #scaling_change = 1 + (abs(event.delta)//event.delta)/10
+        prev_scale = self.pixel_scale
+
+        self.pixel_scale = self.scaling_scl.get()
+        
+        
+        #overall scale change
+        old_scale = (prev_scale / self.pixel_scale_og) * self.pixel_scale_og
+        
+        
+        cur_scale = (self.pixel_scale / self.pixel_scale_og) * self.pixel_scale_og
+        
+        
+        #scale relative percentage change
+        inc_percent = (cur_scale - old_scale)/prev_scale + 1
+        
+            
+
+        #self.pixel_scale = self.pixel_scale * scaling_change
+        #print(self.max_pixel_scale, self.min_pixel_scale, prev_scale, self.pixel_scale, scaling_change)
+        if self.pixel_scale < self.min_pixel_scale:
+            self.pixel_scale = prev_scale
+        if self.pixel_scale >= self.max_pixel_scale:
+            self.pixel_scale = prev_scale
+
+        if prev_scale != self.pixel_scale:
+            
+            transform_matrix = np.array(scale_matrix2D(inc_percent, inc_percent))
+
+        
+        #start = time.time()
+
+        cx, cy = self.canvas.winfo_width()/2, self.canvas.winfo_height()/2
+
+
+        self.pivot_matrix[0, 2] = cx
+        self.pivot_matrix[1, 2] = cy
+
+        self.matrix_pivot[0, 2] = -cx
+        self.matrix_pivot[1, 2] = -cy
+
+        #print(self.current_key_frame.get_borders())
+        self.transform_borders(self.matrix_pivot, transform_matrix,  self.pivot_matrix)
+        self.borders = self.get_borders()
+        ltx, lty, rtx, rty, rbx, rby, lbx, lby = self.get_borders()
+        self.render_onion_skin()
+        self.canvas.config(scrollregion=(ltx, lty, rbx, rby))
+        for key_frame in self.key_frame_collection:
+            key_frame.pixel_scale = self.pixel_scale
+            key_frame.transform_vertices(self.matrix_pivot, transform_matrix,  self.pivot_matrix)
+        
+        #print("Transfrom Time {}".format(time.time() - start))
+        
+        #self.current_key_frame.render_grid(self.canvas)
+        self.current_key_frame.resize_canvas(self.canvas, cx, cy, inc_percent, inc_percent)
+
+
+    def on_mousewheel_scroll(self, event):
         #applies transformations to the canvas or to pixels
         #connect to the mousewheel
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
         transform_matrix = np.eye(3, dtype=np.float64)
-        
+
         if self.mode == "H-Shear":
             #rotating pixels
             sign = (abs(event.delta)//event.delta)
@@ -1090,7 +1200,6 @@ class Animator(ttk.Frame):
             self.render_canvas()
             #self.current_key_frame.resize_canvas(self.canvas, cx, cy, scaling_change, scaling_change)
             self.update_key_frame(self.frame_idx)
-            
         elif self.mode == "V-Shear":
             #rotating pixels
             sign = (abs(event.delta)//event.delta)
@@ -1106,8 +1215,8 @@ class Animator(ttk.Frame):
 
             self.current_key_frame.transform_pixels(self.matrix_pivot, transform_matrix,  self.pivot_matrix, self.canvas, self.borders)
             self.render_canvas()
+            #self.current_key_frame.resize_canvas(self.canvas, cx, cy, scaling_change, scaling_change)
             self.update_key_frame(self.frame_idx)
-            
         elif self.mode == "Rotate":
             #rotating pixels
             sign = (abs(event.delta)//event.delta)
@@ -1124,20 +1233,18 @@ class Animator(ttk.Frame):
 
             self.current_key_frame.transform_pixels(self.matrix_pivot, transform_matrix,  self.pivot_matrix, self.canvas, self.borders)
             self.render_canvas()
+            #self.current_key_frame.resize_canvas(self.canvas, cx, cy, scaling_change, scaling_change)
             self.update_key_frame(self.frame_idx)
-           
-            
         else:
         
             #resizing pixels
         
-        
+       
         
             scaling_change = 1 + (abs(event.delta)//event.delta)/5
             prev_scale = self.pixel_scale
 
             self.pixel_scale = self.pixel_scale * scaling_change
-            self.scale_lbl.config(text=f"Scale: {self.pixel_scale:.2f}")
             #self.scaling_scl.set(self.pixel_scale)
             #print(self.max_pixel_scale, self.min_pixel_scale, prev_scale, self.pixel_scale, scaling_change)
 
@@ -1168,22 +1275,20 @@ class Animator(ttk.Frame):
             self.transform_borders(self.matrix_pivot, transform_matrix,  self.pivot_matrix)
             self.borders = self.get_borders()
             ltx, lty, rtx, rty, rbx, rby, lbx, lby = self.get_borders()
-            #self.render_onion_skin()
+            self.render_onion_skin()
             self.canvas.config(scrollregion=(ltx, lty, rbx, rby))
 
-            #for key_frame in self.key_frame_collection:
-                #key_frame.pixel_scale = self.pixel_scale
-                #key_frame.transform_vertices(self.matrix_pivot, transform_matrix,  self.pivot_matrix)
-                #key_frame.scale_image(self.canvas, self.borders)
-            self.current_key_frame.scale_image(self.canvas, self.borders)
-            self.render_canvas()
-            #self.current_key_frame.render_image(self.canvas, self.borders)
-            #self.render_borders()
-            #self.current_key_frame.resize_canvas(self.canvas, cx, cy, scaling_change, scaling_change)
-            #self.current_key_frame.render_grid(self.canvas, self.borders)
+            for key_frame in self.key_frame_collection:
+                key_frame.pixel_scale = self.pixel_scale
+                key_frame.transform_vertices(self.matrix_pivot, transform_matrix,  self.pivot_matrix)
+
+            self.current_key_frame.resize_canvas(self.canvas, cx, cy, scaling_change, scaling_change)
+        #self.current_key_frame.render_grid(self.canvas, self.borders)
+
+
 
     def render_canvas(self):
-
+        
         
         self.canvas.delete("all")
         if self.bg_color_iv.get():
@@ -1194,12 +1299,10 @@ class Animator(ttk.Frame):
             self.preview_canvas.config(bg=self.canvas_color)
             
         self.render_onion_skin()
-        self.current_key_frame.render_image(self.canvas, self.borders)
-        #self.current_key_frame.render_grid(self.canvas, self.borders)
+        self.current_key_frame.render_grid(self.canvas, self.borders)
         self.render_borders()
 
     def render_onion_skin(self):
-  
         if self.onion_iv.get():
             #print("yeap")
             '''
@@ -1207,121 +1310,55 @@ class Animator(ttk.Frame):
                 hexcode = '#%02x%02x%02x' % (r, g, b) #"#{:02x}{:02x}{:02x}".format(r,g,b)
                 return hexcode
             '''
-            #self.canvas.delete("onion")
-            border_x = self.borders[0]
-            border_y = self.borders[1]
-
-            border_width = self.borders[4] - self.borders[0]
-            border_height = self.borders[5] - self.borders[1]
-
-            im_width, im_height = self.current_key_frame.pixel_image.size  
-            
-            true_pixel_width = border_width/im_width
-            true_pixel_height = border_height/im_height
-
-            mxp_dim = max(im_width, im_height)
-            mxb_dim = max(border_width, border_height)
-
-            scale_dim = mxb_dim/mxp_dim
-
-
-            img = Image.new("RGBA", (self.pixel_canvas_width, self.pixel_canvas_height), self.current_key_frame.blank)
+            self.canvas.delete("onion")
             for i in range(self.frame_idx - int(self.onion_prev_sb.get()), self.frame_idx + int(self.onion_next_sb.get()) + 1):
                 #if current_frame < len(self.key_frame_collection):
                 key_frame = None
                 
-                
-                
                 #key_frame = self.key_frame_collection[current_frame]
                 #using current_key_frame's 
-                #for y in range(self.pixel_canvas_height):
-                #    for x in range(self.pixel_canvas_width):
-                #print(i)
-                if i < self.frame_idx:
-                    #previous frame in onion skin
-                    if i > -1:
-                        key_frame = self.key_frame_collection[i]
-                        #coord_key = key_frame.coord_to_str(x, y)
-                        prev_img = key_frame.get_pil_image().copy()
-                        prev_img_data = []
-                        for color in prev_img.getdata():
-                            if color[-1] == 0:
-                                prev_img_data.append(color)
-                            else:
-                                prev_img_data.append(
-                                                        (
-                                                            255, 
-                                                            color[1], 
-                                                            color[2], 
-                                                            int(255 - (175 * ((self.frame_idx - i)/self.onion_prev)))
-                                                        )
-                                                    )
-                        prev_img = Image.new(img.mode, img.size)
-                        prev_img.putdata(prev_img_data)
-                        #splitting image into color bands
-                        #red_img, green_img, blue_img, alpha = prev_img.split()
+                for y in range(self.pixel_canvas_height):
+                    for x in range(self.pixel_canvas_width):
 
-                        #red_img.putalpha(int(200 * ((self.frame_idx - i)/self.onion_prev)))
-                        #prev_img.putalpha(int(200 * ((self.frame_idx - i)/self.onion_prev)))
-
-                        img = Image.alpha_composite(img, prev_img)
-                        #img.paste(prev_img, (0,0))
-
-                        
-                if i > self.frame_idx:
-                    #next frame in onion skin
-                 
-                    if i < len(self.key_frame_collection):
-                        key_frame = self.key_frame_collection[i]
-                        next_img = key_frame.get_pil_image().copy()
-                        next_img_data = []
-                        for color in next_img.getdata():
-                            if color[-1] == 0:
-                                next_img_data.append(color)
-                            else:
-                                next_img_data.append(
-                                                        (
-                                                            color[0], 
-                                                            color[1], 
-                                                            255, 
-                                                            int(255 - (175 * ((i - self.frame_idx)/self.onion_next)))
-                                                        )
-                                                    )
-                        next_img = Image.new(img.mode, img.size)
-                        next_img.putdata(next_img_data)
-                        #splitting image into color bands
-                        #red_img, green_img, blue_img, alpha  = next_img.split()
-                        #green_img.putalpha(int(200 * ((i - self.frame_idx)/self.onion_next)))
-                        #next_img.putalpha(int(200 * ((i - self.frame_idx)/self.onion_next)))
-
-                        img = Image.alpha_composite(img, next_img)
-                        #img.paste(next_img, (0,0))
-                        
-
-            self.onion_image =  ImageTk.PhotoImage(
-                                    img.resize(
-                                        (round(scale_dim * im_width), round(scale_dim * im_height))
-                                        , Image.Resampling.NEAREST
-                                                            )
-                                                )
-            
-            # Draw the image
-            self.canvas.create_image(
-                border_x, border_y,     # Image display position (top-left coordinate)
-                anchor='nw',            # Anchor, top-left is the origin
-                image=self.onion_image,     # Display image data
-                #tags = ("image")
-                
-            )
+                        if i < self.frame_idx:
+                            #previous frame in onion skin
+                            if i > -1:
+                                key_frame = self.key_frame_collection[i]
+                                coord_key = key_frame.coord_to_str(x, y)
+                                if key_frame.pixel_grid[y][x]:
+                                    #key_frame.draw_pixel(self.canvas, coord_key, "green", "green", "onion", self.borders)
+                                   
+                                    current_color = key_frame.rgb_to_hex(0, int(200 * ((self.frame_idx - i)/self.onion_prev)), 0)
+                                    
+                                    key_frame.draw_pixel(
+                                                        self.canvas, 
+                                                        coord_key, 
+                                                        "", 
+                                                        current_color,  
+                                                        "onion", 
+                                                        self.borders
+                                                         )
+                        elif i > self.frame_idx:
+                            #next frame in onion skin
+                            if i < len(self.key_frame_collection):
+                                key_frame = self.key_frame_collection[i]
+                                coord_key = key_frame.coord_to_str(x, y)
+                                if key_frame.pixel_grid[y][x]:
+                                    #key_frame.draw_pixel(self.canvas, coord_key, "red", "red", "onion", self.borders)
+                                    current_color = key_frame.rgb_to_hex(int(200 * ((i - self.frame_idx)/self.onion_next)), 0, 0)
+                                    
+                                    key_frame.draw_pixel(
+                                                        self.canvas, 
+                                                        coord_key, 
+                                                        "",  
+                                                        current_color,  
+                                                        "onion", 
+                                                        self.borders
+                                                         )
 
     def on_canvas_lmb_click(self, event):
-        x = self.canvas.canvasx(event.x)
-        y = self.canvas.canvasy(event.y)
-
         if self.wn_open(self.sub_wn):
             return
-        
-        #self.render_onion_skin()
         
         if self.mode == "H-Shear":
             return
@@ -1332,37 +1369,45 @@ class Animator(ttk.Frame):
         if self.mode == "Rotate":
             return
 
+
+        #self.render_onion_skin()
+        #print('yep')
+        x = self.canvas.canvasx(event.x)
+        y = self.canvas.canvasy(event.y)
         if self.mode == "Draw":
             #print(self.current_key_frame.pixel_scale)
-            self.current_key_frame.brush_click(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()), True)
-        elif self.mode == "Erase":
-            #print("press")
-            #print(self.current_key_frame.pixel_scale)
-            self.current_key_frame.brush_click(x, y, self.canvas, self.canvas_color, self.borders, float(self.brush_sb.get()), False)
-        elif self.mode == "Stroke":
-            self.current_key_frame.start_stroke(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Move":
-            #self.canvas.delete("all")
-            self.current_key_frame.move_click(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Picker":
-            self.color = self.current_key_frame.pick_color(x, y, self.canvas, self.borders)
-            self.palette_canvas.config(bg=self.color)
-        elif self.mode == "Rectangle" or self.mode == "Circle" or self.mode == "Select":
-            self.current_key_frame.shape_click(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Lasso":
-            self.current_key_frame.lasso_click(x, y, self.canvas, self.color, self.borders)
+            self.current_key_frame.brush_click(x, y, self.canvas, self.color, self.borders)
         elif self.mode == "Bucket":
             self.current_key_frame.bucket_fill(x, y, self.canvas, self.color, self.borders)
         elif self.mode == "Wand":
             self.current_key_frame.wand_click(x, y, self.canvas, self.color, self.borders)
+        elif self.mode == "Erase":
+            self.current_key_frame.brush_click(x, y, self.canvas, "", self.borders)
+        elif self.mode == "Rectangle":
+            self.current_key_frame.shape_click(x, y, self.canvas, self.color, self.borders)
+        elif self.mode == "Circle":
+            self.current_key_frame.shape_click(x, y, self.canvas, self.color, self.borders)
+        elif self.mode == "Move":
+            #self.canvas.delete("all")
+            self.current_key_frame.move_click(x, y, self.canvas, self.color, self.borders)
+        elif self.mode == "Lasso":
+            self.current_key_frame.lasso_click(x, y, self.canvas, self.color, self.borders)
+        elif self.mode == "Select":
+            self.current_key_frame.shape_click(x, y, self.canvas, self.color, self.borders)
+        elif self.mode == "Stroke":
+            self.current_key_frame.start_stroke(x, y, self.canvas, self.color, self.borders)
+        elif self.mode == "Picker":
+            self.color = self.current_key_frame.pick_color(x, y, self.canvas, self.borders)
+            self.palette_canvas.config(bg=self.color)
+
 
     def on_canvas_lmb_press(self, event):
-        x = self.canvas.canvasx(event.x)
-        y = self.canvas.canvasy(event.y)
-
         if self.wn_open(self.sub_wn):
             return
+        
 
+        
+        self.render_onion_skin()
 
         if self.mode == "R-Shear":
             return
@@ -1373,44 +1418,50 @@ class Animator(ttk.Frame):
         if self.mode == "Rotate":
             return
 
+        x = self.canvas.canvasx(event.x)
+        y = self.canvas.canvasy(event.y)
         if self.mode == "Draw":
             #print(self.current_key_frame.pixel_scale)
-            self.current_key_frame.brush_press(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()), True)
+            self.current_key_frame.brush_press(x, y, self.canvas, self.color, self.borders)
+            
+        elif self.mode == "Bucket":
+            pass
+        elif self.mode == "Wand":
+            pass
         elif self.mode == "Erase":
             #print("press")
             #print(self.current_key_frame.pixel_scale)
-            self.current_key_frame.brush_press(x, y, self.canvas, self.canvas_color, self.borders, float(self.brush_sb.get()), False)
-        elif self.mode == "Stroke":
-            self.current_key_frame.start_stroke(x, y, self.canvas, self.color, self.borders)
+            self.current_key_frame.brush_press(x, y, self.canvas, "", self.borders)
+            
+        elif self.mode == "Rectangle":
+            self.current_key_frame.rectangle_press(x, y, self.canvas, self.color, self.borders)
+        elif self.mode == "Circle":
+            self.current_key_frame.circle_press(x, y, self.canvas, self.color, self.borders)
         elif self.mode == "Move":
             #this was to test the difference between this file and PixAnimate3.py's speed
             #start = time.time()
             self.current_key_frame.move_press(x, y, self.canvas, self.color, self.borders)
             #print(f"Transform Time {time.time() - start}")
-        elif self.mode == "Picker":
-            self.color = self.current_key_frame.pick_color(x, y, self.canvas, self.borders)
-            self.palette_canvas.config(bg=self.color)
-        elif self.mode == "Rectangle":
-            self.current_key_frame.rectangle_press(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Circle":
-            self.current_key_frame.circle_press(x, y, self.canvas, self.color, self.borders)
         elif self.mode == "Lasso":
             #print("L")
             self.current_key_frame.lasso_press(x, y, self.canvas, self.color, self.borders)
         elif self.mode == "Select":
             self.current_key_frame.select_press(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Bucket" or self.mode == "Wand":
+        elif self.mode == "Stroke":
+            self.current_key_frame.start_stroke(x, y, self.canvas, self.color, self.borders)
+        elif self.mode == "Picker":
             pass
-        
+
         
         self.render_borders()
+        
 
     def on_canvas_lmb_release(self, event):
-        x = self.canvas.canvasx(event.x)
-        y = self.canvas.canvasy(event.y)
-
         if self.wn_open(self.sub_wn):
             return
+        
+        
+        self.render_onion_skin()
 
         if self.mode == "H-Shear":
             return
@@ -1421,98 +1472,101 @@ class Animator(ttk.Frame):
         if self.mode == "Rotate":
             return
 
-        if self.mode == "Draw" or self.mode == "Erase":
-            self.current_key_frame.last_pixel.clear()
-        elif self.mode == "Stroke":
+        x = self.canvas.canvasx(event.x)
+        y = self.canvas.canvasy(event.y)
+        if self.mode == "Stroke":
             self.current_key_frame.end_stroke(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Move":
-            self.current_key_frame.move_release(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Rectangle" or self.mode == "Circle":
+        elif self.mode == "Rectangle":
+            self.current_key_frame.shape_release(x, y, self.canvas, self.color, self.borders)
+        elif self.mode == "Circle":
             self.current_key_frame.shape_release(x, y, self.canvas, self.color, self.borders)
         elif self.mode == "Lasso":
             #print("L")
             self.current_key_frame.lasso_release(x, y, self.canvas, self.color, self.borders)
+        elif self.mode == "Move":
+            self.current_key_frame.move_release(x, y, self.canvas, self.color, self.borders)
         elif self.mode == "Select":
             self.current_key_frame.select_release(x, y, self.canvas, self.color, self.borders)
-        elif self.mode == "Bucket" or self.mode == "Wand":
-            pass
-        #self.current_key_frame.render_image(self.canvas, self.borders)
 
-        if self.mode !="Lasso" and self.mode != "Select":
-            #this is so temp pixels and temp colors don't get cleared before being used
-            self.render_canvas()
-            self.update_key_frame(self.frame_idx)
-        self.render_borders()
-        
-    def on_canvas_rmb_click(self, event):
-        x = self.canvas.canvasx(event.x)
-        y = self.canvas.canvasy(event.y)
 
-        if self.wn_open(self.sub_wn):
-            return
-        
-        if self.mode == "H-Shear":
-            return
-        
-        if self.mode == "V-Shear":
-            return
-        
-        if self.mode == "Rotate":
-            return
 
-        if self.mode == "Select" or self.mode == "Lasso" or self.mode == "Wand":
-            self.current_key_frame.select_move_click(x, y, self.canvas, self.color, self.borders)
-
-    def on_canvas_rmb_press(self, event):
-        x = self.canvas.canvasx(event.x)
-        y = self.canvas.canvasy(event.y)
-
-        if self.wn_open(self.sub_wn):
-            return
-
-        if self.mode == "H-Shear":
-            return
-        
-        if self.mode == "V-Shear":
-            return
-        
-        if self.mode == "Rotate":
-            return
-
-        if self.mode == "Select" or self.mode == "Lasso" or self.mode == "Wand":
-            #self.current_key_frame.scale_image(self.canvas, self.borders)
-            self.current_key_frame.move_press(x, y, self.canvas, "", self.borders)
-        self.render_borders()
-
-    def on_canvas_rmb_release(self, event):
-        x = self.canvas.canvasx(event.x)
-        y = self.canvas.canvasy(event.y)
-
-        if self.wn_open(self.sub_wn):
-            return
-        
-        
-        #self.render_onion_skin()
-
-        if self.mode == "H-Shear":
-            return
-        
-        if self.mode == "V-Shear":
-            return
-        
-        if self.mode == "Rotate":
-            return
-
-        if self.mode == "Select" or self.mode == "Lasso" or self.mode == "Wand":
-            self.current_key_frame.shape_release(x, y, self.canvas, self.color, self.borders)
         #self.update_animation_timeline()
-        self.render_canvas()
         self.update_key_frame(self.frame_idx)
         #reason render canvas is commented is because doing so removes the negative colors of
         #both lasso and select
         #self.current_key_frame.render_grid(self.canvas)
         self.render_borders()
-      
+        #pass
+    
+    def on_canvas_rmb_click(self, event):
+        if self.wn_open(self.sub_wn):
+            return
+        
+        if self.mode == "H-Shear":
+            return
+        
+        if self.mode == "V-Shear":
+            return
+        
+        if self.mode == "Rotate":
+            return
+        #self.render_onion_skin()
+
+        x = self.canvas.canvasx(event.x)
+        y = self.canvas.canvasy(event.y)
+        if self.mode == "Select" or self.mode == "Lasso" or self.mode == "Wand":
+            self.current_key_frame.select_move_click(x, y, self.canvas, self.color, self.borders)
+    
+    def on_canvas_rmb_press(self, event):
+        if self.wn_open(self.sub_wn):
+            return
+
+        
+        self.render_onion_skin()
+
+        if self.mode == "H-Shear":
+            return
+        
+        if self.mode == "V-Shear":
+            return
+        
+        if self.mode == "Rotate":
+            return
+        #print("hm")
+        x = self.canvas.canvasx(event.x)
+        y = self.canvas.canvasy(event.y)
+        if self.mode == "Select" or self.mode == "Lasso" or self.mode == "Wand":
+            self.current_key_frame.move_press(x, y, self.canvas, "", self.borders)
+        self.render_borders()
+
+    def on_canvas_rmb_release(self, event):
+        if self.wn_open(self.sub_wn):
+            return
+        
+        
+        self.render_onion_skin()
+
+        if self.mode == "H-Shear":
+            return
+        
+        if self.mode == "V-Shear":
+            return
+        
+        if self.mode == "Rotate":
+            return
+
+        x = self.canvas.canvasx(event.x)
+        y = self.canvas.canvasy(event.y)
+        
+        if self.mode == "Select" or self.mode == "Lasso" or self.mode == "Wand":
+            self.current_key_frame.shape_release(x, y, self.canvas, self.color, self.borders)
+        #self.update_animation_timeline()
+        self.update_key_frame(self.frame_idx)
+        #reason render canvas is commented is because doing so removes the negative colors of
+        #both lasso and select
+        #self.current_key_frame.render_grid(self.canvas)
+        self.render_borders()
+
     def fps_to_ms(self, fps):
         return 1000/fps
 
@@ -1521,12 +1575,12 @@ class Animator(ttk.Frame):
     def load_frames(self, image: Image, mode='RGBA'):
         #https://stackoverflow.com/questions/74731252/fastest-way-to-load-an-animated-gif-in-python-into-a-numpy-array
         return [
-            np.array(frame.convert(mode))
+            np.array(frame.convert(mode)).tolist()
             for frame in ImageSequence.Iterator(image)
         ]
     
-    def open_file(self):
 
+    def open_file(self):
 
         filetypes = [
 
@@ -1576,76 +1630,67 @@ class Animator(ttk.Frame):
           
                     total_frames = img.n_frames
                     self.pixel_canvas_width, self.pixel_canvas_height = img.size 
-                    self.set_scaling(self.canvas)
-                    self.borders = self.set_borders(self.canvas_width, self.canvas_height, self.pixel_canvas_width, self.pixel_canvas_height)
                 
-                    for i in range(total_frames):
-                        #print(i)
-                        #img.seek(i)
-                        #can't just convert a frame of a gif as an RGBA numpy array
-                        #rgba_array = self.load_frames(img) #np.array(img).tolist() 
-                        #print(rgba_frames[i])
-                        new_frame = ImageFrame( 
-                                    self.pixel_canvas_width,
-                                    self.pixel_canvas_height, 
-                                    self.canvas_width,
-                                    self.canvas_height 
-                                )
-                        #if it's a clear pixel put None in the 2D array, otherwise a hexcode
-                        #evil 2d list comprehension, downright devious
-                        
-                        new_frame.pixel_image = Image.fromarray(rgba_frames[i], mode="RGBA")
-        
-                        
-                        '''
-                        new_frame.pixel_grid = [
-                                                    [
-                                                        #col is an RGBA array like [255, 255, 255, 0] if the last is 0 that means Alpha, transparency is 0
-                                                        new_frame.rgb_to_hex(col[0], col[1], col[2]) if col[-1] != 0 else None for col in row
-                                                    ] for row in rgba_frames[i]
-                                                ]
-                        #debug
-                        for y in range(len(rgba_frames[i])):
-                            for x in range(len(rgba_frames[i][y])):
-                                col = rgba_frames[i][y][x]
-                                #col is an RGBA array like [255, 255, 255, 0] if the last is 0 that means Alpha, transparency is 0
-                                if i == 0:
-                                    print(col, len(col))
-                                if col[-1] != 0:
-                                    
-                                    
-                                    new_frame.pixel_grid[y][x] = new_frame.rgb_to_hex(col[0], col[1], col[2])
-                                else:
-                                    new_frame.pixel_grid[y][x] = None 
-                        '''   
-                                    
-                                    
-                        
-                                    
-                        #new_frame.pixel_coords = new_frame.grid_to_coords(self.borders)
-                        self.key_frame_collection.append(new_frame)
-                        #img.save(target_folder + f'/frame_{i:03d}.png')`
+                for i in range(total_frames):
+                    #print(i)
+                    #img.seek(i)
+                    #can't just convert a frame of a gif as an RGBA numpy array
+                    #rgba_array = self.load_frames(img) #np.array(img).tolist() 
+                    #print(rgba_frames[i])
+                    new_frame = KeyFrame( 
+                                self.pixel_canvas_width,
+                                self.pixel_canvas_height, 
+                                self.canvas_width,
+                                self.canvas_height 
+                            )
+                    #if it's a clear pixel put None in the 2D array, otherwise a hexcode
+                    #evil 2d list comprehension, downright devious
+                    
+                    new_frame.pixel_grid = [
+                                                [
+                                                    #col is an RGBA array like [255, 255, 255, 0] if the last is 0 that means Alpha, transparency is 0
+                                                    new_frame.rgb_to_hex(col[0], col[1], col[2]) if col[-1] != 0 else None for col in row
+                                                ] for row in rgba_frames[i]
+                                            ]
+                    '''
+                    #debug
+                    for y in range(len(rgba_frames[i])):
+                        for x in range(len(rgba_frames[i][y])):
+                            col = rgba_frames[i][y][x]
+                            #col is an RGBA array like [255, 255, 255, 0] if the last is 0 that means Alpha, transparency is 0
+                            if i == 0:
+                                print(col, len(col))
+                            if col[-1] != 0:
+                                
+                                
+                                new_frame.pixel_grid[y][x] = new_frame.rgb_to_hex(col[0], col[1], col[2])
+                            else:
+                                new_frame.pixel_grid[y][x] = None 
+                    '''   
+                                
+                                
+                    
+                                
+                    new_frame.pixel_coords = new_frame.grid_to_coords(self.borders)
+                    self.key_frame_collection.append(new_frame)
+                    #img.save(target_folder + f'/frame_{i:03d}.png')
                 
                 
             else:
                 #print(selected_file)
                 img = Image.open(selected_file)
                 self.pixel_canvas_width, self.pixel_canvas_height = img.size 
-                #rgba_array = np.array(img).tolist() 
+                rgba_array = np.array(img).tolist() 
                 #self.temp_pixels = [ [col, row] for row in range(len(self.pixel_grid)) for col in range(len(self.pixel_grid[0])) if self.pixel_grid[row][col] ]
                 #print(rgba_array)
-                new_frame = ImageFrame( 
+                new_frame = KeyFrame( 
                                 self.pixel_canvas_width,
                                 self.pixel_canvas_height, 
                                 self.canvas_width,
                                 self.canvas_height 
                             )
-                
-                self.set_scaling(self.canvas)
-                self.borders = self.set_borders(self.canvas_width, self.canvas_height, self.pixel_canvas_width, self.pixel_canvas_height)
                 #if it's a clear pixel put None in the 2D array, otherwise a hexcode
                 #evil 2d list comprehension, downright devious
-                '''
                 new_frame.pixel_grid = [
                                             [
                                                 #col is an RGBA array like [255, 255, 255, 0] if the last is 0 that means Alpha, transparency is 0
@@ -1653,8 +1698,6 @@ class Animator(ttk.Frame):
                                             ] for row in rgba_array 
                                         ]
                 new_frame.pixel_coords = new_frame.grid_to_coords(self.borders)
-                '''
-                new_frame.pixel_image = img
                 self.key_frame_collection.append(new_frame)
                 
             self.frame_idx = 0
@@ -1665,7 +1708,6 @@ class Animator(ttk.Frame):
             self.canvas.config(state="normal")
 
     def save_gif(self):
-
         filetypes = [
                     #("All files", "*.*"),
                     ("gif files", "*.gif"),
@@ -1683,13 +1725,8 @@ class Animator(ttk.Frame):
             key_frame_images = []
             if self.bg_color_iv.get():
 
-                rgba = tuple(self.current_key_frame.hex_to_rgb(self.bg_color, True))
-                for key_frame in self.key_frame_collection:
-
-                    blank_image = Image.new("RGBA", (self.pixel_canvas_width, self.pixel_canvas_height), rgba)
-                    #blank_image.paste(key_frame.get_pil_image(), (0, 0))
-                    blank_image = Image.alpha_composite(blank_image, key_frame.get_pil_image())
-                    key_frame_images.append(blank_image)
+                r, g, b = self.current_key_frame.hex_to_rgb(self.bg_color)
+                key_frame_images = [key_frame.pixel_to_pil_image([r, g, b, 255]) for key_frame in self.key_frame_collection]
                 key_frame_images[0].save(
                                             save_path, 
                                             format = "GIF", 
@@ -1705,7 +1742,7 @@ class Animator(ttk.Frame):
                 
             else:
 
-                key_frame_images = [key_frame.get_pil_image() for key_frame in self.key_frame_collection]
+                key_frame_images = [key_frame.pixel_to_pil_image() for key_frame in self.key_frame_collection]
                 key_frame_images[0].save(
                                             save_path, 
                                             format = "GIF", 
@@ -1717,7 +1754,6 @@ class Animator(ttk.Frame):
                                         )
 
     def save_frame(self):
-
         #saves an individual frame
         filetypes = [
                     #("All files", "*.*"),
@@ -1733,19 +1769,23 @@ class Animator(ttk.Frame):
         if save_path:
             print(save_path)
             if self.bg_color_iv.get():
-                rgba = tuple(self.current_key_frame.hex_to_rgb(self.bg_color, True))
-                blank_image = Image.new("RGBA", (self.pixel_canvas_width, self.pixel_canvas_height), rgba)
-                blank_image = Image.alpha_composite(blank_image, self.current_key_frame.get_pil_image())
-                #blank_image.paste(, (0, 0))
-                blank_image.save(save_path)
+                r, g, b = self.current_key_frame.hex_to_rgb(self.bg_color)
+                self.current_key_frame.pixel_to_pil_image([r, g, b, 255]).save(save_path)
                 
             else:
-                self.current_key_frame.get_pil_image().save(save_path)
+                self.current_key_frame.pixel_to_pil_image().save(save_path)
          
     def clear_frame(self):
+        for y in range(self.current_key_frame.pixel_canvas_height):
+            for x in range(self.current_key_frame.pixel_canvas_width):
+                self.current_key_frame.pixel_grid[y][x] = None
+                coord_key = self.current_key_frame.coord_to_str(x, y)
+        
+        d_keys = list(self.current_key_frame.pixel_coords.keys())
+        while d_keys:
+            del self.current_key_frame.pixel_coords[d_keys.pop()]
 
-        self.current_key_frame.pixel_image = Image.new("RGBA", (self.pixel_canvas_width, self.pixel_canvas_height), self.current_key_frame.blank)
-        #self.canvas.delete('all')
+        self.canvas.delete('all')
 
         self.current_key_frame.pixel_vertices.clear()
         self.current_key_frame.last_pixel = []
@@ -1753,20 +1793,26 @@ class Animator(ttk.Frame):
         self.current_key_frame.temp_pixels = []
         self.current_key_frame.temp_colors = []
         self.current_key_frame.first_pixel = []
-        #self.current_key_frame.render_image(self.canvas, self.borders)
+        self.current_key_frame.render_grid(self.canvas, self.borders)
 
         self.update_key_frame(self.frame_idx)
-        self.render_canvas()
         self.render_borders()
         #self.update_animation_timeline()
 
     def clear_frames(self):
-
         for i in range(len(self.key_frame_collection)):
             key_frame = self.key_frame_collection[i]
-            key_frame.pixel_image = Image.new("RGBA", (self.pixel_canvas_width, self.pixel_canvas_height), key_frame.blank)
-            self.update_key_frame(i)
+            for y in range(key_frame.pixel_canvas_height):
+                for x in range(key_frame.pixel_canvas_width):
+                    key_frame.pixel_grid[y][x] = None
+                    coord_key = key_frame.coord_to_str(x, y)
         
+            d_keys = list(key_frame.pixel_coords.keys())
+            while d_keys:
+                del key_frame.pixel_coords[d_keys.pop()]
+            self.update_key_frame(i)
+
+
             key_frame.pixel_vertices.clear()
             key_frame.last_pixel = []
             key_frame.stroke_pixels = []
@@ -1774,20 +1820,19 @@ class Animator(ttk.Frame):
             key_frame.temp_colors = []
             key_frame.first_pixel = []
 
-        #self.canvas.delete('all')
-        #self.current_key_frame.render_grid(self.canvas, self.borders)
-        self.render_canvas()
+        self.canvas.delete('all')
+        self.current_key_frame.render_grid(self.canvas, self.borders)
+        
         self.render_borders()
         #self.update_animation_timeline()
 
     def debug(self):
-       
         print("yep")
         canvas_width = self.canvas.winfo_width()
         canvas_height = self.canvas.winfo_height()
 
         print("Unique Vertices\n")
-        #print(f"Length:{len(self.current_key_frame.pixel_vertices)}")
+        print(f"Length:{len(self.current_key_frame.pixel_vertices)}")
 
         '''
         for key in self.current_key_frame.pixel_coords:
@@ -1798,15 +1843,10 @@ class Animator(ttk.Frame):
 
                 print(f"Top Left: {vertices[0]}\nTop Right: {vertices[1]}\nBottom Right: {vertices[2]}\nBottom Left: {vertices[3]}\n")
         '''
-        #print("Pixel Coords Len", len(self.current_key_frame.pixel_coords))
+        print("Pixel Coords Len", len(self.current_key_frame.pixel_coords))
         print(f"Sizes:\n Images {len(self.timeline_img_list)} Preview {len(self.preview_img_list)} Timeline: {len(self.timeline_widget_list)}")
-
-        #self.current_key_frame.display_2d([[col for col in self]])
-        pixel_grid =  self.current_key_frame.pil_image_to_grid()
-        self.current_key_frame.display_2d(pixel_grid)
-        #self.current_key_frame.display_2d(self.current_key_frame.pil_image_to_array2D())
-        #self.current_key_frame.display_2d(self.current_key_frame.pil_image_to_numpy_array2D())
-      
+        self.current_key_frame.display_2d(self.current_key_frame.pixel_grid)
+        
     def choose_color(self):
         print("pixel grid")
         #self.current_key_frame.display_2d(self.current_key_frame.pixel_grid)
@@ -1821,7 +1861,6 @@ class Animator(ttk.Frame):
             self.palette_canvas.config(bg=self.color)
 
     def change_canvas_color(self):
-
         #print("pixel grid")
         #self.current_key_frame.display_2d(self.current_key_frame.pixel_grid)
         #print(self.pixel_coords)
@@ -1831,20 +1870,25 @@ class Animator(ttk.Frame):
         #print(color_code)
         if color_code[1]:
             #color_code index 1 is a hex code, index 0 is an rgb tuble
+            
             #this is so erasing works
             self.canvas_color = color_code[1] 
             self.canvas.config(bg=self.canvas_color)
+            
+            
             
         self.render_canvas()
 
     def change_bg_color(self):
         #bg color saved
         #print("pixel grid")
+
         # variable to store hexadecimal code of selected_color
         color_code = colorchooser.askcolor(title ="Choose selected_color") 
         #print(color_code)
         if color_code[1]:
             #color_code index 1 is a hex code, index 0 is an rgb tuble
+            
             #this is so erasing works
             self.bg_color = color_code[1] 
             self.bg_color_btn.config(bg=self.bg_color, fg=self.current_key_frame.invert_color(self.bg_color))
@@ -1853,13 +1897,30 @@ class Animator(ttk.Frame):
         
         self.render_canvas()
             
+        
+
     def get_canvas_colors(self):
         set_of_colors = {col for row in self.current_key_frame.pixel_grid for col in row if col != None}
         return set_of_colors
 
+
     #Preview Controling Widgets
     def update_preview_canvas(self):
+        #after(2000, task)
+        #self.current_key_frame.update_canvas(self.canvas)
+        #cnvs = tk.Canvas(self.timeline_scroll_frame, width=self.timeline_cell_size, height=self.anim_canvas_height)
+        '''
+        cnvs.create_image(
+            0, 0,           # Image display position (top-left coordinate)
+            anchor='nw',    # Anchor, top-left is the origin
+            image=self.timeline_img_list[0],        # Display image data
+            tags = ("image")
+        )
+        cnvs.pack()#grid(row=0, column=1)
+        '''
 
+        #print("update")
+        
         if self.preview_idx > len(self.preview_img_list) - 1:
             self.preview_idx = 0
 
@@ -1880,7 +1941,7 @@ class Animator(ttk.Frame):
 
     def play_preview(self):
         #so you can only chang the fps when the playing is false
-        
+    
         #https://stackoverflow.com/questions/66361332/creating-a-timer-with-tkinter
         if self.playing == True:
             #print("fps scale on")
@@ -1906,7 +1967,7 @@ class Animator(ttk.Frame):
     
     def get_key_frame(self, idx):
         if not self.key_frame_collection:
-            new_frame = ImageFrame( 
+            new_frame = KeyFrame( 
                                 self.pixel_canvas_width,
                                 self.pixel_canvas_height, 
                                 self.canvas_width,
@@ -1921,7 +1982,6 @@ class Animator(ttk.Frame):
             return self.key_frame_collection[idx]
             
     def next_key_frame(self, *args):
-
         #self.canvas.delete("all")
         self.frame_idx += 1
         if self.frame_idx == len(self.key_frame_collection):
@@ -1933,7 +1993,6 @@ class Animator(ttk.Frame):
         self.highlight_current_frame()
 
     def prev_key_frame(self, *args):
-
         #self.canvas.delete("all")
         self.frame_idx -= 1
         if self.frame_idx < 0:
@@ -1945,7 +2004,6 @@ class Animator(ttk.Frame):
         self.highlight_current_frame()
 
     def highlight_current_frame(self):
-
         for i in range(len(self.timeline_widget_list)):
             widget = self.timeline_widget_list[i]
     
@@ -1956,9 +2014,9 @@ class Animator(ttk.Frame):
                 widget.config(bg="Azure3")
 
     def duplicate_key_frame(self):
-
+        
         #new_len = len(self.key_frame_collection)
-        new_frame = ImageFrame( 
+        new_frame = KeyFrame( 
                                 self.pixel_canvas_width,
                                 self.pixel_canvas_height, 
                                 self.canvas_width,
@@ -1967,7 +2025,11 @@ class Animator(ttk.Frame):
         
         
 
-        new_frame.pixel_image = self.current_key_frame.pixel_image.copy()
+        new_frame.pixel_scale = self.pixel_scale
+        for y in range(self.pixel_canvas_height):
+            for x in range(self.pixel_canvas_width):
+                if self.current_key_frame.pixel_grid[y][x]:
+                    new_frame.pixel_grid[y][x] = self.current_key_frame.pixel_grid[y][x]
 
         
         if len(self.key_frame_collection) - 1 == self.frame_idx:
@@ -1986,9 +2048,11 @@ class Animator(ttk.Frame):
 
         self.render_canvas()
 
+
     def add_key_frame(self):
-     
-        new_frame = ImageFrame( 
+        
+        #new_len = len(self.key_frame_collection)
+        new_frame = KeyFrame( 
                                 self.pixel_canvas_width,
                                 self.pixel_canvas_height, 
                                 self.canvas_width,
@@ -2011,8 +2075,9 @@ class Animator(ttk.Frame):
  
         self.update_animation_timeline()
     
+   
+
     def delete_key_frame(self, *args):
-        
         if len(self.key_frame_collection) > 1:
             
             if self.frame_idx >= len(self.key_frame_collection) - 1:
@@ -2040,8 +2105,8 @@ class Animator(ttk.Frame):
 
             self.update_animation_timeline()
             
+
     def select_key_frame(self, string_idx : str):
-        
         print("selected",string_idx)
         self.canvas.delete("all")
         self.frame_idx = int(string_idx)
@@ -2073,7 +2138,7 @@ class Animator(ttk.Frame):
         display_img = None
 
 
-        img = key_frame.get_pil_image()
+        img = key_frame.pixel_to_pil_image()
         im_width, im_height = img.size  
         canvas_size = self.timeline_cell_size
         mx_dim = max(im_width, im_height)
@@ -2200,6 +2265,9 @@ class Animator(ttk.Frame):
             else:
                 widget.config(bg="Azure3")
             
+
+    
+    
                     
 class App(tk.Tk):
     def __init__(self):
@@ -2213,9 +2281,9 @@ class App(tk.Tk):
         #self.bind("<Down>", self.t2d_poly.undo)
         #self.bind("<Up>", self.t2d_poly.redo)
         
-        IKs = Animator(self, 500, 500, 128, 96)
+        IKs = Animator(self, 500, 500, 8, 8)
         IKs.pack(side="top", fill="both", expand=True)
-        
+
         self.bind("<Up>", IKs.prev_key_frame)
         self.bind("<Down>", IKs.next_key_frame)
         self.bind("<Delete>", IKs.delete_pixels)
@@ -2223,8 +2291,6 @@ class App(tk.Tk):
         self.bind("<Control-v>", IKs.paste_pixels)
         self.bind("<Control-x>", IKs.cut_pixels)
         self.bind("<Control-d>", IKs.delete_key_frame)
-        
-        self.bind("<Control-s>", lambda a:print("Quick Save not implemented"))
         self.bind("<Control-z>", lambda a:print("Undo not implemented"))
         self.bind("<Control-y>", lambda a:print("Redo not implemented"))
         
@@ -2233,28 +2299,17 @@ class App(tk.Tk):
 
 
 if __name__ == "__main__":
-    # problems
-    # duplicate works but doesn't update the timeline FIXED
-    # pixels that don't exist in the grid not being moved or deleted when selected FIXED
-    # resize grid sometimes not working FIXED
-    # Need to add animation preview FIXED
-    # onion skin spinboxes on prev and next FIXED
+    #problems
+    #duplicate works but doesn't update the timeline DONE
+    #pixels that don't exist in the grid not being moved or deleted when selected 
+    #resize grid sometimes not working DONE
+    # Need to add animation preview DONE
+    # onion skin spinboxes on prev and next DONE
     # palette import from pixelplacer3.py
-    # impor images and gifs FIXED
+    # impor images and gifs DONE - Kind of -pixels end up distorted in some cases - not sure why
     # Xaolin's Woo's antialiasing
-    # different brush sizes DONE
-    # rotation and anchoring FIXED
-    # 9  23 25
-    # see if it's possible replace the draw_pixel method in Frame_image render_image and Image.getpixel((x,y)) and Image.putpixel((x,y)) 
-        # draw_pixel is essential as placeholder pixels, until the image is really updated
-        # so perhaps each FrameImage can have three images, in addition to canvas_image, the Tkinter PhotoImage, and pixel_image, the Pil Image
-            # This would likely be a temporary image that temp_pixels can be pasted to and displayed over the real image
-    # fix render order for bucket and wand FIXED
-    # drag borders
-    # swap frames, both with button and timeline
-    # make the timeline more effient, only update frames after.
-    # 
-
+    # different brush sizes
+    # rotation and anchoring DONE
 
     app = App()
     

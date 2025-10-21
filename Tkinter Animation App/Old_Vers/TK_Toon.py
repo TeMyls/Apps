@@ -4,7 +4,8 @@ import os
 from PIL import Image, ImageTk, ImageSequence, ImageOps
 from MatrixMath import *
 from collisions import *
-from FrameImage import *
+#from FrameKey import *
+from Frame_Image import *
 from Tool_tip import *
 import numpy as np
 from numpy import radians as to_radians
@@ -132,10 +133,6 @@ class Animator(ttk.Frame):
         self.onion_cb = ttk.Checkbutton(self.options_frame, text="Onion Skin", variable=self.onion_iv, command=self.render_canvas)
         self.onion_image = None
 
-        self.brush_lbl = ttk.Label(self.options_frame, text="Brush Size")
-        self.brush_sb = ttk.Spinbox(self.options_frame, from_ = 1, to = 10, increment=0.5, width=10, command=self.render_canvas)
-        self.brush_sb.set(1)
-
         self.debug_btn = ttk.Button(self.options_frame, text="Debug", command=self.debug)
         self.clear_btn = ttk.Button(self.options_frame, text="Clear Frame", command=self.clear_frame)
         self.wipeout_btn = ttk.Button(self.options_frame, text="Clear All", command=self.clear_frames)
@@ -187,8 +184,8 @@ class Animator(ttk.Frame):
 
         
         options_arrangement = [
-            [self.brush_lbl, self.brush_sb],
-            [self.color_btn, self.canvas_color_btn],
+
+            [self.color_btn, self.canvas_color_btn],#self.debug_btn
             [self.clear_btn, self.wipeout_btn],
             [self.prev_btn,  self.next_btn],
             [self.delete_btn, self.add_btn],
@@ -245,8 +242,8 @@ class Animator(ttk.Frame):
         
         self.timeline_canvas.create_window((0, 0), window=self.timeline_scroll_frame, anchor="nw")
         self.timeline_canvas.configure(yscrollcommand=self.timeline_sb_y.set)
-
         #self.edge_scrollbar_y.config(command=self.self.edge_canvas.yview)
+        
         #self.timeline_canvas.pack(fill="y", expand=True) #.grid(row=0, column=0)
         #self.timeline_sb_y.pack(fill="y", expand=True)  #.grid(row=0, column=1, sticky="NS")
         
@@ -392,14 +389,14 @@ class Animator(ttk.Frame):
                                  text="Lasso", 
                                  image=self.lasso_sel_img
                                  ) 
-        CreateToolTip(self.lasso_sel_bn, "Lasso Selection\n\tLMB: Selects\n\tRMB: To Move\n\tDelete: Delete Selection")
+        CreateToolTip(self.lasso_sel_bn, "Lasso Selection")
         
         self.rect_sel_img = tk.PhotoImage(file="icons\\select_32dp_000000_FILL0_wght400_GRAD0_opsz40.png").subsample(4,4)
         self.rect_sel_bn = tk.Button(self.btn_frame, 
                                  text="Select", 
                                  image=self.rect_sel_img
                                  ) 
-        CreateToolTip(self.rect_sel_bn, "Rectangle Selection\n\tLMB: Selects\n\tRMB: To Move\n\tDelete: Delete Selection")
+        CreateToolTip(self.rect_sel_bn, "Rectangle Selection")
         
         self.line_img = tk.PhotoImage(file="icons\\border_color_32dp_000000_FILL0_wght400_GRAD0_opsz40.png").subsample(4,4)
         self.line_bn = tk.Button(self.btn_frame, 
@@ -445,7 +442,7 @@ class Animator(ttk.Frame):
                                  text="Wand", 
                                  image=self.wand_img,
                                  ) 
-        CreateToolTip(self.wand_bn, "Color Selection\n\tLMB: Selects\n\tRMB: To Move\n\tDelete: Delete Selection")
+        CreateToolTip(self.wand_bn, "Color Selection")
 
         #self.palette_img = tk.PhotoImage(file="icons\\blank.png")
         self.palette_canvas = tk.Canvas(self.btn_frame,  
@@ -458,7 +455,6 @@ class Animator(ttk.Frame):
                                  relief="sunken"
                                  
                                  ) 
-        #CreateToolTip(self.palette_canvas, "Current Color")
         #CreateToolTip(self.palette_canvas, "Selected Color")
         
         self.pen_bn.config(command=lambda:self.select_mode(self.pen_bn))
@@ -569,7 +565,25 @@ class Animator(ttk.Frame):
         self.undo_stack = []
         self.redo_queue = []
         
+        
+        '''
+         variable=self.rotation_angle,
+            from_ = 0,
+            to = 360,
+            orient = "horizontal",
+            length=
+            command = lambda:self.resize_pixels()
+        '''
 
+        
+        
+        
+        
+        
+        #self.canvas.config()
+        
+
+        
         
         #thr following attributes are for the four borders, anything else is temporary
         self.top_left = Vertex(
@@ -736,7 +750,10 @@ class Animator(ttk.Frame):
         self.top_right.transform(translation_matrix, transform_matrix, matrix_translation)
         self.bottom_left.transform(translation_matrix, transform_matrix, matrix_translation)
         self.bottom_right.transform(translation_matrix, transform_matrix, matrix_translation)
-
+        self.top_left.been_transformed = False
+        self.top_right.been_transformed = False
+        self.bottom_left.been_transformed = False
+        self.bottom_right.been_transformed = False
        
     #button focused methods
 
@@ -749,8 +766,19 @@ class Animator(ttk.Frame):
             else:
                 widget.config(bg="yellow")
                 self.mode = widget.cget("text")
+                '''
+                if self.mode == "Anchor":
+                    print("yep")
+                    for wdgt in self.rotation_widgets:
+                        show_pack_widget(wdgt)
+                    
+                else:
+                    for wdgt in self.rotation_widgets:
+                        hide_pack_widget(wdgt)
+                '''
+                    
 
-        
+
 
     def select_direction(self, clicked_widget, widget_array):
         
@@ -790,8 +818,31 @@ class Animator(ttk.Frame):
             transform_matrix = np.eye(3)
             self.transform_borders(self.matrix_pivot, transform_matrix,  self.pivot_matrix)
             self.borders = self.get_borders()
-            self.render_canvas()
 
+            '''
+            for key_frame in self.key_frame_collection:
+                key_frame.canvas_width = event.width
+                key_frame.canvas_height = event.height
+                
+                
+                    
+                    
+                self.pivot_matrix[0, 2] = fx
+                self.pivot_matrix[1, 2] = fx
+
+                self.matrix_pivot[0, 2] = -fx
+                self.matrix_pivot[1, 2] = -fx
+                transform_matrix  = np.array(translation_matrix2D(cx - fx, cy - fy))
+                key_frame.transform_vertices(self.matrix_pivot, transform_matrix,  self.pivot_matrix)
+            
+            '''
+            self.render_canvas()
+            #self.render_onion_skin()
+            #self.current_key_frame.render_image(self.canvas, self.borders)
+            #self.current_key_frame.render_grid(self.canvas, self.borders)
+            #self.render_borders()
+        # Example: Recalculate positions of elements on the canvas
+        # canvas.coords(my_rectangle, 0, 0, event.width, event.height)
 
     def wn_open(self, window):
         #https://stackoverflow.com/questions/76940339/is-there-a-way-to-check-if-a-window-is-open-in-tkinter
@@ -829,6 +880,9 @@ class Animator(ttk.Frame):
         #self.render_borders()
         for i in range(len(self.key_frame_collection)):
             key_frame = self.key_frame_collection[i]
+            
+            #key_frame.blank
+            #key_frame.alter_array_dimensions(int(width), int(height), "#______", pivot, self.canvas, self.borders)
             key_frame.alter_image_dimensions(pivot, int(width), int(height), self.canvas, self.borders)
             key_frame.pixel_canvas_width = int(width)
             key_frame.pixel_canvas_height = int(height)
@@ -1248,14 +1302,7 @@ class Animator(ttk.Frame):
                             if color[-1] == 0:
                                 prev_img_data.append(color)
                             else:
-                                prev_img_data.append(
-                                                        (
-                                                            255, 
-                                                            color[1], 
-                                                            color[2], 
-                                                            int(255 - (175 * ((self.frame_idx - i)/self.onion_prev)))
-                                                        )
-                                                    )
+                                prev_img_data.append((color[0], color[1], color[2], int(175 * ((self.frame_idx - i)/self.onion_prev))))
                         prev_img = Image.new(img.mode, img.size)
                         prev_img.putdata(prev_img_data)
                         #splitting image into color bands
@@ -1279,14 +1326,7 @@ class Animator(ttk.Frame):
                             if color[-1] == 0:
                                 next_img_data.append(color)
                             else:
-                                next_img_data.append(
-                                                        (
-                                                            color[0], 
-                                                            color[1], 
-                                                            255, 
-                                                            int(255 - (175 * ((i - self.frame_idx)/self.onion_next)))
-                                                        )
-                                                    )
+                                next_img_data.append((color[0], color[1], color[2], int(175 * ((i - self.frame_idx)/self.onion_next))))
                         next_img = Image.new(img.mode, img.size)
                         next_img.putdata(next_img_data)
                         #splitting image into color bands
@@ -1321,7 +1361,7 @@ class Animator(ttk.Frame):
         if self.wn_open(self.sub_wn):
             return
         
-        #self.render_onion_skin()
+        self.render_onion_skin()
         
         if self.mode == "H-Shear":
             return
@@ -1334,11 +1374,11 @@ class Animator(ttk.Frame):
 
         if self.mode == "Draw":
             #print(self.current_key_frame.pixel_scale)
-            self.current_key_frame.brush_click(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()), True)
+            self.current_key_frame.brush_click(x, y, self.canvas, self.color, self.borders, True)
         elif self.mode == "Erase":
             #print("press")
             #print(self.current_key_frame.pixel_scale)
-            self.current_key_frame.brush_click(x, y, self.canvas, self.canvas_color, self.borders, float(self.brush_sb.get()), False)
+            self.current_key_frame.brush_click(x, y, self.canvas, self.canvas_color, self.borders, False)
         elif self.mode == "Stroke":
             self.current_key_frame.start_stroke(x, y, self.canvas, self.color, self.borders)
         elif self.mode == "Move":
@@ -1347,10 +1387,12 @@ class Animator(ttk.Frame):
         elif self.mode == "Picker":
             self.color = self.current_key_frame.pick_color(x, y, self.canvas, self.borders)
             self.palette_canvas.config(bg=self.color)
-        elif self.mode == "Rectangle" or self.mode == "Circle" or self.mode == "Select":
+        elif self.mode == "Rectangle" or self.mode == "Circle":
             self.current_key_frame.shape_click(x, y, self.canvas, self.color, self.borders)
         elif self.mode == "Lasso":
             self.current_key_frame.lasso_click(x, y, self.canvas, self.color, self.borders)
+        elif self.mode == "Select":
+            self.current_key_frame.shape_click(x, y, self.canvas, self.color, self.borders)
         elif self.mode == "Bucket":
             self.current_key_frame.bucket_fill(x, y, self.canvas, self.color, self.borders)
         elif self.mode == "Wand":
@@ -1362,7 +1404,8 @@ class Animator(ttk.Frame):
 
         if self.wn_open(self.sub_wn):
             return
-
+    
+        self.render_onion_skin()
 
         if self.mode == "R-Shear":
             return
@@ -1375,11 +1418,11 @@ class Animator(ttk.Frame):
 
         if self.mode == "Draw":
             #print(self.current_key_frame.pixel_scale)
-            self.current_key_frame.brush_press(x, y, self.canvas, self.color, self.borders, float(self.brush_sb.get()), True)
+            self.current_key_frame.brush_press(x, y, self.canvas, self.color, self.borders, True)
         elif self.mode == "Erase":
             #print("press")
             #print(self.current_key_frame.pixel_scale)
-            self.current_key_frame.brush_press(x, y, self.canvas, self.canvas_color, self.borders, float(self.brush_sb.get()), False)
+            self.current_key_frame.brush_press(x, y, self.canvas, self.canvas_color, self.borders, False)
         elif self.mode == "Stroke":
             self.current_key_frame.start_stroke(x, y, self.canvas, self.color, self.borders)
         elif self.mode == "Move":
@@ -1388,8 +1431,7 @@ class Animator(ttk.Frame):
             self.current_key_frame.move_press(x, y, self.canvas, self.color, self.borders)
             #print(f"Transform Time {time.time() - start}")
         elif self.mode == "Picker":
-            self.color = self.current_key_frame.pick_color(x, y, self.canvas, self.borders)
-            self.palette_canvas.config(bg=self.color)
+            pass
         elif self.mode == "Rectangle":
             self.current_key_frame.rectangle_press(x, y, self.canvas, self.color, self.borders)
         elif self.mode == "Circle":
@@ -1411,6 +1453,8 @@ class Animator(ttk.Frame):
 
         if self.wn_open(self.sub_wn):
             return
+        
+        self.render_onion_skin()
 
         if self.mode == "H-Shear":
             return
@@ -1444,6 +1488,10 @@ class Animator(ttk.Frame):
             self.update_key_frame(self.frame_idx)
         self.render_borders()
         
+
+
+        
+    
     def on_canvas_rmb_click(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
@@ -1451,6 +1499,8 @@ class Animator(ttk.Frame):
         if self.wn_open(self.sub_wn):
             return
         
+        self.render_onion_skin()
+
         if self.mode == "H-Shear":
             return
         
@@ -1463,12 +1513,19 @@ class Animator(ttk.Frame):
         if self.mode == "Select" or self.mode == "Lasso" or self.mode == "Wand":
             self.current_key_frame.select_move_click(x, y, self.canvas, self.color, self.borders)
 
+
+        
+   
+    
     def on_canvas_rmb_press(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
 
         if self.wn_open(self.sub_wn):
             return
+
+        
+        self.render_onion_skin()
 
         if self.mode == "H-Shear":
             return
@@ -1484,6 +1541,8 @@ class Animator(ttk.Frame):
             self.current_key_frame.move_press(x, y, self.canvas, "", self.borders)
         self.render_borders()
 
+    
+
     def on_canvas_rmb_release(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
@@ -1492,7 +1551,7 @@ class Animator(ttk.Frame):
             return
         
         
-        #self.render_onion_skin()
+        self.render_onion_skin()
 
         if self.mode == "H-Shear":
             return
@@ -1513,6 +1572,7 @@ class Animator(ttk.Frame):
         #self.current_key_frame.render_grid(self.canvas)
         self.render_borders()
       
+
     def fps_to_ms(self, fps):
         return 1000/fps
 
@@ -1683,13 +1743,14 @@ class Animator(ttk.Frame):
             key_frame_images = []
             if self.bg_color_iv.get():
 
-                rgba = tuple(self.current_key_frame.hex_to_rgb(self.bg_color, True))
+                rgba = self.current_key_frame.hex_to_rgb(self.bg_color, True)
                 for key_frame in self.key_frame_collection:
 
                     blank_image = Image.new("RGBA", (self.pixel_canvas_width, self.pixel_canvas_height), rgba)
-                    #blank_image.paste(key_frame.get_pil_image(), (0, 0))
-                    blank_image = Image.alpha_composite(blank_image, key_frame.get_pil_image())
+                    blank_image.paste(key_frame.get_pil_image(), (0, 0))
                     key_frame_images.append(blank_image)
+                #key_frame_images = [key_frame.pixel_to_pil_image([r, g, b, 255]) for key_frame in self.key_frame_collection]
+                #key_frame_images = [key_frame.get_pil_image for key_frame in self.key_frame_collection]
                 key_frame_images[0].save(
                                             save_path, 
                                             format = "GIF", 
@@ -1735,8 +1796,7 @@ class Animator(ttk.Frame):
             if self.bg_color_iv.get():
                 rgba = tuple(self.current_key_frame.hex_to_rgb(self.bg_color, True))
                 blank_image = Image.new("RGBA", (self.pixel_canvas_width, self.pixel_canvas_height), rgba)
-                blank_image = Image.alpha_composite(blank_image, self.current_key_frame.get_pil_image())
-                #blank_image.paste(, (0, 0))
+                blank_image.paste(self.current_key_frame.get_pil_image(), (0, 0))
                 blank_image.save(save_path)
                 
             else:
@@ -1764,7 +1824,7 @@ class Animator(ttk.Frame):
 
         for i in range(len(self.key_frame_collection)):
             key_frame = self.key_frame_collection[i]
-            key_frame.pixel_image = Image.new("RGBA", (self.pixel_canvas_width, self.pixel_canvas_height), key_frame.blank)
+            self.current_key_frame.pixel_image = Image.new("RGBA", (self.pixel_canvas_width, self.pixel_canvas_height), key_frame.blank)
             self.update_key_frame(i)
         
             key_frame.pixel_vertices.clear()
@@ -1804,8 +1864,8 @@ class Animator(ttk.Frame):
         #self.current_key_frame.display_2d([[col for col in self]])
         pixel_grid =  self.current_key_frame.pil_image_to_grid()
         self.current_key_frame.display_2d(pixel_grid)
-        #self.current_key_frame.display_2d(self.current_key_frame.pil_image_to_array2D())
-        #self.current_key_frame.display_2d(self.current_key_frame.pil_image_to_numpy_array2D())
+        print(self.current_key_frame.display_2d(self.current_key_frame.pil_image_to_array2D()))
+        print(self.current_key_frame.display_2d(self.current_key_frame.pil_image_to_numpy_array2D()))
       
     def choose_color(self):
         print("pixel grid")
@@ -1831,20 +1891,26 @@ class Animator(ttk.Frame):
         #print(color_code)
         if color_code[1]:
             #color_code index 1 is a hex code, index 0 is an rgb tuble
+            
             #this is so erasing works
             self.canvas_color = color_code[1] 
             self.canvas.config(bg=self.canvas_color)
             
+            
+            
         self.render_canvas()
 
     def change_bg_color(self):
+
         #bg color saved
         #print("pixel grid")
+
         # variable to store hexadecimal code of selected_color
         color_code = colorchooser.askcolor(title ="Choose selected_color") 
         #print(color_code)
         if color_code[1]:
             #color_code index 1 is a hex code, index 0 is an rgb tuble
+            
             #this is so erasing works
             self.bg_color = color_code[1] 
             self.bg_color_btn.config(bg=self.bg_color, fg=self.current_key_frame.invert_color(self.bg_color))
@@ -1857,9 +1923,25 @@ class Animator(ttk.Frame):
         set_of_colors = {col for row in self.current_key_frame.pixel_grid for col in row if col != None}
         return set_of_colors
 
+
     #Preview Controling Widgets
     def update_preview_canvas(self):
 
+        #after(2000, task)
+        #self.current_key_frame.update_canvas(self.canvas)
+        #cnvs = tk.Canvas(self.timeline_scroll_frame, width=self.timeline_cell_size, height=self.anim_canvas_height)
+        '''
+        cnvs.create_image(
+            0, 0,           # Image display position (top-left coordinate)
+            anchor='nw',    # Anchor, top-left is the origin
+            image=self.timeline_img_list[0],        # Display image data
+            tags = ("image")
+        )
+        cnvs.pack()#grid(row=0, column=1)
+        '''
+
+        #print("update")
+        
         if self.preview_idx > len(self.preview_img_list) - 1:
             self.preview_idx = 0
 
@@ -1904,6 +1986,7 @@ class Animator(ttk.Frame):
     
     ##Timeline controlling widgets
     
+
     def get_key_frame(self, idx):
         if not self.key_frame_collection:
             new_frame = ImageFrame( 
@@ -1988,6 +2071,8 @@ class Animator(ttk.Frame):
 
     def add_key_frame(self):
      
+        #new_len = len(self.key_frame_collection)
+        #new_len = len(self.key_frame_collection)
         new_frame = ImageFrame( 
                                 self.pixel_canvas_width,
                                 self.pixel_canvas_height, 
@@ -2200,6 +2285,9 @@ class Animator(ttk.Frame):
             else:
                 widget.config(bg="Azure3")
             
+
+    
+    
                     
 class App(tk.Tk):
     def __init__(self):
@@ -2213,7 +2301,7 @@ class App(tk.Tk):
         #self.bind("<Down>", self.t2d_poly.undo)
         #self.bind("<Up>", self.t2d_poly.redo)
         
-        IKs = Animator(self, 500, 500, 128, 96)
+        IKs = Animator(self, 500, 500, 60, 40)
         IKs.pack(side="top", fill="both", expand=True)
         
         self.bind("<Up>", IKs.prev_key_frame)
@@ -2224,7 +2312,6 @@ class App(tk.Tk):
         self.bind("<Control-x>", IKs.cut_pixels)
         self.bind("<Control-d>", IKs.delete_key_frame)
         
-        self.bind("<Control-s>", lambda a:print("Quick Save not implemented"))
         self.bind("<Control-z>", lambda a:print("Undo not implemented"))
         self.bind("<Control-y>", lambda a:print("Redo not implemented"))
         
@@ -2233,27 +2320,21 @@ class App(tk.Tk):
 
 
 if __name__ == "__main__":
-    # problems
-    # duplicate works but doesn't update the timeline FIXED
-    # pixels that don't exist in the grid not being moved or deleted when selected FIXED
-    # resize grid sometimes not working FIXED
-    # Need to add animation preview FIXED
-    # onion skin spinboxes on prev and next FIXED
+    #problems
+    #duplicate works but doesn't update the timeline DONE
+    #pixels that don't exist in the grid not being moved or deleted when selected 
+    #resize grid sometimes not working DONE
+    # Need to add animation preview DONE
+    # onion skin spinboxes on prev and next DONE
     # palette import from pixelplacer3.py
-    # impor images and gifs FIXED
+    # impor images and gifs DONE - Kind of -pixels end up distorted in some cases - not sure why
     # Xaolin's Woo's antialiasing
-    # different brush sizes DONE
-    # rotation and anchoring FIXED
+    # different brush sizes
+    # rotation and anchoring DONE
     # 9  23 25
-    # see if it's possible replace the draw_pixel method in Frame_image render_image and Image.getpixel((x,y)) and Image.putpixel((x,y)) 
-        # draw_pixel is essential as placeholder pixels, until the image is really updated
-        # so perhaps each FrameImage can have three images, in addition to canvas_image, the Tkinter PhotoImage, and pixel_image, the Pil Image
-            # This would likely be a temporary image that temp_pixels can be pasted to and displayed over the real image
-    # fix render order for bucket and wand FIXED
-    # drag borders
-    # swap frames, both with button and timeline
-    # make the timeline more effient, only update frames after.
-    # 
+    #see if it's possible replace the draw_pixel method in Frame_image render_image and Image.getpixel((x,y)) and Image.putpixel((x,y)) Dropped
+    #fix rotations, shearing, wand, fill
+    #fix render order for bucket and wand
 
 
     app = App()

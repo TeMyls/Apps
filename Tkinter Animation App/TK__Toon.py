@@ -137,6 +137,10 @@ class Animator(ttk.Frame):
         self.brush_sb = ttk.Spinbox(self.options_frame, from_ = 1, to = 10, increment=0.5, width=10, command=self.render_canvas)
         self.brush_sb.set(1)
 
+        self.export_size_sb = ttk.Spinbox(self.options_frame, from_ = 1, to = 16, increment=1, width=10, command=None)
+        self.export_size_sb.set(1)
+        self.export_size_lbl = ttk.Label(self.options_frame, text="Save Scale")
+
         self.debug_btn = ttk.Button(self.options_frame, text="Debug", command=self.debug)
         self.clear_btn = ttk.Button(self.options_frame, text="Clear Frame", command=self.clear_frame)
         self.wipeout_btn = ttk.Button(self.options_frame, text="Clear All", command=self.clear_frames)
@@ -144,7 +148,7 @@ class Animator(ttk.Frame):
         self.gif_btn = ttk.Button(self.options_frame, text="Save Gif", command=self.save_gif)
         self.color_btn = ttk.Button(self.options_frame, text="Color", command=self.choose_color)
         self.canvas_color_btn = ttk.Button(self.options_frame, text="Canvas Color", command=self.change_canvas_color)
-        self.resize_btn = ttk.Button(self.options_frame, text="Resize", command=self.on_pixel_image_resize)
+        self.resize_btn = ttk.Button(self.options_frame, text="Pixel Resize", command=self.on_pixel_image_resize)
         self.open_btn = ttk.Button(self.options_frame, text="Import", command=self.open_file)
 
         self.bg_color_iv = tk.BooleanVar(value=False)
@@ -198,9 +202,11 @@ class Animator(ttk.Frame):
             [self.save_btn, self.gif_btn ],
             [self.resize_btn, self.open_btn],
             [self.bg_color_cb, self.bg_color_btn],
+            [self.export_size_lbl, self.export_size_sb],
             [self.onion_cb, None],
             [self.onion_prev_lbl, self.onion_prev_sb],
             [self.onion_next_lbl, self.onion_next_sb],
+            
             [self.scale_lbl, self.dim_lbl]
             
 
@@ -334,7 +340,7 @@ class Animator(ttk.Frame):
         self.fps_lbl = tk.Label(self.preview_frame, text="FPS")
         self.fps_scl = tk.Scale(self.preview_frame, from_=1, to=24, variable=self.fps_iv,orient="horizontal", command=None, state="active")
         self.play_img = tk.PhotoImage(file="icons\\play_arrow_32dp_000000_FILL0_wght400_GRAD0_opsz40.png").subsample(6, 6)
-        self.playing = True
+        self.playing = False
         self.play_btn = tk.Button(self.preview_frame, text="Play", image=self.play_img, command=self.play_preview) 
         self.preview_idx = 0
         self.preview_id = ""
@@ -1755,7 +1761,15 @@ class Animator(ttk.Frame):
 
                     blank_image = Image.new("RGBA", (self.pixel_canvas_width, self.pixel_canvas_height), rgba)
                     #blank_image.paste(key_frame.get_pil_image(), (0, 0))
+                    #pasting the keyframe image on top of the colored background image
                     blank_image = Image.alpha_composite(blank_image, key_frame.get_pil_image())
+                    resize_factor = int(self.export_size_sb.get())
+                    if  resize_factor > 1:
+                        blank_image = blank_image.resize(
+                                        (self.pixel_canvas_width * resize_factor, self.pixel_canvas_height * resize_factor),
+                                        Image.Resampling.NEAREST
+                                        )
+
                     key_frame_images.append(blank_image)
                 key_frame_images[0].save(
                                             save_path, 
@@ -1771,8 +1785,20 @@ class Animator(ttk.Frame):
                 
                 
             else:
+                
+                resize_factor = int(self.export_size_sb.get())
+                if  resize_factor > 1:
+                
+                    key_frame_images = [
+                        key_frame.get_pil_image().resize(
+                            (self.pixel_canvas_width * resize_factor, self.pixel_canvas_height * resize_factor),
+                            Image.Resampling.NEAREST)
+                        for key_frame in self.key_frame_collection
+                        ]
+                else:
 
-                key_frame_images = [key_frame.get_pil_image() for key_frame in self.key_frame_collection]
+                    key_frame_images = [key_frame.get_pil_image() for key_frame in self.key_frame_collection]
+
                 key_frame_images[0].save(
                                             save_path, 
                                             format = "GIF", 
@@ -1803,11 +1829,24 @@ class Animator(ttk.Frame):
                 rgba = tuple(self.current_key_frame.hex_to_rgb(self.bg_color, True))
                 blank_image = Image.new("RGBA", (self.pixel_canvas_width, self.pixel_canvas_height), rgba)
                 blank_image = Image.alpha_composite(blank_image, self.current_key_frame.get_pil_image())
+                resize_factor = int(self.export_size_sb.get())
+                if  resize_factor > 1:
+                    blank_image = blank_image.resize(
+                        (self.pixel_canvas_width * resize_factor, self.pixel_canvas_height * resize_factor),
+                        Image.Resampling.NEAREST
+                        )
                 #blank_image.paste(, (0, 0))
                 blank_image.save(save_path)
                 
             else:
-                self.current_key_frame.get_pil_image().save(save_path)
+                resize_factor = int(self.export_size_sb.get())
+                if  resize_factor > 1:
+                    self.current_key_frame.get_pil_image().resize(
+                        (self.pixel_canvas_width * resize_factor, self.pixel_canvas_height * resize_factor),
+                        Image.Resampling.NEAREST
+                        ).save(save_path)
+                else:
+                    self.current_key_frame.get_pil_image().save(save_path)
          
     def clear_frame(self):
 

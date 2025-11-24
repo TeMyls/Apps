@@ -1,4 +1,4 @@
-# TK__Toon
+# TK-Toon or Tkinter Toon: An Animation Application
 
 By TeMyls
 

@@ -45,4 +45,14 @@ The gif in question.</br>
 A quick drawing of a bouncing ball.</br>
 ![A sped up drawing of a bouncing ball](https://github.com/TeMyls/TK__Toon/blob/main/animating.gif)</br>
 The bouncing ball output gif.</br>
-![The bouncing ball gif](https://github.com/TeMyls/TK__Toon/blob/main/animating.gif)</br>
+![The bouncing ball gif](https://github.com/TeMyls/TK-Toon/blob/main/animating%20output.gif)</br>
+
+# Big thanks to the articles below
+<https://blog.teclado.com/tkinter-scrollable-frames/></br>
+<https://cs111.wellesley.edu/archive/cs111_fall14/public_html/labs/lab12/tkintercolor.html></br>
+<https://stackoverflow.com/questions/76940339/is-there-a-way-to-check-if-a-window-is-open-in-tkinter></br>
+<https://stackoverflow.com/questions/74731252/fastest-way-to-load-an-animated-gif-in-python-into-a-numpy-array></br>
+<https://stackoverflow.com/questions/60948028/python-pillow-transparent-gif-isnt-working></br>
+<https://stackoverflow.com/questions/66361332/creating-a-timer-with-tkinter></br>
+<https://note.nkmk.me/en/python-pillow-paste/></br>
+<https://stackoverflow.com/questions/71221471/python-bind-a-shift-key-press-to-a-command></br>

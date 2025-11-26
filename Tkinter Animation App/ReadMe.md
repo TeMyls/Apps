@@ -29,7 +29,7 @@ The icons used can be found at [Google Icons](https://fonts.google.com/icons?ico
 * Different brush sizes
 * Mouse Centric Transformations, Rotation and shearing, applied to the whole frame or selected areas
 * Frame navigation using either buttons or the arrow keys.
-* Standard Shortcuts, such as Copy, Control-C, Paste, Control-V, and Cut, Control-X when and area is selected.
+* Standard Shortcuts, such as Copy, Control-C, Paste, Control-V, and Cut, Control-X when an area is selected.
   
 </br>
 </br>As of now it has basic capabilities such as adding, deleting, duplicating, and inserting frames, and onion skin, resizing the pixel area of a frame, moving the drawable area, playing frames back as a preview, and exporting or importing animations as GIF files or frames as PNG files. </br>

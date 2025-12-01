@@ -244,7 +244,7 @@ class Timer(ttk.Frame):
 
             self.refresh_time()
 
-            self.tick_id = self.after(500,lambda:self.tick())
+            self.tick_id = self.after(1000,lambda:self.tick())
             self.update()
             self.draw_arc()
         else:
@@ -285,7 +285,7 @@ class Timer(ttk.Frame):
         self.playing = True
         #forcing the buttons to update
         self.update()
-        self.tick_id = self.after(500,lambda:self.tick())
+        self.tick_id = self.after(1000,lambda:self.tick())
 
 
     def pause_countdown(self):
@@ -368,4 +368,5 @@ if __name__ == "__main__":
     #app.geometry("800x600")
     app.title("Simple Timer")
     app.resizable()
+
     app.mainloop()

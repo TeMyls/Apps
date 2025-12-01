@@ -115,23 +115,13 @@ class Timer(ttk.Frame):
 
         # the upper frame itself 
         self.upper_frame.pack()
+        # the lower frame itself
         self.lower_frame.pack()
         
-
-        
         self.canvas.pack()
-        # the lower frame itself
         
-        
-
-
-
-        # the full frame
-        #self.full_frame.pack()
-
         self.tick_id = ""
         self.ms_tick = 1000
-
 
         self.hours = 0
         self.minutes = 0
@@ -385,4 +375,5 @@ if __name__ == "__main__":
     #app.geometry("800x600")
     app.title("Simple Timer")
     app.resizable()
+
     app.mainloop()

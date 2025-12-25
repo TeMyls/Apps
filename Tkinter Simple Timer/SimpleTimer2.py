@@ -30,9 +30,6 @@ def clamp(x, lower, upper):
 def lerp(a, b, amount):
   return a + (b - a) * clamp(amount, 0, 1)
 
-
-
-
 class Timer(ttk.Frame):
     def __init__(self, parent, c_width, c_height):
         super().__init__(parent)
@@ -84,10 +81,15 @@ class Timer(ttk.Frame):
         self.minute_lbl = tk.Label(self.minute_frame, text="Min", background=self.canvas_color)
         self.second_lbl = tk.Label(self.second_frame, text="Sec", background=self.canvas_color)
 
+        self.hour_sv = tk.StringVar()
+        self.minute_sv = tk.StringVar()
+        self.second_sv = tk.StringVar()
+
         ent_width = 8
-        self.hour_ent = tk.Entry(self.hour_frame, text="Hours", width=ent_width, background=self.canvas_color, bg=self.canvas_color)
-        self.minute_ent = tk.Entry(self.minute_frame, text="Min", width=ent_width, background=self.canvas_color, bg=self.canvas_color)
-        self.second_ent = tk.Entry(self.second_frame, text="Sec", width=ent_width, background=self.canvas_color, bg=self.canvas_color)
+        
+        self.hour_ent = tk.Entry(self.hour_frame, text="Hours", width=ent_width, textvariable=self.hour_sv, background=self.canvas_color)
+        self.minute_ent = tk.Entry(self.minute_frame, text="Min", width=ent_width, textvariable=self.minute_sv, background=self.canvas_color)
+        self.second_ent = tk.Entry(self.second_frame, text="Sec", width=ent_width, textvariable=self.second_sv, background=self.canvas_color)
         
         
 
@@ -115,13 +117,23 @@ class Timer(ttk.Frame):
 
         # the upper frame itself 
         self.upper_frame.pack()
-        # the lower frame itself
         self.lower_frame.pack()
         
-        self.canvas.pack()
+
         
+        self.canvas.pack()
+        # the lower frame itself
+        
+        
+
+
+
+        # the full frame
+        #self.full_frame.pack()
+
         self.tick_id = ""
         self.ms_tick = 1000
+
 
         self.hours = 0
         self.minutes = 0
@@ -208,16 +220,19 @@ class Timer(ttk.Frame):
         self.refresh_seconds()
     
     def refresh_seconds(self):
-        self.second_ent.delete(0, tk.END)
-        self.second_ent.insert(tk.END, str(self.seconds))
+        self.second_sv.set(str(self.seconds))
+        #self.second_ent.delete(0, tk.END)
+        #self.second_ent.insert(tk.END, str(self.seconds))
 
     def refresh_minutes(self):
-        self.minute_ent.delete(0, tk.END)
-        self.minute_ent.insert(tk.END, str(self.minutes))
+        self.minute_sv.set(str(self.minutes))
+        #self.minute_ent.delete(0, tk.END)
+        #self.minute_ent.insert(tk.END, str(self.minutes))
 
     def refresh_hours(self):
-        self.hour_ent.delete(0, tk.END)
-        self.hour_ent.insert(tk.END, str(self.hours))
+        self.hour_sv.set(str(self.hours))
+        #self.hour_ent.delete(0, tk.END)
+        #self.hour_ent.insert(tk.END, str(self.hours))
 
     def time_to_seconds(self, hours: int, minutes: int, seconds: int):
         return hours * 3600 + minutes * 60 + seconds
@@ -293,6 +308,7 @@ class Timer(ttk.Frame):
         #forcing the buttons to update
         self.update()
         self.tick_id = self.after(self.ms_tick,lambda:self.tick())
+        print("Played")
 
 
     def pause_countdown(self):
@@ -327,37 +343,10 @@ class Timer(ttk.Frame):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        #https://stackoverflow.com/questions/71221471/python-bind-a-shift-key-press-to-a-command
-        #frame.bind('<Left>', leftKey)
-        #frame.bind('<Right>', rightKey)
-        "<Left>"
-        "<Right>"
-        "<Control-z>"
-        "<Control-y>"
-        #self.bind("<Down>", self.t2d_poly.undo)
-        #self.bind("<Up>", self.t2d_poly.redo)
         
-        IKs = Timer(self, 300, 300)
-        IKs.pack(side="top", fill="both", expand=True)
+        Ts = Timer(self, 300, 300)
+        Ts.pack(side="top", fill="both", expand=True)
         
-        '''
-        self.bind("<Up>", IKs.prev_key_frame)
-        self.bind("<Down>", IKs.next_key_frame)
-        self.bind("<Delete>", IKs.delete_pixels)
-        self.bind("<Control-c>", IKs.copy_pixels)
-        self.bind("<Control-v>", IKs.paste_pixels)
-        self.bind("<Control-x>", IKs.cut_pixels)
-        self.bind("<Control-d>", IKs.delete_key_frame)
-
-        self.bind("<KeyPress-Shift_L>", IKs.shift_press)
-        self.bind("<KeyPress-Shift_R>", IKs.shift_press)
-        self.bind("<KeyRelease-Shift_L>", IKs.shift_release)
-        self.bind("<KeyRelease-Shift_R>", IKs.shift_release)
-        
-        self.bind("<Control-s>", lambda a:print("Quick Save not implemented"))
-        self.bind("<Control-z>", lambda a:print("Undo not implemented"))
-        self.bind("<Control-y>", lambda a:print("Redo not implemented"))
-        '''
     
         
 
@@ -375,5 +364,4 @@ if __name__ == "__main__":
     #app.geometry("800x600")
     app.title("Simple Timer")
     app.resizable()
-
     app.mainloop()

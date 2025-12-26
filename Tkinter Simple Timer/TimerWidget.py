@@ -1,0 +1,312 @@
+import tkinter as tk
+from tkinter import ttk
+#from WidgetUtils import *
+from Tool_tip import *
+#from playsound import playsound
+
+
+
+class Timer(ttk.Frame):
+    def __init__(self, parent, c_width, c_height):
+        super().__init__(parent)
+        #the color selection palette
+
+
+
+        self.canvas_width = c_width
+        self.canvas_height = c_height
+        #the reason this has an underscore is to 
+        self.canvas_color = "#808080"
+
+        #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+        #The main canvas
+        #https://blog.teclado.com/tkinter-scrollable-frames/
+        #self.full_frame = tk.Frame(self) 
+
+        
+
+        self.canvas = tk.Canvas(self, 
+                                width=c_width,
+                                height=c_height, 
+                                bg=self.canvas_color)
+        
+        self.canvas_frame = tk.Frame(self.canvas, background=self.canvas_color)
+        
+        self.canvas.create_window((self.canvas_width/2, self.canvas_height/2), window=self.canvas_frame, anchor="center")
+
+        self.upper_frame = tk.Frame(self.canvas_frame)
+        self.lower_frame =  tk.Frame(self.canvas_frame)
+
+        self.hour_frame = tk.Frame(self.upper_frame, background=self.canvas_color)
+        self.minute_frame = tk.Frame(self.upper_frame, background=self.canvas_color)
+        self.second_frame = tk.Frame(self.upper_frame, background=self.canvas_color)
+
+ 
+
+        self.play_img = tk.PhotoImage(file="icons\\play_arrow_32dp_000000_FILL0_wght400_GRAD0_opsz40.png").subsample(5, 5)
+        self.playing = False
+        self.play_btn = tk.Button(self.lower_frame, text="Start", image=self.play_img, command=self.start_timer, background=self.canvas_color)
+        CreateToolTip(self.play_btn, "Start")
+
+        self.replay_img = tk.PhotoImage(file="icons\\replay_128dp_000000_FILL0_wght400_GRAD0_opsz48.png").subsample(5, 5)
+        #self.playing = False
+        self.replay_btn = tk.Button(self.lower_frame, text="Reset", image=self.replay_img, command=self.restart_timer, background=self.canvas_color)
+        CreateToolTip(self.replay_btn, "Reset")
+
+        self.hour_lbl = tk.Label(self.hour_frame, text="Hours", background=self.canvas_color)
+        self.minute_lbl = tk.Label(self.minute_frame, text="Min", background=self.canvas_color)
+        self.second_lbl = tk.Label(self.second_frame, text="Sec", background=self.canvas_color)
+
+        self.hour_sv = tk.StringVar()
+        self.minute_sv = tk.StringVar()
+        self.second_sv = tk.StringVar()
+
+        ent_width = 8
+        
+        self.hour_ent = tk.Entry(self.hour_frame, text="Hours", width=ent_width, textvariable=self.hour_sv, background=self.canvas_color)
+        self.minute_ent = tk.Entry(self.minute_frame, text="Min", width=ent_width, textvariable=self.minute_sv, background=self.canvas_color)
+        self.second_ent = tk.Entry(self.second_frame, text="Sec", width=ent_width, textvariable=self.second_sv, background=self.canvas_color)
+        
+        
+
+        # the hour frame order
+        self.hour_lbl.pack()
+        self.hour_ent.pack()
+
+        # the minute frame order
+        self.minute_lbl.pack()
+        self.minute_ent.pack()
+
+        # the second frame order
+        self.second_lbl.pack()
+        self.second_ent.pack()
+
+        
+        # the upper frame order
+        self.play_btn.pack(side="left")
+        self.replay_btn.pack(side="left")
+
+        # the lower frame order
+        self.hour_frame.pack(side="left")
+        self.minute_frame.pack(side="left")
+        self.second_frame.pack(side="left")
+
+        # the upper frame itself 
+        self.upper_frame.pack()
+        self.lower_frame.pack()
+        
+
+        
+        self.canvas.pack()
+        # the lower frame itself
+        
+        
+
+
+
+        # the full frame
+        #self.full_frame.pack()
+
+        self.tick_id = ""
+        self.ms_tick = 1000
+
+
+        self.hours = 0
+        self.minutes = 0
+        self.seconds = 1
+
+        self.hour_ent.insert(tk.END, str(self.hours))
+        self.minute_ent.insert(tk.END, str(self.minutes))
+        self.second_ent.insert(tk.END, str(self.seconds))
+
+        self.total_seconds = self.time_to_seconds(self.hours, self.minutes, self.seconds)
+        self.og_total_seconds = self.total_seconds
+
+        self.entry_widgets = [
+
+            self.hour_ent, self.minute_ent, self.second_ent
+
+        ]
+
+        self.draw_arc()
+
+        #print(self.time_to_seconds(3, 4, 2))
+        #print(self.seconds_to_time(self.time_to_seconds(3, 4, 2)))
+
+    def draw_arc(self):
+        #min_dim = min(self.canvas_width, self.canvas_height)
+        #c_min = min(event.height, event.width)
+        self.canvas.delete("arc")
+        deci = 0.9
+        coords = [
+                    self.canvas_width - self.canvas_width * deci, 
+                    self.canvas_height - self.canvas_height * deci, 
+                    self.canvas_width * deci, 
+                    self.canvas_height * deci
+                ]
+
+        self.canvas.create_arc(
+                                coords, 
+                                start=90, 
+                                extent=self.total_seconds/self.og_total_seconds * -360,
+                                fill="red",
+                                outline="red",
+                                tags=("arc")
+                                )
+        
+        deci = deci - 0.1
+        coords = [
+                    self.canvas_width - self.canvas_width * deci, 
+                    self.canvas_height - self.canvas_height * deci, 
+                    self.canvas_width * deci, 
+                    self.canvas_height * deci
+                ]
+        
+        self.canvas.create_oval(
+            coords,
+            fill=self.canvas_color,
+            outline=self.canvas_color,
+            tags=("arc")
+
+        )
+
+
+    
+    def refresh_time(self):
+        self.hours, self.minutes, self.seconds = self.seconds_to_time(self.total_seconds)
+        #print("H")
+        self.refresh_hours()
+        self.refresh_minutes()
+        self.refresh_seconds()
+    
+    def refresh_seconds(self):
+        self.second_sv.set(str(self.seconds))
+        #self.second_ent.delete(0, tk.END)
+        #self.second_ent.insert(tk.END, str(self.seconds))
+
+    def refresh_minutes(self):
+        self.minute_sv.set(str(self.minutes))
+        #self.minute_ent.delete(0, tk.END)
+        #self.minute_ent.insert(tk.END, str(self.minutes))
+
+    def refresh_hours(self):
+        self.hour_sv.set(str(self.hours))
+        #self.hour_ent.delete(0, tk.END)
+        #self.hour_ent.insert(tk.END, str(self.hours))
+
+    def time_to_seconds(self, hours: int, minutes: int, seconds: int):
+        return hours * 3600 + minutes * 60 + seconds
+    
+    def seconds_to_time(self, seconds: int):
+        return seconds // 3600, (seconds % 3600) // 60, (seconds % 3600) % 60
+
+    
+
+    #Preview Controling Widgets
+    def tick(self):
+        
+        if self.total_seconds >= 1:
+
+            self.total_seconds -= 1
+
+            self.refresh_time()
+
+            self.tick_id = self.after(self.ms_tick,lambda:self.tick())
+            self.update()
+            self.draw_arc()
+        else:
+            playsound("alarm.mp3")
+            self.pause_countdown()
+
+        
+
+    def begin_countdown(self):
+        #print("fps scale off")
+        can_tick = self.hour_ent.get().isnumeric() and self.minute_ent.get().isnumeric() and self.second_ent.get().isnumeric()
+        if not can_tick:
+            return 
+        
+        ent_seconds = abs(int(self.second_ent.get()))
+        ent_minutes = abs(int(self.minute_ent.get())) 
+        ent_hours = abs(int(self.hour_ent.get()))
+
+        all_zeros = ent_hours == 0 and ent_minutes == 0 and ent_seconds == 0
+
+        if all_zeros:
+            return
+
+        hour_limit = 4
+        
+        self.play_btn.config(bg="yellow")
+
+        self.total_seconds = self.time_to_seconds(ent_hours, ent_minutes, ent_seconds)
+        if not self.playing:
+            self.og_total_seconds = self.total_seconds
+        self.refresh_time()
+
+
+        #self.total_seconds = self.time_to_seconds(self.hours, self.minutes, self.seconds)
+        self.playing = True
+        #forcing the buttons to update
+        self.update()
+        self.tick_id = self.after(self.ms_tick,lambda:self.tick())
+        print("Played")
+
+
+    def pause_countdown(self):
+        self.play_btn.config(bg="SystemButtonFace")
+
+        #for widget in self.entry_widgets:
+        #    enable_widget(widget) #widget.config(state="active")
+
+        self.playing = False
+        self.update()
+
+        if self.tick_id:
+            self.tick_id = self.after_cancel(self.tick_id)
+
+    def restart_timer(self):
+        self.hours, self.minutes, self.seconds = self.seconds_to_time(self.og_total_seconds)
+        self.total_seconds = self.og_total_seconds
+
+        self.refresh_hours()
+        self.refresh_minutes()
+        self.refresh_seconds()
+
+    def start_timer(self):
+        #so you can only chang the fps when the playing is false
+        
+        #https://stackoverflow.com/questions/66361332/creating-a-timer-with-tkinter
+        if self.playing == True:
+            self.pause_countdown()
+        else:
+            self.begin_countdown()
+
+
+'''
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        
+        time = Timer(self, 300, 300)
+        time.pack(side="top", fill="both", expand=True)
+        
+    
+        
+
+               
+
+if __name__ == "__main__":
+
+
+
+    app = App()
+    
+    #transparent frame
+    #app.config(bg = '#add123')
+    #app.wm_attributes('-transparentcolor','#add123')
+    #app.geometry("800x600")
+    app.title("Simple Timer")
+    app.resizable()
+    app.mainloop()
+'''

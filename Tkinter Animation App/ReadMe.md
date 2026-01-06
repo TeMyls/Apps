@@ -5,7 +5,7 @@ By TeMyls
 A simple animation application made with Python's Tkinter, PIL(Python Imaging Library), and Numpy. </br>
 This was an attempt at trying to visually and functionally clone the pixel art application [Piskel](https://github.com/piskelapp/piskel), but it shares none of the code and is made with my current expertise with the tools above.</br>
 
-The main page for the app can be found [here](https://github.com/TeMyls/TK-Toon/edit/main/README.md) as a standalone repository</br>
+The main page for the app can be found [here](https://github.com/TeMyls/TK-Toon/tree/main) as a standalone repository</br>
 The icons used can be found at [Google Icons](https://fonts.google.com/icons?icon.size=32&icon.color=%23000000&icon.style=Rounded)</br>
 
 ### Capabilities

@@ -1727,7 +1727,7 @@ class Animator(ttk.Frame):
                                         ]
                 new_frame.pixel_coords = new_frame.grid_to_coords(self.borders)
                 '''
-                new_frame.pixel_image = img
+                new_frame.pixel_image = img.convert("RGBA")
                 self.key_frame_collection.append(new_frame)
                 
             self.frame_idx = 0

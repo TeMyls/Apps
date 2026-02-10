@@ -494,7 +494,7 @@ class Kinematics(ttk.Frame):
             self.update_treeview(self.edges, self.selected_idx)
         
     def on_canvas_lmb_release(self, event):
-        if self.mode == "Shift" and self.mode == "Move":
+        if self.mode == "Shift" or self.mode == "Move":
             self.last_pixel.clear()
             self.distances = self.edge_distance()
 
@@ -569,16 +569,8 @@ class Kinematics(ttk.Frame):
         
 
         if len(self.vertices) > 0:
-            idx = -1
-            
+            idx = self.is_vertex_colliding(x, y, self.radius, 1, 1)
 
-            for i in range(len(self.vertices)):
-                #if point_circle(x, y, self.vertices[i].get_X(), self.vertices[i].get_Y(), self.radius * 2):
-                vx, vy = self.vertices[i].get_coords()
-                if circle_circle(x, y, self.radius, vx, vy, self.radius):
-                    idx = i
-                    break
-            
             if idx > -1:
                 #print(idx)
                 self.vertices.pop(idx)
@@ -658,14 +650,7 @@ class Kinematics(ttk.Frame):
 
 
         if len(self.vertices) > 0:
-            idx = -1
-            for i in range(len(self.vertices)):
-                
-                ox, oy = self.vertices[i].get_coords()
-                if circle_circle(x, y, self.radius * 1.5, ox, oy, self.radius):
-                    idx = i
-                  
-                    break
+            idx = self.is_vertex_colliding(x, y, self.radius, 1.5, 1)
 
 
             if idx != -1:
@@ -692,15 +677,7 @@ class Kinematics(ttk.Frame):
         
         
         if len(self.vertices) > 1:
-           
-            idx = -1
-            for i in range(len(self.vertices)):
-                if i != self.selected_idx:
-                    ox, oy = self.vertices[i].get_coords()
-                    if circle_circle(x, y, self.radius * 0.7, ox, oy, self.radius):
-                        idx = i
-                        
-                        break
+            idx = self.is_vertex_colliding(x, y, self.radius, 0.7, 1)
 
             #print(f"selected: {self.selected_idx} Parent Type:{type(list(self.edges.keys())[0])} idx: {idx}")
             
@@ -773,16 +750,13 @@ class Kinematics(ttk.Frame):
         self.render_brush(x, y, 0.5, "gray", "target")
 
         if len(self.vertices) > 1:
-            idx = -1
-            for i in range(len(self.vertices)):
-                
-                ox, oy = self.vertices[i].get_coords()
-                if circle_circle(x, y, self.radius, ox, oy, self.radius):
-                    #if the index in self.vertices has no childern as represented by []
-                    if not self.edges[i] and self.selected_idx != idx:
-                        idx = i
-                  
-                        break
+            idx = self.is_vertex_colliding(x, y, self.radius, 1, 1)
+            if idx > -1:
+                if self.edges[idx]:
+                    return
+            
+            if self.selected_idx == idx:
+                return
 
 
             if idx != -1:
@@ -790,7 +764,7 @@ class Kinematics(ttk.Frame):
 
                 #self.highlight_vertex(idx)
                 #print(f"selected: {self.selected_idx}")
-                ox, oy = self.vertices[i].get_coords()
+                ox, oy = self.vertices[idx].get_coords()
                 self.render_brush(ox, oy, 1.5, "gray", "target_sel")
 
     def move_vertex(self, event):
@@ -849,7 +823,16 @@ class Kinematics(ttk.Frame):
                             outline=color,
                             tags=(tag)
                             )
-    
+        
+    def is_vertex_colliding(self, x, y, radius, m1 = 1, m2 = 1) -> int:
+        idx = -1
+        for i in range(len(self.vertices)):
+            if i != self.selected_idx:
+                vx, vy = self.vertices[i].get_coords()
+                if circle_circle(x, y, radius * m1, vx, vy, radius * m2):
+                    idx = i
+                    return idx
+        return idx
 
     #Render Canvas---------------------------------------------------------------------------------------------------
     

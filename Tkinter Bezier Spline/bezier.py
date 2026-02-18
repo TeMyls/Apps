@@ -1,0 +1,209 @@
+import math
+
+floor = lambda x: round(x)
+
+floor_color = 1
+
+wall_color = 0
+player_color = 7
+other_color = 9
+
+colors = {
+	#wall
+	wall_color:'.',
+	#floor
+	floor_color:'#',
+	#player
+	player_color:'@',
+	other_color:'X'
+
+	
+	
+}
+
+def empty_map(rows,columns,color):
+	return [[color]*columns for i in range(rows)]
+
+def symbol_display(arr):
+	#displays map in readable format
+	h=''
+	for row in arr:
+		for col in row:
+			h += colors[col]
+		h = h + '\n'
+	print(h)
+
+def in_bounds(x, y,grid_w,grid_h):
+    return 0 <= x < grid_w and 0 <= y < grid_h 
+
+def clamp(x, lower, upper):
+	if x < lower:
+		return lower
+	elif x > upper:
+		return upper
+		
+	else:
+		return x
+
+def lerp(a, b, percentage):
+	return a + (b - a) * clamp(percentage, 0, 1)
+	
+
+def r_bez(point_ls: list[float], points: int, point: int) -> list[float]:
+	# the way bezier curves work is by linear interpolating(lerp)
+		# the value from one coordinate to another, getting an X-Y point at a percentage between the two
+		# these points are lerp-ed until the path of a single line is deduced
+	# Example
+	# 4 X-Y coordinate pairs have 3 lines between them
+	# when a percentage value is connected inbetween these 3 lines sequentially you get 2 lines, then 1 line from where each point on the found
+	# this recurcise and iterative versions do exactly that, once the amount of points is reduced to 4 numbers, 2 X-Y pairs, a line
+			# the curve's coordinate at that percentage is found
+			
+	ln = len(point_ls)
+	#print(point_ls)
+	if ln == 4:
+		x1 = point_ls[0]
+		y1 = point_ls[1]
+		
+		x2 = point_ls[2]
+		y2 = point_ls[3]
+	
+		#print(x1, y1, x2, y2)
+		
+		x = lerp(x1, x2, point/points)
+		y = lerp(y1, y2, point/points)
+			
+		return [x , y]
+				
+	if ln < 6:
+		return
+
+	ls_point = []
+	for i in range(3, ln, 2):
+		
+		x1 = point_ls[i - 3]
+		y1 = point_ls[i - 2]
+		
+		x2 = point_ls[i - 1]
+		y2 = point_ls[i]
+	
+		#print(x1, y1, x2, y2)
+		ls_point.append(
+			lerp(x1, x2, point/points)
+			)
+		ls_point.append(
+			lerp(y1, y2, point/points)
+			)
+
+	return r_bez(ls_point, points, point)
+	
+def i_bez(point_ls: list[float], points: int, point: int) -> list[float]:
+	ln = len(point_ls)
+	if ln < 6:
+		return
+	
+	ls_point = [coord for coord in point_ls]
+	while len(ls_point) != 4:
+		ln = len(ls_point)
+		i = 3 
+		while i < ln:
+		#for i in range(3, ln, 2):
+		
+			x1 = ls_point[i - 3]
+			y1 = ls_point[i - 2]
+			
+			x2 = ls_point[i - 1]
+			y2 = ls_point[i]
+		
+			#print(x1, y1, x2, y2)
+			ls_point.append(
+				lerp(x1, x2, point/points)
+				)
+			ls_point.append(
+				lerp(y1, y2, point/points)
+				)
+			i += 2
+			
+		ls_point = ls_point[ln:ln + i]
+		#print(len(ls_point))
+		#if len(ls_point) == 4:
+			#return ls_point
+	x1 = ls_point[0]
+	y1 = ls_point[1]
+	
+	x2 = ls_point[2]
+	y2 = ls_point[3]
+
+	#print(x1, y1, x2, y2)
+	
+	x = lerp(x1, x2, point/points)
+	y = lerp(y1, y2, point/points)
+	return [x , y]
+
+def spline(point_ls: list[float], points: int, point: int) -> list[float]:
+	# Spline
+	# Splitting the points into smaller quadratic Bezier curves, each which only have 8 X-Y, or 4 control points
+		# Every other point is on the line itself and the curve is controlled by the two points preceding it
+		# control is more localized 
+	#print(points)
+	control_matrix = []
+	curve_coords = []
+	if len(point_ls) > 7:
+
+		#print(point_ls)
+		#print(control_matrix)
+		# 8 points is 4 X-Y points
+		inc = 8
+		dec = 0
+		for i in range(0, len(point_ls) + 1, inc):
+			if i + inc - dec < len(point_ls):
+				start = i - dec
+				stop = i + inc - dec
+				ele = point_ls[ start:stop ]
+				dec += 2
+				#control_matrix.append(ele)
+				#print(ele, start, stop, "yep")
+
+			
+
+				#curve_coords.clear()
+				for j in range(points + 1):
+					curve_xy = i_bez(ele, points, j)
+				
+					curve_coords.append(curve_xy[0])
+					curve_coords.append(curve_xy[1])
+	return curve_coords	
+
+grid = empty_map(22, 22, wall_color)
+w = len(grid[0]) - 1
+h = len(grid) - 1
+points = 10
+control_points = [
+			#X 					Y
+			0					,0				, 
+			floor(w  * 0.20)	,floor(h * .80)	, 
+			floor(w  * 0.65)	,floor(h * .20)	, 
+			floor(w  * 0.90)	,floor(h * .75)
+		]
+#curve = n_curve_bezier(points, 8)
+print("getting and displaying x-y bezier points")
+for i in range(points):
+	curve_point = r_bez(control_points, points, i)
+	
+	x = floor(curve_point[0])
+	y = floor(curve_point[1])
+	
+	grid[y][x] = floor_color
+	print(curve_point)
+
+symbol_display(grid)
+print("setting the original control points")
+for i in range(0, len(control_points), 2):
+	x = floor(control_points[i])
+	y = floor(control_points[i + 1])
+	
+	grid[y][x] = player_color
+
+symbol_display(grid)
+
+
